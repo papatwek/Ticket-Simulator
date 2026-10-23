@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="wyze">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wyze - ECE Ticket Simulator</title>
+<meta name="description" content="Wyze customer support training simulator for live-chat and email ticketing with realistic AI customer scenarios, typing speed tracking, case documentation, and trainer reviews."/>
+<meta property="og:title" content="Wyze - ECE Ticket Simulator"/>
+<meta property="og:description" content="Wyze customer support training simulator for live-chat and email ticketing with realistic AI customer scenarios, typing speed tracking, case documentation, and trainer reviews."/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2300A396'/%3E%3Ctext x='16' y='22' font-family='Inter,sans-serif' font-size='11' font-weight='700' fill='%23FFFFFF' text-anchor='middle'%3EWZ%3C/text%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<section class="login-screen" id="loginScreen" aria-labelledby="loginTitle">
+  <div class="login-card">
+    <div class="login-header-row">
+      <div class="brand-mark">WZ</div>
+      <div>
+        <h1 id="loginTitle">Wyze - ECE Ticket Simulator</h1>
+        <p class="login-tagline">BPO Live-Chat &amp; Email Ticketing Agent Cockpit</p>
+      </div>
+    </div>
+
+    <!-- Auth Mode Navigation Tabs -->
+    <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Authentication Options">
+      <button type="button" class="auth-tab active" id="tabSignIn" role="tab" aria-selected="true" aria-controls="signInView">Sign In</button>
+      <button type="button" class="auth-tab" id="tabSignUp" role="tab" aria-selected="false" aria-controls="signUpView">Create Account</button>
+    </div>
+
+    <!-- SIGN IN VIEW -->
+    <div id="signInView" class="auth-view" role="tabpanel" aria-labelledby="tabSignIn">
+      <form id="signInForm" class="login-form">
+        <label>ECE Email
+          <input id="signInEmail" name="email" type="email" autocomplete="username" placeholder="agent@ececontactcenters.com" required/>
+        </label>
+        <label>Password
+          <input id="signInPassword" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required/>
+        </label>
+        <div class="auth-helper-row">
+          <button type="button" class="link-btn" id="forgotPassLink">Forgot password?</button>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="signInSubmitBtn">Sign in to simulator</button>
+      </form>
+    </div>
+
+    <!-- SIGN UP VIEW -->
+    <div id="signUpView" class="auth-view" role="tabpanel" aria-labelledby="tabSignUp" hidden>
+      <form id="signUpForm" class="login-form">
+        <div id="signUpDetailsStep" class="login-step">
+          <label>ECE Email
+            <input id="signUpEmail" name="email" type="email" autocomplete="email" placeholder="agent@ececontactcenters.com" required/>
+            <span class="field-hint">Must be your corporate ECE address (e.g. @ececontactcenters.com)</span>
+          </label>
+          <label>Full Name
+            <input id="signUpName" name="name" type="text" autocomplete="name" maxlength="100" placeholder="e.g. Alex Morgan" required/>
+          </label>
+          <label>Password
+            <input id="signUpPassword" name="password" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters" required/>
+          </label>
+          <label>Repeat Password
+            <input id="signUpRepeatPassword" name="repeatPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat your password" required/>
+          </label>
+          <button class="btn btn-primary btn-block" type="button" id="continueSignUpBtn">Continue to avatar selection →</button>
+        </div>
+        <fieldset class="avatar-fieldset" id="signUpAvatarStep" hidden>
+          <legend>Choose your support avatar</legend>
+          <div class="avatar-choices" id="avatarChoices"></div>
+          <div class="login-step-actions">
+            <button class="btn btn-ghost" type="button" id="backToSignUpDetailsBtn">← Back</button>
+            <button class="btn btn-primary" type="submit" id="signUpSubmitBtn">Create Account & Enter</button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+    <!-- FORGOT PASSWORD VIEW -->
+    <div id="forgotPasswordView" class="auth-view" role="region" aria-label="Forgot Password" hidden>
+      <div class="forgot-header">
+        <h2>Reset Your Password</h2>
+        <p class="muted">Enter your registered ECE corporate email to verify your identity and establish new credentials.</p>
+      </div>
+
+      <form id="forgotPasswordForm" class="login-form">
+        <div id="forgotStep1" class="login-step">
+          <label>ECE Email
+            <input id="forgotEmail" name="email" type="email" autocomplete="email" placeholder="agent@ececontactcenters.com" required/>
+          </label>
+          <div class="login-step-actions">
+            <button class="btn btn-ghost" type="button" id="cancelForgotBtn">Cancel</button>
+            <button class="btn btn-primary" type="button" id="sendResetCodeBtn">Generate verification code →</button>
+          </div>
+        </div>
+
+        <div id="forgotStep2" class="login-step" hidden>
+          <div class="security-dispatch-card" id="securityDispatchCard">
+            <div class="dispatch-header">🔒 ECE Enterprise Security Dispatch</div>
+            <div class="dispatch-body" id="dispatchBody"></div>
+          </div>
+
+          <label>6-Digit Verification Code
+            <input id="resetCode" name="code" type="text" maxlength="6" pattern="[0-9]{6}" placeholder="e.g. 849201" autocomplete="one-time-code"/>
+            <span class="field-hint">Enter the 6-digit code dispatched above</span>
+          </label>
+          <label>New Password
+            <input id="newPassword" name="newPassword" type="password" minlength="6" autocomplete="new-password" placeholder="At least 6 characters"/>
+          </label>
+          <label>Repeat New Password
+            <input id="repeatNewPassword" name="repeatPassword" type="password" minlength="6" autocomplete="new-password" placeholder="Repeat new password"/>
+          </label>
+          <div class="login-step-actions">
+            <button class="btn btn-ghost" type="button" id="backToForgotStep1Btn">← Back</button>
+            <button class="btn btn-primary" type="submit" id="confirmResetBtn">Reset password & proceed</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Organized Auth Footer Block -->
+    <div class="auth-card-footer">
+      <div class="auth-status-banner" id="loginStatusBanner">
+        <span class="auth-status-dot" id="loginStatusDot"></span>
+        <span class="login-status" id="loginStatus" aria-live="polite">Sign in with your registered ECE credentials.</span>
+      </div>
+
+      <div class="auth-footer-actions">
+        <div id="signInSwitchRow" class="auth-switch-row">
+          <span>Don't have an account yet?</span>
+          <button type="button" class="link-btn-highlight" id="switchToSignUp">Sign up with your ECE email</button>
+        </div>
+        <div id="signUpSwitchRow" class="auth-switch-row" hidden>
+          <span>Already registered?</span>
+          <button type="button" class="link-btn-highlight" id="switchToSignIn">Sign in with existing credentials</button>
+        </div>
+        <div id="forgotSwitchRow" class="auth-switch-row" hidden>
+          <span>Remember your password?</span>
+          <button type="button" class="link-btn-highlight" id="backToSignInFromForgot">Return to Sign In</button>
+        </div>
+      </div>
+
+      <div class="auth-security-notice">
+        <svg class="notice-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>Your unique account is attached to your seven-day session history for QA coaching and progress tracking.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="app" id="appRoot" hidden aria-hidden="true">
+
+  <header class="toolbar">
+    <div class="brand">
+      <span class="brand-mark">WZ</span>
+      <div class="brand-text">
+        <strong>Wyze <span class="brand-tag">- ECE Ticket Simulator</span></strong>
+        <span>Live-Chat &amp; Email Support Practice</span>
+      </div>
+    </div>
+    <div class="sim-mode-toggle" role="radiogroup" aria-label="Simulation Mode">
+      <button type="button" class="mode-tab active" id="modeChatBtn" title="Switch to Real-time Live-Chat Simulation">💬 Live Chat</button>
+      <button type="button" class="mode-tab" id="modeEmailBtn" title="Switch to Asynchronous Email Ticketing Simulation">✉️ Email Ticket</button>
+    </div>
+    <div class="toolbar-controls">
+      <select id="themeSelect" class="tb-select" aria-label="Visual Theme" title="Switch visual theme">
+        <option value="wyze">Theme: Wyze Teal</option>
+        <option value="dark">Theme: Dark Cockpit</option>
+        <option value="warm">Theme: Warm Classic</option>
+      </select>
+      <select id="categorySelect" class="tb-select" aria-label="Scenario type">
+        <option value="random">Scenario: Random</option>
+        <option value="connectivity">Device offline / won't connect</option>
+        <option value="account">App or login trouble</option>
+        <option value="footage">Missing footage / cloud storage</option>
+        <option value="hardware">Hardware malfunction</option>
+        <option value="shipping">Shipping / delivery delay</option>
+        <option value="rma">Defective item / RMA request</option>
+        <option value="billing">Billing / Cam Plus dispute</option>
+        <option value="privacy">Privacy or security concern</option>
+        <option value="howto">Feature confusion / how-to</option>
+        <option value="motion">Motion detection / event clips not triggering</option>
+        <option value="sd">SD card / local video won't play</option>
+        <option value="battery">Wireless cam battery draining / not charging</option>
+        <option value="view">Live view black / buffering / won't load</option>
+        <option value="audio">Two-way audio / speaker not working</option>
+        <option value="notify">Push notifications not arriving</option>
+        <option value="night">Night vision / image quality poor</option>
+        <option value="home">Routines / Alexa / Google integration</option>
+      </select>
+      <select id="emotionSelect" class="tb-select" aria-label="Customer mood">
+        <option value="random">Mood: Random</option>
+        <option value="calm">Calm</option>
+        <option value="annoyed">Mildly annoyed</option>
+        <option value="frustrated">Frustrated</option>
+        <option value="upset">Very upset</option>
+        <option value="anxious">Anxious / worried</option>
+        <option value="confused">Confused</option>
+      </select>
+      <label class="toggle" id="twoChatsToggleWrap" title="Run two customers at once, like a real live-chat queue"><input type="checkbox" id="twoChatsToggle"/><span>2 chats</span></label>
+      <label class="toggle" id="timerToggleWrap" title="On-screen reply timer that glows yellow/red if you take too long"><input type="checkbox" id="timerToggle"/><span>Timer</span></label>
+      <button id="newScenarioBtn" class="btn btn-primary">Start new customer</button>
+      <button id="feedbackBtn" class="btn btn-ghost" disabled>Coaching notes</button>
+      <button id="caseBtn" class="btn btn-ghost">Case file</button>
+      <label class="toggle" title="View ground truth answer key"><input type="checkbox" id="trainerModeToggle"/><span>Trainer view</span></label>
+      <button id="historyBtn" class="btn btn-ghost">History</button>
+      <button id="myAnalyticsBtn" class="btn btn-ghost" title="View my performance stats, chat speed, and AI coaching insights">📊 My Performance</button>
+      <button id="adminConsoleBtn" class="btn btn-ghost" title="Leadership Admin: Trainee management, password resets, account deactivation, and analytics">🛡️ Leadership Admin</button>
+      <button id="infoBtn" class="icon-btn" aria-label="How this works" title="How this works">?</button>
+      <button id="signOutBtn" class="btn btn-ghost" title="Sign out of your account">Sign out</button>
+    </div>
+  </header>
+
+  <div class="disclaimer">
+    <span><strong>Training simulator only</strong> — not affiliated with or endorsed by Wyze Labs, Inc. Every customer detail is synthetic practice data.</span>
+    <span id="accountStatus" class="sync-status">Shared history is active.</span>
+  </div>
+
+  <main class="workspace">
+
+    <section class="pane chat-pane" aria-label="Simulated customer chat">
+      <div class="chat-header">
+        <div class="chat-id">
+          <div class="chat-tabs" id="chatTabs" role="tablist"></div>
+          <span class="ticket-id" id="ticketId">No active case</span>
+          <span class="status-pill" id="statusPill" hidden></span>
+          <span class="agent-identity" id="agentIdentity" hidden title="Click to view your personal performance analytics"></span>
+        </div>
+        <div class="chat-meta" id="chatMeta"></div>
+      </div>
+
+      <!-- Dedicated Email Simulation Ticket Header & Interval Controls -->
+      <div class="email-ticket-header" id="emailTicketHeader" hidden>
+        <div class="email-subject-row">
+          <span class="email-pill">EMAIL TICKET</span>
+          <span class="email-subject-text" id="emailSubjectText">No active email ticket</span>
+        </div>
+        <div class="email-participants-row">
+          <div class="email-participant"><span class="email-meta-label">From:</span> <span id="emailCustomerFrom" class="email-meta-val">—</span></div>
+          <div class="email-participant"><span class="email-meta-label">To:</span> <span class="email-meta-val">Wyze Customer Support &lt;support@wyze.com&gt;</span></div>
+        </div>
+        <div class="email-interval-row">
+          <div class="interval-label-group">
+            <span class="interval-icon">⏱️</span>
+            <span>Customer Reply Interval:</span>
+          </div>
+          <div class="interval-controls">
+            <label>Min <input type="number" id="emailMinMins" min="15" max="60" value="30"/>m</label>
+            <span class="interval-sep">to</span>
+            <label>Max <input type="number" id="emailMaxMins" min="60" max="180" value="120"/>m</label>
+          </div>
+          <span class="interval-note muted">(Simulated wait between 30m and 2h)</span>
+        </div>
+        <div class="email-pending-banner" id="emailPendingBanner" hidden>
+          <div class="email-pending-content">
+            <span class="pending-icon">⏳</span>
+            <div>
+              <strong>Email dispatched. Customer is currently offline.</strong>
+              <div class="email-pending-sub">Projected customer reply in <span id="emailPendingMins" class="highlight-wait">45 minutes</span> (approx. <span id="emailClockStamp">11:15 AM</span>).</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" id="emailFastForwardBtn">⏩ Advance Time &amp; Receive Reply</button>
+        </div>
+      </div>
+
+      <div class="reply-timer" id="replyTimer" hidden>
+        <span class="timer-label">Reply time:</span>
+        <span class="timer-clock" id="replyTimerClock">—</span>
+      </div>
+
+      <div class="speed-bar" id="speedBar" hidden>
+        <span id="speedLive">Start typing your reply to measure your speed</span>
+        <span id="speedAvg" class="speed-avg"></span>
+      </div>
+
+      <div class="error-banner" id="errorBanner" hidden>
+        <span id="errorText"></span>
+        <button type="button" id="retryBtn">Retry</button>
+      </div>
+
+      <div class="chat-log" id="chatLog" aria-live="polite">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-state-icon">💬</div>
+          <p>Ready when you are.</p>
+          <p>Pick a scenario type and mood above — or click a quick starter below to begin the chat:</p>
+          <div class="quick-starts">
+            <button type="button" class="quick-chip" data-category="connectivity" data-emotion="frustrated">Wi-Fi won't connect (Frustrated)</button>
+            <button type="button" class="quick-chip" data-category="footage" data-emotion="anxious">Missing event clips (Anxious)</button>
+            <button type="button" class="quick-chip" data-category="billing" data-emotion="annoyed">Cam Plus dispute (Annoyed)</button>
+            <button type="button" class="quick-chip" data-category="random" data-emotion="random">Surprise scenario (Random)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="typing-indicator" id="typingIndicator" hidden aria-label="Customer is typing">
+        <span></span><span></span><span></span>
+      </div>
+
+      <form class="chat-input" id="chatForm">
+        <textarea id="agentInput" placeholder="Type your reply as the agent… (Enter to send, Shift+Enter for a new line)" disabled rows="2"></textarea>
+        <button type="button" class="btn btn-ghost" id="clearChatBtn" title="Archive this chat with an audit entry and require a new customer" disabled>Clear chat</button>
+        <button type="submit" class="btn btn-primary" id="sendBtn" disabled>Send</button>
+      </form>
+    </section>
+
+    <aside class="pane case-pane" id="casePane" aria-label="Case documentation" hidden>
+      <div class="case-head">
+        <h2>Case file <span id="caseTabLabel" class="case-tab-label"></span></h2>
+        <div class="case-actions">
+          <button type="button" class="link-btn" id="copyBtn">Copy transcript & notes</button>
+          <button type="button" class="modal-close" id="closeCase" aria-label="Close">×</button>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <label>Name<input id="fCustomerName" type="text" placeholder="Ask the customer" autocomplete="off"/></label>
+        <label>Email<input id="fEmail" type="text" placeholder="Ask the customer" autocomplete="off"/></label>
+        <label>Product<input id="fProduct" type="text" placeholder="e.g. Wyze Cam v3" autocomplete="off"/></label>
+      </div>
+
+      <label class="notes-label">Recap / TS
+        <textarea id="fRecap" placeholder="What the customer reported and the troubleshooting steps you ran through…"></textarea>
+      </label>
+      <label class="notes-label">Resources
+        <textarea id="fResources" placeholder="KB articles, tools, or docs you referenced…"></textarea>
+      </label>
+      <label class="notes-label">Next Steps
+        <textarea id="fNextSteps" placeholder="What was agreed, follow-ups, or anything still pending…"></textarea>
+      </label>
+      <label class="notes-label">Escalation POC (if needed)
+        <textarea id="fEscalation" placeholder="Who/where the case escalates to and why, or leave blank if resolved…"></textarea>
+      </label>
+      <div class="save-indicator" id="saveIndicator" aria-live="polite"> </div>
+
+      <section class="post-section" aria-label="Post-drill summary">
+        <h3>Post-drill summary</h3>
+        <div class="post-fields">
+          <label>Trainee Name<input id="fTraineeName" type="text" placeholder="Set at login" autocomplete="off" readonly/></label>
+          <label>LOB<input id="fLob" type="text" placeholder="e.g. Cameras / Home Security" autocomplete="off"/></label>
+        </div>
+        <button id="endBtn" class="btn btn-primary btn-block" disabled>End conversation</button>
+        <div class="avg-wpm" id="avgWpmBox" hidden aria-live="polite">Average typing speed: <b id="avgWpmVal">—</b></div>
+        <div class="feedback-box" id="coachingBox" hidden>
+          <h3>Coaching points</h3>
+          <div id="coachingContent"></div>
+        </div>
+      </section>
+
+      <details class="answer-key" id="answerKey" hidden>
+        <summary>Trainer answer key</summary>
+        <dl id="answerKeyContent"></dl>
+      </details>
+
+      <div class="feedback-box" id="feedbackBox" hidden>
+        <h3>Coaching notes</h3>
+        <div id="feedbackContent"></div>
+      </div>
+    </aside>
+
+  </main>
+</div>
+
+<!-- Trainee Performance & Analytics Cockpit Modal -->
+<div class="modal" id="profileAnalyticsModal" hidden>
+  <div class="modal-content analytics-modal-content" role="dialog" aria-modal="true" aria-labelledby="paTitle">
+    <button class="modal-close" id="closeProfileAnalytics" aria-label="Close">×</button>
+
+    <!-- Profile Header -->
+    <div class="pa-header">
+      <div class="pa-profile-info">
+        <div class="pa-avatar-wrap" id="paAvatarWrap"></div>
+        <div>
+          <div class="pa-title-row">
+            <h2 id="paTitle"><span id="paAgentName">Trainee Agent</span></h2>
+            <span class="pa-id-badge" id="paAgentEmail">agent@ececontactcenters.com</span>
+          </div>
+          <p class="pa-subtitle">ECE Live-Chat Agent Performance Cockpit • Wyze Support Division</p>
+        </div>
+      </div>
+      <div class="pa-header-actions">
+        <button type="button" class="btn btn-ghost" id="refreshAnalyticsBtn">↻ Refresh Stats</button>
+      </div>
+    </div>
+
+    <!-- Top KPI Ribbon -->
+    <div class="pa-kpi-grid">
+      <div class="pa-kpi-card">
+        <div class="pa-kpi-label">Typing Speed</div>
+        <div class="pa-kpi-val" id="paKpiWpm">—</div>
+        <div class="pa-kpi-sub" id="paKpiWpmSub">Target: ≥ 45 WPM</div>
+      </div>
+      <div class="pa-kpi-card">
+        <div class="pa-kpi-label">Avg Response Time</div>
+        <div class="pa-kpi-val" id="paKpiResp">—</div>
+        <div class="pa-kpi-sub" id="paKpiRespSub">Target: &lt; 60s</div>
+      </div>
+      <div class="pa-kpi-card">
+        <div class="pa-kpi-label">Resolution Rate</div>
+        <div class="pa-kpi-val" id="paKpiResRate">—</div>
+        <div class="pa-kpi-sub" id="paKpiResCount">0 completed</div>
+      </div>
+      <div class="pa-kpi-card">
+        <div class="pa-kpi-label">Chat Abandonment</div>
+        <div class="pa-kpi-val" id="paKpiAbandonRate">—</div>
+        <div class="pa-kpi-sub" id="paKpiAbandonCount">7-min breaches</div>
+      </div>
+      <div class="pa-kpi-card">
+        <div class="pa-kpi-label">Frustration Recovery</div>
+        <div class="pa-kpi-val" id="paKpiChurnRate">—</div>
+        <div class="pa-kpi-sub" id="paKpiChurnCount">De-escalation rate</div>
+      </div>
+      <div class="pa-kpi-card">
+        <div class="pa-kpi-label">Case File Docs</div>
+        <div class="pa-kpi-val" id="paKpiDocRate">—</div>
+        <div class="pa-kpi-sub">SOP data quality</div>
+      </div>
+    </div>
+
+    <!-- Sub-Tabs Navigation -->
+    <div class="pa-tabs" role="tablist">
+      <button type="button" class="pa-tab active" id="paTabAi" role="tab" aria-selected="true">🌟 AI Coaching Insights</button>
+      <button type="button" class="pa-tab" id="paTabSpeed" role="tab" aria-selected="false">⚡ Speed & Latency</button>
+      <button type="button" class="pa-tab" id="paTabRes" role="tab" aria-selected="false">🎯 Resolutions & Abandonments</button>
+      <button type="button" class="pa-tab" id="paTabChurn" role="tab" aria-selected="false">🛡️ Frustration & Churn</button>
+      <button type="button" class="pa-tab" id="paTabTranscripts" role="tab" aria-selected="false">📜 My Session History</button>
+    </div>
+
+    <!-- SUB-TAB 1: AI COACHING INSIGHTS -->
+    <div class="pa-panel active" id="paPanelAi" role="tabpanel">
+      <div class="pa-ai-card">
+        <div class="pa-ai-header">
+          <div class="pa-ai-title">
+            <span class="ai-sparkle">✨</span>
+            <div>
+              <h3>AI Performance & QA Coaching Synthesis</h3>
+              <p class="muted">Deep assessment of your customer interactions, SLA adherence, and troubleshooting accuracy.</p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" id="refreshAiBtn">Generate Fresh AI Assessment</button>
+        </div>
+
+        <div class="pa-grade-banner" id="paGradeBanner">
+          <span class="pa-grade-pill" id="paOverallGrade">Solid</span>
+          <span class="pa-grade-summary" id="paExecutiveSummary">Evaluating your practice sessions across the Wyze product catalog…</span>
+        </div>
+
+        <div class="pa-ai-columns">
+          <div class="pa-ai-col">
+            <h4>🌟 Core Strengths Demonstrated</h4>
+            <ul class="pa-bullet-list" id="paStrengthsList">
+              <li>Active listening and relevant responses to customer problem descriptions.</li>
+              <li>Accurate execution of troubleshooting steps across Wyze camera setups.</li>
+            </ul>
+          </div>
+          <div class="pa-ai-col">
+            <h4>⚠️ Key Areas Needing Improvement</h4>
+            <ul class="pa-bullet-list warning-list" id="paGrowthList">
+              <li>Keep response intervals under 60 seconds to eliminate customer wait anxiety.</li>
+              <li>Provide hold updates before 180 seconds elapse whenever searching documentation.</li>
+              <li>Ensure all case file notes (Name, Email, Product, Recap, Next Steps) are documented.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="pa-ai-split">
+          <div class="pa-insight-box">
+            <h4>🛡️ Churn Prevention & De-escalation Advice</h4>
+            <p id="paChurnAdvice">Acknowledge customer frustration immediately upon joining. Never make promises you cannot verify, and maintain proactive communication during diagnostic lookups.</p>
+          </div>
+          <div class="pa-insight-box">
+            <h4>⚡ Speed & SLA Discipline</h4>
+            <p id="paSpeedAdvice">Aim for a steady pace of 45-60 WPM. Use concise, actionable prompts instead of lengthy paragraphs to keep the conversation flowing.</p>
+          </div>
+        </div>
+
+        <div class="pa-next-goal-card">
+          <div class="goal-label">🎯 Actionable Goal for Your Next Live Drill:</div>
+          <div class="goal-text" id="paNextGoal">Complete a full scenario with zero response gaps over 60 seconds and 100% case file documentation.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 2: SPEED & RESPONSE TIME ANALYSIS -->
+    <div class="pa-panel" id="paPanelSpeed" role="tabpanel" hidden>
+      <div class="pa-metrics-row">
+        <div class="pa-metric-box">
+          <h3>Typing Speed Distribution (WPM)</h3>
+          <p class="muted">Live-chat queue benchmark: 45–65 WPM allows handling multiple chats efficiently.</p>
+          <div class="pa-dist-bars" id="paSpeedDistBars"></div>
+        </div>
+        <div class="pa-metric-box">
+          <h3>Customer Response Wait Time Latency</h3>
+          <p class="muted">Target: reply within 60 seconds. Messages taking over 120s trigger hold warnings.</p>
+          <div class="pa-dist-bars" id="paRespDistBars"></div>
+        </div>
+      </div>
+
+      <div class="pa-card">
+        <h3>WPM Progression Across Recent Drills</h3>
+        <div class="pa-table-wrap">
+          <table class="pa-data-table" id="paWpmTable">
+            <thead>
+              <tr>
+                <th>Ticket ID</th>
+                <th>Date</th>
+                <th>Average WPM</th>
+                <th>Speed Tier</th>
+                <th>Outcome</th>
+              </tr>
+            </thead>
+            <tbody id="paWpmTableBody">
+              <tr><td colspan="5" class="muted text-center">No timed practice replies recorded yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 3: RESOLUTIONS & ABANDONMENT BREAKDOWN -->
+    <div class="pa-panel" id="paPanelRes" role="tabpanel" hidden>
+      <div class="pa-metrics-row">
+        <div class="pa-metric-box">
+          <h3>7-Minute Abandonment Analysis</h3>
+          <p class="muted">Customers leave and disconnect if unacknowledged for 7 continuous minutes.</p>
+          <div id="paAbandonmentAnalysisContent"></div>
+        </div>
+        <div class="pa-metric-box">
+          <h3>Resolution by Wyze Category</h3>
+          <p class="muted">Your success rate and WPM across different device families.</p>
+          <div class="pa-category-list" id="paCategoryList"></div>
+        </div>
+      </div>
+
+      <div class="pa-card">
+        <h3>Abandoned Chat Log (Inactivity Breaches)</h3>
+        <div id="paAbandonedTableWrap">
+          <table class="pa-data-table" id="paAbandonedTable">
+            <thead>
+              <tr>
+                <th>Ticket</th>
+                <th>Product Category</th>
+                <th>Idle Duration</th>
+                <th>Customer Departure Reason</th>
+              </tr>
+            </thead>
+            <tbody id="paAbandonedTableBody">
+              <tr><td colspan="4" class="muted text-center">No chat abandonments recorded. Excellent hold management!</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 4: CUSTOMER FRUSTRATION & CHURN RECOVERY -->
+    <div class="pa-panel" id="paPanelChurn" role="tabpanel" hidden>
+      <div class="pa-metrics-row">
+        <div class="pa-metric-box">
+          <h3>De-escalation & Churn Mitigation</h3>
+          <div class="pa-stat-highlight" id="paChurnStatHighlight">
+            <span class="stat-number" id="paChurnPercent">100%</span>
+            <span class="stat-desc" id="paChurnDesc">of frustrated or upset customers were successfully guided to resolution.</span>
+          </div>
+          <p class="muted" style="margin-top:10px;">High frustration requires immediate empathy acknowledgment before requesting account verification.</p>
+        </div>
+        <div class="pa-metric-box">
+          <h3>Wyze Customer Frustration Recovery Playbook</h3>
+          <ul class="pa-playbook-list">
+            <li><strong>Empathy First:</strong> "I completely understand how frustrating it is when your camera drops connection. Let's get this sorted out right now."</li>
+            <li><strong>Set Expectations:</strong> "I am looking up your subscription right now—this will take about 1 minute."</li>
+            <li><strong>Proactive Updates:</strong> If a diagnosis takes over 2 minutes, send a quick update so the customer knows you are actively working.</li>
+            <li><strong>Never Ghost:</strong> Never leave a customer idle past 3 minutes without a check-in. At 7 minutes, the customer leaves and disputes charges.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 5: MY SESSION TRANSCRIPTS -->
+    <div class="pa-panel" id="paPanelTranscripts" role="tabpanel" hidden>
+      <div class="pa-transcripts-layout">
+        <div class="pa-session-selector">
+          <div class="pa-filter-bar">
+            <button type="button" class="pa-filter-btn active" data-filter="all">All</button>
+            <button type="button" class="pa-filter-btn" data-filter="resolved">Resolved</button>
+            <button type="button" class="pa-filter-btn" data-filter="escalated">Escalated</button>
+            <button type="button" class="pa-filter-btn" data-filter="abandoned">Abandoned</button>
+          </div>
+          <div class="pa-sessions-list" id="paSessionsList"></div>
+        </div>
+        <div class="pa-transcript-view" id="paTranscriptView">
+          <div class="empty-state" style="padding:40px 20px;">
+            <p>Select a session on the left to inspect the complete conversation transcript, typing speed, and case notes.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- First-login walkthrough -->
+<div class="modal" id="welcomeModal" hidden>
+  <div class="modal-content welcome-content" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <h3 id="welcomeTitle">Welcome to Wyze - ECE Chat Simulator</h3>
+    <p class="muted">A quick guide to the controls:</p>
+    <ul class="welcome-guide">
+      <li><strong>Theme Switcher:</strong> choose between Wyze Teal, Dark Cockpit, or Warm Classic at the top.</li>
+      <li><strong>Scenario and mood:</strong> choose the customer’s issue and tone before starting, or click a quick starter.</li>
+      <li><strong>Your avatar:</strong> the character you chose appears beside your replies. With <strong>2 chats</strong> on, use the Chat 1 / Chat 2 tabs to switch conversations; <strong>Timer</strong> shows reply time.</li>
+      <li><strong>Start new customer:</strong> create a new practice conversation.</li>
+      <li><strong>Send / Clear chat:</strong> reply to the customer; clearing archives the transcript and requires a new customer.</li>
+      <li><strong>Coaching notes / End conversation:</strong> request feedback during practice or finish the drill for a QA review.</li>
+      <li><strong>Case file:</strong> open or close your notes. Use <em>Copy transcript & notes</em> to copy them.</li>
+      <li><strong>My Performance:</strong> view your personal typing speed, response latency, abandonment analysis, and AI insights.</li>
+      <li><strong>Trainer view:</strong> reveal the answer key and ideal SOP resolution.</li>
+      <li><strong>History:</strong> review conversations. Enter the trainer passcode and press <em>Unlock</em> to monitor live chats; <em>Lock</em> hides live sessions again. Expand the window for class review. In a transcript, <em>Back</em> returns to the list and <em>Export locally</em> downloads it.</li>
+      <li><strong>?</strong> reopen the full help guide. <strong>Retry</strong> appears if an action fails.</li>
+    </ul>
+    <button type="button" class="btn btn-primary btn-block" id="finishWelcome">Start practicing</button>
+  </div>
+</div>
+
+<!-- History modal -->
+<div class="modal" id="historyModal" hidden>
+  <div class="modal-content">
+    <button class="history-expand-btn" id="historyExpandBtn" type="button" aria-label="Expand history window" title="Expand history window">⤢</button>
+    <button class="modal-close" id="closeHistory" aria-label="Close">×</button>
+    <h3>Past sessions</h3>
+    <div class="trainer-access" id="trainerAccess">
+      <input type="password" id="trainerPassInput" placeholder="Trainer passcode to view live chats…" autocomplete="off"/>
+      <button type="button" class="btn btn-ghost" id="trainerPassBtn">Unlock</button>
+      <span class="trainer-status" id="trainerPassStatus"></span>
+    </div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<!-- Info modal -->
+<div class="modal" id="infoModal" hidden>
+  <div class="modal-content">
+    <button class="modal-close" id="closeInfo" aria-label="Close">×</button>
+    <h3>How this works</h3>
+    <ol class="info-steps">
+      <li><strong>Start a new customer.</strong> Optionally set a scenario type and mood, choose a theme, or leave both random.</li>
+      <li><strong>Handle the chat</strong> the way you would on the floor — apply your process, ask verification questions, and troubleshoot. The customer responds to your questions and follows reasonable instructions. If you go quiet for three minutes or run past a hold time you promised, the customer may check back in. If you remain quiet for 7 minutes, the customer abandons the chat.</li>
+      <li><strong>Log the case</strong> in the fields on the right as you learn each detail. Nothing is pre-filled on purpose — that's the practice.</li>
+      <li><strong>Get coaching notes</strong> any time after the first reply for a read on what you did well and what to tighten up. The coach remembers your past sessions so it can track your consistency and improvement.</li>
+      <li><strong>Watch your typing speed</strong> — every reply you type is timed (words per minute) so you can see whether your responses are fast enough for a live-chat queue.</li>
+      <li><strong>Track your performance:</strong> click <em>📊 My Performance</em> to review your typing speed distribution, response times, frustration recovery rate, and AI coaching insights.</li>
+      <li><strong>Trainer view</strong> reveals the real persona details and ideal resolution, for checking a trainee's notes against the truth.</li>
+      <li><strong>History</strong> keeps recent conversations for seven days. Enter the trainer passcode to review live chats and expand the window for class review.</li>
+    </ol>
+    <p class="muted">Your case notes and recent conversations are saved for seven days for coaching review. Never paste real customer information into this tool.</p>
+  </div>
+</div>
+
+<!-- ========================================================================
+     LEADERSHIP ADMIN CONSOLE MODAL
+     ======================================================================== -->
+<div class="modal" id="adminConsoleModal" hidden>
+  <div class="modal-content admin-modal-content" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+    <div class="admin-modal-header">
+      <div>
+        <h2 id="adminModalTitle">🛡️ Leadership Admin — Trainee Management &amp; Telemetry</h2>
+        <p class="muted">Search trainee performance, manage credentials, trigger password resets, deactivate accounts, and view drill-down analytics.</p>
+      </div>
+      <button type="button" class="icon-btn" id="closeAdminConsole" aria-label="Close Admin Console">&times;</button>
+    </div>
+
+    <!-- Passcode gate if leadership access is not yet unlocked -->
+    <div class="admin-passcode-gate" id="adminPasscodeGate">
+      <div class="admin-gate-card">
+        <h3>🔒 Leadership Verification Required</h3>
+        <p class="muted">Enter the ECE Trainer / Leadership passcode to manage trainee accounts, trigger credential resets, and monitor team telemetry.</p>
+        <div class="admin-gate-input-row">
+          <input type="password" id="adminGatePasscode" placeholder="Enter leadership passcode" class="input" autocomplete="current-password"/>
+          <button type="button" class="btn btn-primary" id="adminGateUnlockBtn">Unlock Admin Console</button>
+        </div>
+        <div class="status-msg" id="adminGateStatus"></div>
+      </div>
+    </div>
+
+    <!-- Authenticated Admin View -->
+    <div class="admin-dashboard-view" id="adminDashboardView" hidden>
+      <div class="admin-toolbar">
+        <div class="admin-search-wrap">
+          <input type="text" id="adminSearchInput" class="input search-input" placeholder="🔍 Search trainees by name or email..."/>
+          <select id="adminStatusFilter" class="tb-select">
+            <option value="all">Status: All Trainees</option>
+            <option value="active">Active Only</option>
+            <option value="deactivated">Deactivated Only</option>
+          </select>
+        </div>
+        <div class="admin-view-toggle">
+          <button type="button" class="view-btn active" id="adminViewTableBtn" title="Table View">📋 Table View</button>
+          <button type="button" class="view-btn" id="adminViewCardsBtn" title="List/Card View">🗂️ Card View</button>
+          <button type="button" class="btn btn-primary btn-sm" id="adminInviteBtn">+ Invite New Trainee</button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Summary Bar -->
+      <div class="admin-quick-summary" id="adminQuickSummary">
+        <div class="summary-chip"><span class="chip-val" id="adminTotalTraineesCount">0</span> Trainees</div>
+        <div class="summary-chip"><span class="chip-val text-teal" id="adminActiveCount">0</span> Active</div>
+        <div class="summary-chip"><span class="chip-val" id="adminAvgResRate">0%</span> Avg Resolution Rate</div>
+        <div class="summary-chip"><span class="chip-val" id="adminAvgWpm">0 WPM</span> Avg Speed</div>
+      </div>
+
+      <!-- Dynamic Table View -->
+      <div class="admin-table-wrap" id="adminTableView">
+        <table class="admin-trainees-table">
+          <thead>
+            <tr>
+              <th>Trainee</th>
+              <th>Status</th>
+              <th>Last Active / Ticket</th>
+              <th>Total Drills</th>
+              <th>Resolution Rate</th>
+              <th>Avg WPM</th>
+              <th>Frustration Recovery</th>
+              <th>Case Docs</th>
+              <th style="text-align:right;">Leadership Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminTraineesTableBody">
+            <tr><td colspan="9" class="muted text-center py-4">Loading trainees...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Dynamic Cards/List View -->
+      <div class="admin-cards-grid" id="adminCardsView" hidden></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Invite / Register Trainee -->
+<div class="modal" id="adminInviteModal" hidden>
+  <div class="modal-content invite-modal-content" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h3>✉️ Invite / Register Trainee</h3>
+      <button type="button" class="icon-btn" id="closeAdminInvite">&times;</button>
+    </div>
+    <form id="adminInviteForm" class="invite-form">
+      <div class="form-group">
+        <label for="inviteEmail">ECE Corporate Email</label>
+        <input type="email" id="inviteEmail" class="input" placeholder="agent@ececontactcenters.com" required/>
+      </div>
+      <div class="form-group">
+        <label for="inviteName">Full Trainee Name</label>
+        <input type="text" id="inviteName" class="input" placeholder="e.g. Jordan Smith" required/>
+      </div>
+      <div class="form-group">
+        <label for="inviteTempPassword">Temporary Password</label>
+        <input type="text" id="inviteTempPassword" class="input" placeholder="e.g. WyzeTrainee2026!"/>
+        <small class="muted">Leave blank to auto-generate a secure temporary password.</small>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancelAdminInvite">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="submitAdminInvite">Create &amp; Issue Credentials</button>
+      </div>
+    </form>
+    <div class="admin-dispatch-card" id="inviteSuccessCard" hidden>
+      <div class="dispatch-header">✅ Account Successfully Registered</div>
+      <div id="inviteSuccessBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Admin Triggered Password Reset Result -->
+<div class="modal" id="adminResetModal" hidden>
+  <div class="modal-content reset-modal-content" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h3>🔑 Manual Password Reset Generated</h3>
+      <button type="button" class="icon-btn" id="closeAdminResetModal">&times;</button>
+    </div>
+    <div class="admin-reset-body" id="adminResetBody"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-primary" id="dismissAdminResetModal">Done</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

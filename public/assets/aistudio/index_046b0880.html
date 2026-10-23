@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" w-tid="1">
+<head w-tid="3">
+
+
+<link rel="stylesheet" href="https://api.websim.com/fonts.css?v=efc6fca77a630c0b01a0d2a477994914b7ba4e7c">
+<style class="websim-injected websim-ios-mobile-fix">
+/* iOS zoom prevention and overscroll behavior - injected by WebSim */
+html, body {
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+}
+input, textarea, select {
+  font-size: max(1rem, 16px) !important;
+}
+</style>
+<script class="websim-injected">__WEBSIM_DATA__={"home":false,"hostOrigin":"https://websim.com","apiOrigin":"https://api.websim.com","isTopLevelFrame":false,"project_id":"8rxv5d114jvvd7tpvoqq","preview":true,"activityCaptureMode":"on","route":{"type":"project","id":"8rxv5d114jvvd7tpvoqq"},"baseUrl":"https://websim.com/p/8rxv5d114jvvd7tpvoqq"}</script>
+<script class="websim-injected" src="https://api.websim.com/dist/index.js?v=efc6fca77a630c0b01a0d2a477994914b7ba4e7c"></script>
+<meta charset="UTF-8" w-tid="5"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" w-tid="7"/>
+<title w-tid="9">ECEWise - Trainer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23D79A3B'/%3E%3Ctext x='16' y='22' font-family='Inter,sans-serif' font-size='11' font-weight='700' fill='%232B1B04' text-anchor='middle'%3EEC%3C/text%3E%3C/svg%3E" w-tid="11"/>
+<link rel="preconnect" href="https://fonts.googleapis.com" w-tid="13"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin w-tid="15"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" w-tid="17"/>
+<link rel="stylesheet" href="styles.css" w-tid="19"/>
+</head>
+<body w-tid="21">
+<section class="login-screen" id="loginScreen" aria-labelledby="loginTitle" w-tid="23">
+  <div class="login-card" w-tid="25">
+    <div class="brand-mark" w-tid="27">EC</div>
+    <h1 id="loginTitle" w-tid="29">Wyze - ECE Chat Simulator</h1>
+    <form id="loginForm" class="login-form" w-tid="31">
+      <div id="loginDetailsStep" class="login-step" w-tid="33">
+        <label w-tid="35">Shared username
+          <input id="loginUsername" name="username" type="text" autocomplete="username" required w-tid="37"/>
+        </label>
+        <label w-tid="39">Shared passcode
+          <input id="loginPasscode" name="password" type="password" autocomplete="current-password" required w-tid="41"/>
+        </label>
+        <label w-tid="43">Your name
+          <input id="loginName" name="name" type="text" autocomplete="name" maxlength="100" required w-tid="45"/>
+        </label>
+        <button class="btn btn-primary btn-block" type="button" id="continueLoginBtn" w-tid="47">Continue to avatar</button>
+      </div>
+      <fieldset class="avatar-fieldset" id="avatarStep" hidden w-tid="49">
+        <legend w-tid="51">Choose your avatar</legend>
+        <div class="avatar-choices" id="avatarChoices" w-tid="53"></div>
+        <div class="login-step-actions" w-tid="55">
+          <button class="btn btn-ghost" type="button" id="backToDetailsBtn" w-tid="57">Back</button>
+          <button class="btn btn-primary" type="submit" w-tid="59">Enter simulator</button>
+        </div>
+      </fieldset>
+      <p class="login-privacy" w-tid="61">Your name is attached to your seven-day session history.</p>
+      <p class="login-status" id="loginStatus" aria-live="polite" w-tid="63">Team history requires a signed-in Websim account.</p>
+    </form>
+  </div>
+</section>
+<div class="app" id="appRoot" hidden aria-hidden="true" w-tid="65">
+
+  <header class="toolbar" w-tid="67">
+    <div class="brand" w-tid="69">
+      <span class="brand-mark" w-tid="71">EC</span>
+      <div class="brand-text" w-tid="73">
+        <strong w-tid="75">ECEWise <span class="brand-tag" w-tid="77">- Trainer</span></strong>
+        <span w-tid="79">Wyze live-chat trainer</span>
+      </div>
+    </div>
+    <div class="toolbar-controls" w-tid="81">
+      <select id="categorySelect" class="tb-select" aria-label="Scenario type" w-tid="83">
+        <option value="random" w-tid="85">Scenario: Random</option>
+        <option value="connectivity" w-tid="87">Device offline / won't connect</option>
+        <option value="account" w-tid="89">App or login trouble</option>
+        <option value="footage" w-tid="91">Missing footage / cloud storage</option>
+        <option value="hardware" w-tid="93">Hardware malfunction</option>
+        <option value="shipping" w-tid="95">Shipping / delivery delay</option>
+        <option value="rma" w-tid="97">Defective item / RMA request</option>
+        <option value="billing" w-tid="99">Billing / Cam Plus dispute</option>
+        <option value="privacy" w-tid="101">Privacy or security concern</option>
+        <option value="howto" w-tid="103">Feature confusion / how-to</option>
+        <option value="motion" w-tid="105">Motion detection / event clips not triggering</option>
+        <option value="sd" w-tid="107">SD card / local video won't play</option>
+        <option value="battery" w-tid="109">Wireless cam battery draining / not charging</option>
+        <option value="view" w-tid="111">Live view black / buffering / won't load</option>
+        <option value="audio" w-tid="113">Two-way audio / speaker not working</option>
+        <option value="notify" w-tid="115">Push notifications not arriving</option>
+        <option value="night" w-tid="117">Night vision / image quality poor</option>
+        <option value="home" w-tid="119">Routines / Alexa / Google integration</option>
+      </select>
+      <select id="emotionSelect" class="tb-select" aria-label="Customer mood" w-tid="121">
+        <option value="random" w-tid="123">Mood: Random</option>
+        <option value="calm" w-tid="125">Calm</option>
+        <option value="annoyed" w-tid="127">Mildly annoyed</option>
+        <option value="frustrated" w-tid="129">Frustrated</option>
+        <option value="upset" w-tid="131">Very upset</option>
+        <option value="anxious" w-tid="133">Anxious / worried</option>
+        <option value="confused" w-tid="135">Confused</option>
+      </select>
+      <label class="toggle" title="Run two customers at once, like a real live-chat queue" w-tid="137"><input type="checkbox" id="twoChatsToggle" w-tid="139"/><span w-tid="141">2 chats</span></label>
+      <label class="toggle" title="On-screen reply timer that glows yellow/red if you take too long" w-tid="143"><input type="checkbox" id="timerToggle" w-tid="145"/><span w-tid="147">Timer</span></label>
+      <button id="newScenarioBtn" class="btn btn-primary" w-tid="149">Start new customer</button>
+      <button id="feedbackBtn" class="btn btn-ghost" disabled w-tid="151">Get coaching notes</button>
+      <button id="caseBtn" class="btn btn-ghost" w-tid="153">Case file</button>
+      <label class="toggle" w-tid="155"><input type="checkbox" id="trainerModeToggle" w-tid="157"/><span w-tid="159">Trainer view</span></label>
+      <button id="historyBtn" class="btn btn-ghost" w-tid="161">History</button>
+      <button id="infoBtn" class="icon-btn" aria-label="How this works" title="How this works" w-tid="163">?</button>
+    </div>
+  </header>
+
+  <div class="disclaimer" w-tid="165">
+    <strong w-tid="167">Training simulator only</strong> — not affiliated with or endorsed by Wyze Labs, Inc. Every customer detail (name, email, phone, address, MAC, order and serial number) is fictional practice data. Never paste real customer information into this tool.
+    <span id="accountStatus" class="sync-status" w-tid="169">Sign in to start and share team history.</span>
+  </div>
+
+  <main class="workspace" w-tid="171">
+
+    <section class="pane chat-pane" aria-label="Simulated customer chat" w-tid="173">
+      <div class="chat-header" w-tid="175">
+        <div class="chat-id" w-tid="177">
+          <div class="chat-tabs" id="chatTabs" role="tablist" w-tid="179"></div>
+          <span class="ticket-id" id="ticketId" w-tid="181">No active case</span>
+          <span class="status-pill" id="statusPill" hidden w-tid="183"></span>
+          <span class="agent-identity" id="agentIdentity" hidden w-tid="185"></span>
+        </div>
+        <div class="chat-meta" id="chatMeta" w-tid="187"></div>
+      </div>
+
+      <div class="reply-timer" id="replyTimer" hidden w-tid="189">
+        <span class="timer-label" w-tid="191">Reply time</span>
+        <span class="timer-clock" id="replyTimerClock" w-tid="193">—</span>
+      </div>
+
+      <div class="speed-bar" id="speedBar" hidden w-tid="195">
+        <span id="speedLive" w-tid="197">Start typing your reply to measure your speed</span>
+        <span id="speedAvg" class="speed-avg" w-tid="199"></span>
+      </div>
+
+      <div class="error-banner" id="errorBanner" hidden w-tid="201">
+        <span id="errorText" w-tid="203"></span>
+        <button type="button" id="retryBtn" w-tid="205">Retry</button>
+      </div>
+
+      <div class="chat-log" id="chatLog" aria-live="polite" w-tid="207">
+        <div class="empty-state" id="emptyState" w-tid="209">
+          <p w-tid="211">Ready when you are.</p>
+          <p w-tid="213">Pick a scenario type and mood above — or leave both on Random — then start a new customer to begin the chat.</p>
+        </div>
+      </div>
+
+      <div class="typing-indicator" id="typingIndicator" hidden aria-label="Customer is typing" w-tid="215">
+        <span w-tid="217"></span><span w-tid="219"></span><span w-tid="221"></span>
+      </div>
+
+      <form class="chat-input" id="chatForm" w-tid="223">
+        <textarea id="agentInput" placeholder="Type your reply as the agent… (Enter to send, Shift+Enter for a new line)" disabled rows="2" w-tid="225"></textarea>
+        <button type="button" class="btn btn-ghost" id="clearChatBtn" title="Archive this chat with an audit entry and require a new customer" disabled w-tid="227">Clear chat</button>
+        <button type="submit" class="btn btn-primary" id="sendBtn" disabled w-tid="229">Send</button>
+      </form>
+    </section>
+
+    <aside class="pane case-pane" id="casePane" aria-label="Case documentation" hidden w-tid="231">
+      <div class="case-head" w-tid="233">
+        <h2 w-tid="235">Case file <span id="caseTabLabel" class="case-tab-label" w-tid="237"></span></h2>
+        <div class="case-actions" w-tid="239">
+          <button type="button" class="link-btn" id="copyBtn" w-tid="241">Copy transcript & notes</button>
+          <button type="button" class="modal-close" id="closeCase" aria-label="Close" w-tid="243">×</button>
+        </div>
+      </div>
+
+      <div class="field-grid" w-tid="245">
+        <label w-tid="247">Name<input id="fCustomerName" type="text" placeholder="Ask the customer" autocomplete="off" w-tid="249"/></label>
+        <label w-tid="251">Email<input id="fEmail" type="text" placeholder="Ask the customer" autocomplete="off" w-tid="253"/></label>
+        <label w-tid="255">Product<input id="fProduct" type="text" placeholder="e.g. Wyze Cam v3" autocomplete="off" w-tid="257"/></label>
+      </div>
+
+      <label class="notes-label" w-tid="259">Recap / TS
+        <textarea id="fRecap" placeholder="What the customer reported and the troubleshooting steps you ran through…" w-tid="261"></textarea>
+      </label>
+      <label class="notes-label" w-tid="263">Resources
+        <textarea id="fResources" placeholder="KB articles, tools, or docs you referenced…" w-tid="265"></textarea>
+      </label>
+      <label class="notes-label" w-tid="267">Next Steps
+        <textarea id="fNextSteps" placeholder="What was agreed, follow-ups, or anything still pending…" w-tid="269"></textarea>
+      </label>
+      <label class="notes-label" w-tid="271">Escalation POC (if needed)
+        <textarea id="fEscalation" placeholder="Who/where the case escalates to and why, or leave blank if resolved…" w-tid="273"></textarea>
+      </label>
+      <div class="save-indicator" id="saveIndicator" aria-live="polite" w-tid="275"> </div>
+
+      <section class="post-section" aria-label="Post-drill summary" w-tid="277">
+        <h3 w-tid="279">Post-drill summary</h3>
+        <div class="post-fields" w-tid="281">
+          <label w-tid="283">Trainee Name<input id="fTraineeName" type="text" placeholder="Set at login" autocomplete="off" readonly w-tid="285"/></label>
+          <label w-tid="287">LOB<input id="fLob" type="text" placeholder="e.g. Cameras / Home Security" autocomplete="off" w-tid="289"/></label>
+        </div>
+        <button id="endBtn" class="btn btn-primary btn-block" disabled w-tid="291">End conversation</button>
+        <div class="avg-wpm" id="avgWpmBox" hidden aria-live="polite" w-tid="293">Average typing speed: <b id="avgWpmVal" w-tid="295">—</b></div>
+        <div class="feedback-box" id="coachingBox" hidden w-tid="297">
+          <h3 w-tid="299">Coaching points</h3>
+          <div id="coachingContent" w-tid="301"></div>
+        </div>
+      </section>
+
+      <details class="answer-key" id="answerKey" hidden w-tid="303">
+        <summary w-tid="305">Trainer answer key</summary>
+        <dl id="answerKeyContent" w-tid="307"></dl>
+      </details>
+
+      <div class="feedback-box" id="feedbackBox" hidden w-tid="309">
+        <h3 w-tid="311">Coaching notes</h3>
+        <div id="feedbackContent" w-tid="313"></div>
+      </div>
+    </aside>
+
+  </main>
+</div>
+
+<!-- First-login walkthrough -->
+<div class="modal" id="welcomeModal" hidden w-tid="315">
+  <div class="modal-content welcome-content" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" w-tid="317">
+    <h3 id="welcomeTitle" w-tid="319">Welcome to Wyze - ECE Chat Simulator</h3>
+    <p class="muted" w-tid="321">A quick guide to the controls:</p>
+    <ul class="welcome-guide" w-tid="323">
+      <li w-tid="325"><strong w-tid="327">Scenario and mood:</strong> choose the customer’s issue and tone before starting.</li>
+      <li w-tid="329"><strong w-tid="331">Your avatar:</strong> the character you chose appears beside your replies. With <strong w-tid="333">2 chats</strong> on, use the Chat 1 / Chat 2 tabs to switch conversations; <strong w-tid="335">Timer</strong> shows reply time.</li>
+      <li w-tid="337"><strong w-tid="339">Start new customer:</strong> create a new practice conversation.</li>
+      <li w-tid="341"><strong w-tid="343">Send / Clear chat:</strong> reply to the customer; clearing archives the transcript and requires a new customer.</li>
+      <li w-tid="345"><strong w-tid="347">Get coaching notes / End conversation:</strong> request feedback during practice or finish the drill for a review.</li>
+      <li w-tid="349"><strong w-tid="351">Case file:</strong> open or close your notes. Use <em w-tid="353">Copy transcript & notes</em> to copy them.</li>
+      <li w-tid="355"><strong w-tid="357">Trainer view:</strong> reveal the answer key and ideal resolution.</li>
+      <li w-tid="359"><strong w-tid="361">History:</strong> review conversations. Enter the trainer passcode and press <em w-tid="363">Unlock</em> to monitor live chats; <em w-tid="365">Lock</em> hides live sessions again. Expand the window for class review. In a transcript, <em w-tid="367">Back</em> returns to the list and <em w-tid="369">Export locally</em> downloads it.</li>
+      <li w-tid="371"><strong w-tid="373">?</strong> reopen the full help guide. <strong w-tid="375">Retry</strong> appears if an action fails.</li>
+    </ul>
+    <button type="button" class="btn btn-primary btn-block" id="finishWelcome" w-tid="377">Start practicing</button>
+  </div>
+</div>
+
+<!-- History modal -->
+<div class="modal" id="historyModal" hidden w-tid="379">
+  <div class="modal-content" w-tid="381">
+    <button class="history-expand-btn" id="historyExpandBtn" type="button" aria-label="Expand history window" title="Expand history window" w-tid="383">⤢</button>
+    <button class="modal-close" id="closeHistory" aria-label="Close" w-tid="385">×</button>
+    <h3 w-tid="387">Past sessions</h3>
+    <div class="trainer-access" id="trainerAccess" w-tid="389">
+      <input type="password" id="trainerPassInput" placeholder="Trainer passcode to view live chats…" autocomplete="off" w-tid="391"/>
+      <button type="button" class="btn btn-ghost" id="trainerPassBtn" w-tid="393">Unlock</button>
+      <span class="trainer-status" id="trainerPassStatus" w-tid="395"></span>
+    </div>
+    <div id="historyList" w-tid="397"></div>
+  </div>
+</div>
+
+<!-- Info modal -->
+<div class="modal" id="infoModal" hidden w-tid="399">
+  <div class="modal-content" w-tid="401">
+    <button class="modal-close" id="closeInfo" aria-label="Close" w-tid="403">×</button>
+    <h3 w-tid="405">How this works</h3>
+    <ol class="info-steps" w-tid="407">
+      <li w-tid="409"><strong w-tid="411">Start a new customer.</strong> Optionally set a scenario type and mood, or leave both random.</li>
+      <li w-tid="413"><strong w-tid="415">Handle the chat</strong> the way you would on the floor — apply your process, ask verification questions, and troubleshoot. The customer responds to your questions and follows reasonable instructions. If you go quiet for three minutes or run past a hold time you promised, the customer may check back in.</li>
+      <li w-tid="417"><strong w-tid="419">Log the case</strong> in the fields on the right as you learn each detail. Nothing is pre-filled on purpose — that's the practice.</li>
+      <li w-tid="421"><strong w-tid="423">Get coaching notes</strong> any time after the first reply for a read on what you did well and what to tighten up. The coach remembers your past sessions so it can track your consistency and improvement.</li>
+      <li w-tid="425"><strong w-tid="427">Watch your typing speed</strong> — every reply you type is timed (words per minute) so you can see whether your responses are fast enough for a live-chat queue.</li>
+      <li w-tid="429"><strong w-tid="431">Trainer view</strong> reveals the real persona details and ideal resolution, for checking a trainee's notes against the truth.</li>
+      <li w-tid="433"><strong w-tid="435">History</strong> keeps recent conversations for seven days. Enter the trainer passcode to review live chats and expand the window for class review.</li>
+    </ol>
+    <p class="muted" w-tid="437">Your case notes and recent conversations are saved for seven days for coaching review. Never paste real customer information into this tool.</p>
+  </div>
+</div>
+
+<script type="module" src="app.js" w-tid="439"></script>
+</body>
+</html>

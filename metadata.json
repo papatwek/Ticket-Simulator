@@ -1,0 +1,6 @@
+{
+  "name": "Wyze - ECE Ticket Simulator",
+  "description": "Wyze customer support training simulator for live-chat and email ticketing with realistic AI customer scenarios, typing speed tracking, case documentation, and trainer reviews.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
