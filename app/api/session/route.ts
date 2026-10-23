@@ -1,61 +1,36 @@
-import { NextRequest, NextResponse } from 'next/server';
-import {
-  saveSessionToDb,
-  getSessionDetailFromDb,
-  isTrainerPasscode,
-} from '@/lib/db';
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-export async function POST(req: NextRequest) {
-  let body: any;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export async function POST(req: Request) {
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Bad JSON body' }, { status: 400 });
+    const body = await req.json();
+    const { traineeId, scenarioType } = body;
+
+    // Create a new active session/ticket in Supabase
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert([
+        { 
+          trainee_id: traineeId, 
+          scenario_type: scenarioType || 'general_support',
+          status: 'active'
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase session error:", error);
+      return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, session: data });
+  } catch (error) {
+    console.error("Session routing error:", error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-
-  if (!body || !body.id) {
-    return NextResponse.json({ error: 'Missing session id' }, { status: 400 });
-  }
-
-  const userId =
-    req.headers.get('x-websim-user-id') ||
-    req.headers.get('x-trainee-id') ||
-    body.traineeName ||
-    body.userId ||
-    'trainee_local';
-
-  const username =
-    req.headers.get('x-websim-username') ?? body.traineeName ?? 'anon';
-
-  try {
-    const result = saveSessionToDb(body, userId, username);
-    return NextResponse.json({ ok: true, id: result.id });
-  } catch (err: any) {
-    console.error('Error saving session:', err);
-    return NextResponse.json(
-      { error: err.message || 'Database error' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const id = url.searchParams.get('id');
-
-  if (!id) {
-    return NextResponse.json({ error: 'Missing session id' }, { status: 400 });
-  }
-
-  const isTrainerReq =
-    url.searchParams.get('trainer') === '1' &&
-    isTrainerPasscode(url.searchParams.get('key'));
-
-  const result = getSessionDetailFromDb(id, isTrainerReq);
-
-  if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
-  }
-
-  return NextResponse.json(result.data);
 }
