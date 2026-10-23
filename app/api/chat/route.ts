@@ -1,66 +1,29 @@
-import { GoogleGenAI } from '@google/genai';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { messages, schema, json } = await req.json();
+    // 1. Get the message data the trainee typed in the chat UI
+    const body = await req.json();
 
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing or invalid messages array' },
-        { status: 400 }
-      );
-    }
+    // 2. Build the URL to your Render server
+    const backendUrl = `${process.env.NEXT_PUBLIC_AI_BACKEND_URL}/generate-reply`;
 
-    let systemInstruction = '';
-    const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
-
-    for (const msg of messages) {
-      if (msg.role === 'system') {
-        systemInstruction += (systemInstruction ? '\n\n' : '') + String(msg.content || '');
-      } else {
-        const role = msg.role === 'assistant' ? 'model' : 'user';
-        contents.push({
-          role: role,
-          parts: [{ text: String(msg.content || '') }],
-        });
-      }
-    }
-
-    if (contents.length === 0) {
-      contents.push({
-        role: 'user',
-        parts: [{ text: 'Please proceed.' }],
-      });
-    }
-
-    const config: any = {};
-    if (systemInstruction) {
-      config.systemInstruction = systemInstruction;
-    }
-
-    if (schema) {
-      config.responseMimeType = 'application/json';
-      config.responseSchema = schema;
-    } else if (json) {
-      config.responseMimeType = 'application/json';
-    }
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: contents,
-      config: config,
+    // 3. Forward the exact same data to your new Render brain
+    const renderResponse = await fetch(backendUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
 
-    const responseText = response.text ?? '';
-    return NextResponse.json({ content: responseText });
-  } catch (err: any) {
-    console.error('Gemini chat API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Model generation error' },
-      { status: 500 }
-    );
+    if (!renderResponse.ok) {
+      throw new Error('Render backend failed to respond');
+    }
+
+    // 4. Return success to the frontend (The UI will update automatically via Supabase websockets)
+    return NextResponse.json({ success: true });
+    
+  } catch (error) {
+    console.error("Chat routing error:", error);
+    return NextResponse.json({ error: 'Failed to reach AI backend' }, { status: 500 });
   }
 }
