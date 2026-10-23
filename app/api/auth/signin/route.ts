@@ -1,31 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser } from '@/lib/db';
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-export async function POST(req: NextRequest) {
-  let body: any;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export async function POST(req: Request) {
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON request payload' }, { status: 400 });
+    const body = await req.json();
+    const { email } = body; 
+
+    // Find the trainee in Supabase
+    const { data, error } = await supabase
+      .from('trainees')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({ error: 'Account not found. Please sign up.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, user: data });
+  } catch (error) {
+    console.error("Signin routing error:", error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-
-  const { email, password } = body || {};
-
-  if (!email || !password) {
-    return NextResponse.json(
-      { error: 'Please enter both your ECE email and password.' },
-      { status: 400 }
-    );
-  }
-
-  const result = authenticateUser(String(email), String(password));
-
-  if (result.error || !result.user) {
-    return NextResponse.json(
-      { error: result.error || 'Invalid credentials' },
-      { status: result.status || 401 }
-    );
-  }
-
-  return NextResponse.json({ ok: true, user: result.user }, { status: 200 });
 }
