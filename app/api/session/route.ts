@@ -15,9 +15,9 @@ export async function POST(req: Request) {
       .from('sessions')
       .insert([
         { 
-          session_id: req.body.sessionId,  || 'general_support',
-          role: 'assistant',
-          content: aiReply
+          trainee_id: traineeId, 
+          scenario_type: scenarioType || 'general_support',
+          status: 'active'
         }
       ])
       .select()
