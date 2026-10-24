@@ -131,7 +131,7 @@
       for(var i = 0; i < localStorage.length; i++){
         var key = localStorage.key(i) || '';
         if(key.indexOf('ecewise:') !== 0 ||
-           (!key.includes(':session-index') && !key.includes(':live-sessions') && !key.includes(':session:'))) continue;
+            (!key.includes(':session-index') && !key.includes(':live-sessions') && !key.includes(':session:'))) continue;
         try { collect(JSON.parse(localStorage.getItem(key) || 'null')); } catch(e){}
       }
       if(names.length !== stored.length){
@@ -387,7 +387,8 @@
       var completion = await websim.chat.completions.create({
         messages: messages,
         schema: opts.schema,
-        json: opts.json
+        json: opts.json,
+        sessionId: opts.sessionId
       });
       return completion.content;
     } catch(e){
@@ -1328,9 +1329,12 @@
     };
 
     try {
+      s.sessionId = genId('sess');
+      s.ticketId = genTicketId();
+
       var raw = await runModel(
         [{ role: "system", content: system }, { role: "user", content: "Generate the persona and opening message now." }],
-        { schema: schema }
+        { schema: schema, sessionId: s.sessionId }
       );
       var persona = JSON.parse(raw);
       persona.name = makeUnusedCustomerName();
@@ -1338,8 +1342,7 @@
       recordUniqueCustomerName(persona.name);
       s.persona = persona;
       recordUsedProduct(persona);
-      s.sessionId = genId('sess');
-      s.ticketId = genTicketId();
+      
       s.createdAt = Date.now();
       s.status = 'OPEN';
       s.messages = [{ role: 'customer', text: persona.openingMessage, ts: Date.now(), gapSec: null }];
@@ -1478,7 +1481,7 @@
     try {
       var raw = await runModel(
         [{ role: "system", content: buildChatSystemPrompt(s) }].concat(history),
-        { schema: schema }
+        { schema: schema, sessionId: s.sessionId }
       );
       var parsed = JSON.parse(raw);
       if(!parsed || typeof parsed.message !== 'string' || !parsed.message.trim()){
