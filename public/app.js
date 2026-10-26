@@ -3,23 +3,25 @@
 
   var CATEGORY_LABELS = {
     random: "Random — pick a realistic Wyze support scenario",
-    connectivity: "Device offline or won't connect to Wi-Fi",
-    account: "App or account login trouble",
-    footage: "Missing footage or cloud storage confusion",
-    hardware: "Hardware malfunction (battery, audio, video quality)",
-    shipping: "Shipping or delivery delay",
-    rma: "Damaged or defective item — replacement / RMA request",
-    billing: "Billing or Cam Plus subscription dispute",
-    privacy: "Privacy or security concern (unexpected access, odd notifications)",
-    howto: "Feature confusion — customer isn't sure how to do something",
-    motion: "Motion detection or event clips not triggering when they should",
-    sd: "SD card won't be recognized, or recorded video won't play back",
-    battery: "Wireless camera battery draining too fast or not charging with a setup issue",
-    view: "The live view is black, frozen, or keeps buffering",
-    audio: "Two-way audio — the speaker or microphone isn't working",
-    notify: "Push notifications for events aren't arriving (or are showing too many)",
-    night: "Night vision or overall image quality looks dark, grainy, or washed out",
-    home: "Smart-home integration issue — routines, Alexa, or Google Assistant won't work"
+    connectivity: "Device offline or won't connect to Wi-Fi (Wyze Cam v4 / Pan v3 / Battery Cam Pro)",
+    account: "App or account login trouble (2FA verification, password reset, account lock)",
+    footage: "Missing footage or cloud storage confusion (Cam Plus event clip playback vs microSD continuous)",
+    hardware: "Hardware malfunction (battery drain, purple video tint, clicking sound, lens moisture)",
+    shipping: "Shipping or delivery delay (order tracking, FedEx/USPS transit stall, package marked delivered but missing)",
+    rma: "Damaged or defective item — replacement / RMA warranty request (under 1-year Wyze limited warranty)",
+    billing: "Billing or Cam Plus subscription dispute (duplicate charge, auto-renewal cancellation, coupon discount missing)",
+    privacy: "Privacy or security concern (unexpected access notification, sharing camera permission, IP address verification)",
+    howto: "Feature confusion — customer isn't sure how to configure rules, schedules, or sensitivity",
+    motion: "Motion detection or event clips not triggering (AI detection filters, detection zone grid configuration)",
+    sd: "MicroSD card not recognized or recorded video won't play back (FAT32/exFAT format, continuous recording)",
+    battery: "Wireless camera battery draining too fast or not charging (solar panel connection, cold weather impact)",
+    view: "The live view is black, frozen, or keeps buffering (network bandwidth, bitrate drop, router channel congestion)",
+    audio: "Two-way audio — the speaker or microphone isn't working (Wyze app microphone permission, chime volume)",
+    notify: "Push notifications for events aren't arriving or are showing too many (iOS background refresh, Android notification channel)",
+    night: "Night vision or overall image quality looks dark, grainy, or washed out (IR lights reflection on window glass, spotlight toggle)",
+    home: "Smart-home integration issue — routines, Alexa, or Google Assistant won't sync devices",
+    lock: "Wyze Lock Bolt fingerprint or keypad code failing (fingerprint sensor calibration, auto-lock timer)",
+    thermostat: "Wyze Thermostat blowing cold air when calling for heat (O/B reversing valve, C-wire adapter wiring)"
   };
 
   var EMOTION_LABELS = {
@@ -81,13 +83,17 @@
   }));
 
   var WYZE_CATALOG = [
-    "Indoor cameras: Wyze Cam v3, Wyze Cam v3 Pro, Wyze Cam v2, Wyze Cam OG, Wyze Cam Pan v2, Wyze Cam Indoor",
-    "Battery / outdoor cameras: Wyze Cam Outdoor v2, Wyze Cam Outdoor v1, Wyze Battery Cam Pro, Wyze Cam Floodlight",
-    "Video doorbells: Wyze Video Doorbell v2, Wyze Video Doorbell Pro, Wyze Video Doorbell v1",
-    "Home security & locks: Wyze Sense v2 kit, Wyze Lock, Wyze Lock Bolt, Wyze Smart Lock, Wyze Siren",
-    "Smart home & lighting: Wyze Bulb Color, Wyze Bulb White, Wyze Light Strip, Wyze Plug, Wyze Plug Outdoor",
-    "Climate & sensors: Wyze Thermostat, Wyze Sense Thermostat, Wyze Temp/Humidity Sensor, Wyze Leak sensor",
-    "Robotics & wellness: Wyze Robot Vacuum, Wyze Scale, Wyze Buds, Wyze Headphones"
+    "Cameras & Indoor/Outdoor: Wyze Cam v4 (2.5K QHD, Color Night Vision, Wi-Fi 6), Wyze Cam Pan v3 (360 Pan/Tilt, IP65 Weatherproof), Wyze Battery Cam Pro (2K Wire-Free, radar detection), Wyze Cam OG & OG Telephoto (3x zoom, PIP), Wyze Cam Floodlight Pro (3000 lumens, 180 FOV, ambient sensor), Wyze Cam Floodlight v2, Wyze Cam v3, Wyze Cam v3 Pro, Wyze Cam Outdoor v2",
+    "Video Doorbells: Wyze Video Doorbell v2 (2K, head-to-toe view, microSD local chime recording, chime controller), Wyze Video Doorbell Pro (wire-free, 1:1 aspect ratio), Wyze Video Doorbell v1",
+    "Smart Locks & Access: Wyze Lock Bolt (fingerprint keypad, Bluetooth auto-unlock, 50 user capacity), Wyze Lock (auto-lock/unlock with door sensor), Wyze Keypad v2",
+    "Home Networking: Wyze Mesh Router Pro 6E (Tri-band, up to 3000 sq ft, 2.5 Gbps Ethernet), Wyze Mesh Router 6, Wyze Mesh Satellite nodes",
+    "Climate & HVAC: Wyze Thermostat (7-day scheduling, C-wire adapter included, furnace/heat pump compatible), Wyze Room Sensor (remote temperature/humidity averaging)",
+    "Home Automation & Lighting: Wyze Bulb Color (16 million colors, Tunable White, Sun Match circadian), Wyze Light Strip Pro (individually addressable color segments, music sync), Wyze Plug, Wyze Plug Outdoor (dual grounded outlets, IP64)",
+    "Robotics & Floor Care: Wyze Robot Vacuum (LiDAR room mapping, virtual boundary walls, multi-floor maps), Wyze Cordless Vacuum S",
+    "Wellness & Air Quality: Wyze Air Purifier (HEPA H13 CADR 350, laser PM2.5 particle sensor), Wyze Smart Scale X (body composition, heart rate), Wyze Buds Pro (active noise cancellation), Wyze Watch 47c",
+    "Lawn & Garden: Wyze Sprinkler Controller (8-zone smart watering, weather skipping, EPA WaterSense certified)",
+    "Services & Subscriptions: Cam Plus (AI person/vehicle/pet/package detection, unlimited event video length), Cam Plus Unlimited (unlimited cameras on one plan), Wyze Home Monitoring (24/7 professional dispatch), Wyze Care warranty extensions",
+    "Promotions & Orders: Official Wyze seasonal bundles, holiday discount codes, order tracking delays (FedEx/USPS/UPS), and 1-year limited warranty RMA replacements."
   ].join('\n');
 
   var CUSTOMER_FIRST_NAMES = ['Avery','Bailey','Casey','Drew','Ellis','Emery','Finley','Harper','Jamie','Jordan','Kai','Logan','Micah','Morgan','Parker','Quinn','Reese','Riley','Rowan','Sage','Taylor','Alex','Amari','Blake','Cameron','Dakota','Eden','Frankie','Kendall','Marley','Remy','Shiloh'];
@@ -168,6 +174,13 @@
   var serverSaveQueues = Object.create(null);
 
   function $(id){ return document.getElementById(id); }
+
+  function on(target, event, handler){
+    var el = typeof target === 'string' ? $(target) : target;
+    if(el && typeof el.addEventListener === 'function'){
+      el.addEventListener(event, handler);
+    }
+  }
 
   function escapeHtml(str){
     return String(str == null ? '' : str).replace(/[&<>"']/g, function(c){
@@ -294,7 +307,7 @@
   var feedbackBox = $('feedbackBox');
   var feedbackContent = $('feedbackContent');
   var saveIndicator = $('saveIndicator');
-  var categorySelect = $('categorySelect');
+  var categorySelect = $('categorySelect'); // may be null if removed from UI
   var emotionSelect = $('emotionSelect');
   var themeSelect = $('themeSelect');
   var historyBtn = $('historyBtn');
@@ -357,9 +370,8 @@
 
   var lastFailedAction = null;
   var historyDetail = null;
-  var historyRefreshTimer = null;
 
-  /* ---------- Storage Helpers ---------- */
+  /* ---------- Storage & Persistence Helpers ---------- */
   function storageKey(key){
     var identity = loginProfile && loginProfile.id ? loginProfile.id : 'anon';
     return 'ecewise:' + identity + ':' + key;
@@ -369,6 +381,104 @@
   }
   function writeLS(key, val){
     try { localStorage.setItem(storageKey(key), JSON.stringify(val)); } catch(e){}
+  }
+
+  // Complete Active Workspace Persistence across Browser Refreshes
+  function saveWorkspaceState(){
+    if(!loginProfile) return;
+    try {
+      var snapshot = {
+        simMode: simMode,
+        activeIndex: activeIndex,
+        chatSessions: chatSessions.map(serializeSession),
+        emailSessions: emailSessions.map(serializeSession),
+        twoChats: twoChats,
+        timerOn: timerOn
+      };
+      localStorage.setItem('ecewise:' + loginProfile.id + ':active_workspace_v2', JSON.stringify(snapshot));
+    } catch(e){}
+  }
+
+  function deserializeSession(data, type){
+    if(!data) return newSession(type);
+    return {
+      type: data.type || type,
+      sessionId: data.id || data.sessionId || genId('sess'),
+      ticketId: data.ticketId || genTicketId(),
+      createdAt: data.createdAt || Date.now(),
+      persona: data.persona || null,
+      messages: Array.isArray(data.messages) ? data.messages : [],
+      status: data.status || (type === 'email' ? 'NEW' : 'OPEN'),
+      busy: false,
+      holdDeadline: data.holdDeadline || null,
+      holdMinutes: data.holdMinutes || null,
+      feedback: data.feedback || null,
+      typeStart: null,
+      ended: !!data.ended,
+      cleared: !!data.cleared,
+      abandoned: !!data.abandoned,
+      avgWpm: data.avgWpm || null,
+      coachingPoints: data.coachingPoints || null,
+      traineeName: data.traineeName || (loginProfile ? loginProfile.name : ''),
+      avatarId: data.avatarId || (loginProfile ? loginProfile.avatarId : 'pip'),
+      lob: data.lob || '',
+      emailSubject: data.emailSubject || '',
+      emailNextReplyTs: data.emailNextReplyTs || null,
+      emailMinMins: data.emailMinMins || 30,
+      emailMaxMins: data.emailMaxMins || 120,
+      notes: data.notes ? {
+        fCustomerName: data.notes.customerName || data.notes.fCustomerName || '',
+        fEmail: data.notes.email || data.notes.fEmail || '',
+        fProduct: data.notes.product || data.notes.fProduct || '',
+        fRecap: data.notes.recap || data.notes.fRecap || '',
+        fResources: data.notes.resources || data.notes.fResources || '',
+        fNextSteps: data.notes.nextSteps || data.notes.fNextSteps || '',
+        fEscalation: data.notes.escalation || data.notes.fEscalation || ''
+      } : { fCustomerName:'', fEmail:'', fProduct:'', fRecap:'', fResources:'', fNextSteps:'', fEscalation:'' }
+    };
+  }
+
+  function restoreWorkspaceState(){
+    if(!loginProfile) return false;
+    try {
+      var raw = localStorage.getItem('ecewise:' + loginProfile.id + ':active_workspace_v2');
+      if(!raw) return false;
+      var snapshot = JSON.parse(raw);
+      if(!snapshot) return false;
+
+      if(Array.isArray(snapshot.chatSessions) && snapshot.chatSessions.length > 0){
+        chatSessions = snapshot.chatSessions.map(function(s){ return deserializeSession(s, 'chat'); });
+      }
+      if(Array.isArray(snapshot.emailSessions) && snapshot.emailSessions.length > 0){
+        emailSessions = snapshot.emailSessions.map(function(s){ return deserializeSession(s, 'email'); });
+      }
+
+      simMode = snapshot.simMode === 'email' ? 'email' : 'chat';
+      if(modeChatBtn && modeEmailBtn){
+        modeChatBtn.classList.toggle('active', simMode === 'chat');
+        modeEmailBtn.classList.toggle('active', simMode === 'email');
+      }
+
+      twoChats = !!snapshot.twoChats;
+      if(twoChatsToggle) twoChatsToggle.checked = twoChats;
+      if(twoChats && chatSessions.length === 1){
+        chatSessions.push(newSession('chat'));
+      }
+
+      timerOn = !!snapshot.timerOn;
+      if(timerToggle) timerToggle.checked = timerOn;
+      if(replyTimer) replyTimer.hidden = !timerOn;
+
+      sessions = simMode === 'email' ? emailSessions : chatSessions;
+      activeIndex = (typeof snapshot.activeIndex === 'number' && snapshot.activeIndex < sessions.length) ? snapshot.activeIndex : 0;
+      state = sessions[activeIndex];
+
+      applyNotes(state);
+      return true;
+    } catch(e){
+      console.warn('Could not restore workspace state:', e);
+      return false;
+    }
   }
 
   /* ---------- WPM Calculation ---------- */
@@ -445,6 +555,8 @@
       feedback: s.feedback,
       emailSubject: s.emailSubject || '',
       emailNextReplyTs: s.emailNextReplyTs || null,
+      emailMinMins: s.emailMinMins || 30,
+      emailMaxMins: s.emailMaxMins || 120,
       notes: {
         customerName: s.notes.fCustomerName,
         email: s.notes.fEmail,
@@ -503,6 +615,7 @@
     if(s === state && s.sessionId) captureNotes();
     saveLocalSession(s);
     pushServerSession(s);
+    saveWorkspaceState();
     updateZdViewsCounter();
   }
 
@@ -511,7 +624,7 @@
     s = (s && s.sessionId) ? s : state;
     if(s === state) saveIndicator.textContent = 'Saving…';
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(function(){ doSave(s); }, 500);
+    saveTimer = setTimeout(function(){ doSave(s); }, 400);
   }
 
   function captureNotes(){
@@ -707,6 +820,7 @@
     refreshControls();
     updateSpeedUI();
     updateCaseLabel();
+    saveWorkspaceState();
   }
 
   function renderMessages(){
@@ -749,8 +863,7 @@
 
       var timeDiv = document.createElement('div');
       timeDiv.className = 'msg-time';
-      var who = isAgent ? 'Agent' : state.persona.name;
-      timeDiv.textContent = who + ' · ' + fmtTime(m.ts) + meta;
+      timeDiv.textContent = (isAgent ? 'Agent · ' : (state.persona ? state.persona.name + ' · ' : 'Customer · ')) + fmtTime(m.ts) + meta;
 
       row.appendChild(contentDiv);
       row.appendChild(timeDiv);
@@ -760,89 +873,74 @@
   }
 
   function renderFeedback(){
+    if(!feedbackBox) return;
     if(state.feedback){
       feedbackBox.hidden = false;
       feedbackContent.textContent = state.feedback;
     } else {
       feedbackBox.hidden = true;
+      feedbackContent.textContent = '';
     }
   }
 
   function renderAnswerKey(){
-    if(!trainerMode){
+    if(!answerKey) return;
+    if(!trainerMode || !state.persona){
       answerKey.hidden = true;
       return;
     }
     answerKey.hidden = false;
-    if(!state.persona){
-      answerKeyContent.innerHTML = '<p class="muted" style="grid-column:1/-1;margin:0;">Start a scenario to reveal the answer key.</p>';
-      return;
-    }
     var p = state.persona;
-    var rows = [
-      ['Name', p.name, false],
-      ['Email', p.email, false],
-      ['Phone', p.phone, false],
-      ['Shipping address', p.shippingAddress, false],
-      ['Product', p.product, false],
-      ['MAC address', p.macAddress, true],
-      ['Order / RMA #', p.orderNumber, true],
-      ['Serial number', p.serialNumber, true],
-      ['Purchase date', p.purchaseDate, false],
-      ['Real root cause & ideal resolution', p.hiddenSummary, false]
-    ];
-    answerKeyContent.innerHTML = rows.map(function(r){
-      return '<dt>' + escapeHtml(r[0]) + '</dt><dd' + (r[2] ? ' class="mono"' : '') + '>' + escapeHtml(r[1] || '—') + '</dd>';
+    var steps = (p.resolutionSteps || []).map(function(s, i){
+      return '<li>' + escapeHtml(s) + '</li>';
     }).join('');
+
+    answerKeyContent.innerHTML =
+      '<div class="ak-item"><strong>Customer Ground Truth:</strong> ' + escapeHtml(p.name) + ' (' + escapeHtml(p.email) + ')</div>' +
+      '<div class="ak-item"><strong>Product &amp; Issue:</strong> ' + escapeHtml(p.product) + ' — ' + escapeHtml(p.issueCategory) + '</div>' +
+      '<div class="ak-item"><strong>Hardware Specs:</strong> MAC: ' + escapeHtml(p.macAddress) + ' · S/N: ' + escapeHtml(p.serialNumber) + '</div>' +
+      '<div class="ak-item"><strong>Root Cause Diagnosis:</strong> ' + escapeHtml(p.hiddenSummary) + '</div>' +
+      '<div class="ak-item"><strong>Ideal SOP Resolution Steps:</strong><ol class="ak-steps">' + (steps || '<li>Verify issue details and follow standard Wyze troubleshooting guide.</li>') + '</ol></div>';
   }
 
   function updateCaseLabel(){
-    if(!caseOpen) return;
-    var modeLabel = simMode === 'email' ? 'Email Ticket ' : 'Chat ';
-    caseTabLabel.textContent = ' • ' + modeLabel + (activeIndex + 1) + (state.persona ? (' — ' + state.persona.name) : ' (idle)');
+    if(!caseTabLabel) return;
+    caseTabLabel.textContent = state.persona ? ('Case File: ' + (state.persona.name || 'Active Case')) : 'Case File';
   }
 
-  function openCase(){
-    caseOpen = true;
-    casePane.hidden = false;
-    updateCaseLabel();
-  }
-  function closeCaseFn(){
-    caseOpen = false;
-    casePane.hidden = true;
-  }
-
-  /* ---------- Mode Switching: Live Chat vs Email Ticket ---------- */
   function switchMode(newMode){
-    if(simMode === newMode) return;
+    if(newMode === simMode) return;
     captureNotes();
     doSave(state);
+
     simMode = newMode;
+    modeChatBtn.classList.toggle('active', simMode === 'chat');
+    modeEmailBtn.classList.toggle('active', simMode === 'email');
+
     if(simMode === 'email'){
-      modeEmailBtn.classList.add('active');
-      modeChatBtn.classList.remove('active');
-      twoChatsToggleWrap.hidden = true;
-      timerToggleWrap.hidden = true;
-      replyTimer.hidden = true;
+      twoChatsToggleWrap.style.display = 'none';
       speedBar.hidden = true;
+      zdTabsStrip.hidden = false;
       zdComposerNav.hidden = false;
       zdSubmitBar.hidden = false;
-      emailTicketHeader.hidden = false;
+      sendBtn.textContent = 'Submit';
+      agentInput.placeholder = 'Type your public email reply to the customer… (Enter to submit)';
       sessions = emailSessions;
       activeIndex = activeEmailIdx;
     } else {
-      modeChatBtn.classList.add('active');
-      modeEmailBtn.classList.remove('active');
-      twoChatsToggleWrap.hidden = false;
-      timerToggleWrap.hidden = false;
-      replyTimer.hidden = !timerOn;
+      twoChatsToggleWrap.style.display = '';
       speedBar.hidden = false;
+      zdTabsStrip.hidden = true;
       zdComposerNav.hidden = true;
       zdSubmitBar.hidden = true;
       emailTicketHeader.hidden = true;
+      if(emailPendingBanner) emailPendingBanner.hidden = true;
+      sendBtn.textContent = 'Send';
+      agentInput.placeholder = 'Type a message to the customer… (Enter to send)';
       sessions = chatSessions;
       activeIndex = activeChatIdx;
     }
+
     state = sessions[activeIndex];
     applyNotes(state);
     renderTabs();
@@ -855,6 +953,7 @@
     updateSpeedUI();
     updateCaseLabel();
     updateZdViewsCounter();
+    saveWorkspaceState();
   }
 
   /* ---------- Zendesk Ticket Journey & Pending Intervals ---------- */
@@ -869,6 +968,7 @@
     renderTabs();
     updatePendingBanner();
     scheduleSave(state);
+    saveWorkspaceState();
   }
 
   function scheduleEmailReply(){
@@ -893,8 +993,19 @@
     emailClockStamp.textContent = new Date(state.emailNextReplyTs).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
   }
 
+  function checkPendingEmailReplies(){
+    if(simMode !== 'email') return;
+    var now = Date.now();
+    emailSessions.forEach(function(s){
+      if(s.status === 'PENDING' && s.emailNextReplyTs && now >= s.emailNextReplyTs && !s.busy && !s.ended && s.persona){
+        triggerCustomerReply(s);
+      }
+    });
+  }
+
+  // Robust, Self-Contained Customer Reply Trigger
   async function triggerCustomerReply(s){
-    if(s.busy || s.ended || !s.persona) return;
+    if(!s || s.ended || !s.persona) return;
     setBusy(true, s);
     try {
       var systemPrompt = buildSystemPrompt(s);
@@ -926,7 +1037,7 @@
       var now = Date.now();
       s.messages.push({
         role: 'customer',
-        text: parsed.message,
+        text: parsed.message || (typeof parsed === 'string' ? parsed : "I am checking that right now."),
         ts: now,
         gapSec: null
       });
@@ -946,8 +1057,10 @@
         updatePendingBanner();
       }
       scheduleSave(s);
+      saveWorkspaceState();
     } catch(err){
       console.error('Customer reply error:', err);
+      showError("Customer response delayed. You can continue sending your reply.", function(){ triggerCustomerReply(s); });
     } finally {
       setBusy(false, s);
     }
@@ -994,6 +1107,7 @@
           setBusy(false, s);
         }
         scheduleSave(s);
+        saveWorkspaceState();
       }
     });
   }
@@ -1020,7 +1134,7 @@
     ].join('\n');
   }
 
-  /* ---------- Start Scenario ---------- */
+  /* ---------- Start Scenario (Standard Random Selection) ---------- */
   async function startScenario(){
     var s = state;
     clearError();
@@ -1033,14 +1147,18 @@
     s.holdDeadline = null;
     s.holdMinutes = null;
 
-    var category = CATEGORY_LABELS[categorySelect.value] || CATEGORY_LABELS.random;
-    var emotion = EMOTION_LABELS[emotionSelect.value] || EMOTION_LABELS.random;
+    // Standard Random Selection from the Expanded Wyze Catalog
+    var categoryKeys = Object.keys(CATEGORY_LABELS).filter(function(k){ return k !== 'random'; });
+    var randomKey = categoryKeys[Math.floor(Math.random() * categoryKeys.length)];
+    var category = CATEGORY_LABELS[randomKey];
+
+    var emotion = (emotionSelect && EMOTION_LABELS[emotionSelect.value]) || EMOTION_LABELS.random;
 
     var system = [
       "You generate one fictional customer persona and an opening " + (simMode === 'email' ? 'support email' : 'live-chat message') + " for a Wyze customer support simulator.",
       "Hard rules:",
       "- All personal details must be completely synthetic (e.g. @example.invalid, 202-555-01xx).",
-      "- Pick ONE specific, real-sounding Wyze product from this catalog: " + WYZE_CATALOG,
+      "- Pick ONE specific, real Wyze product from this catalog: " + WYZE_CATALOG,
       "- Scenario type: " + category,
       "- Emotional mood: " + emotion,
       "- hiddenSummary: 2-3 sentences on the real root cause and ideal SOP troubleshooting steps.",
@@ -1099,22 +1217,24 @@
       updatePendingBanner();
       updateCaseLabel();
       scheduleSave(s);
-    } catch(e){
+      saveWorkspaceState();
+    } catch(err){
+      console.error('Failed to start scenario:', err);
+      showError("Could not connect simulated customer. Please click retry.", startScenario);
       chatLog.innerHTML = '';
       chatLog.appendChild(emptyState);
-      showError(e.message || 'Could not start customer scenario.', startScenario);
     } finally {
       setBusy(false, s);
     }
   }
 
-  /* ---------- Send Agent Message ---------- */
+  /* ---------- Send Agent Message & Customer Response Cycle ---------- */
   async function sendAgentMessage(text, wpm){
     var s = state;
-    if(!text || s.busy || !s.persona) return;
+    if(!s.persona || s.ended || !text) return;
     clearError();
 
-    // Check if Internal Note in Email mode
+    // Internal Note handling in Zendesk Email mode
     if(simMode === 'email' && activeComposerTab === 'internal'){
       s.messages.push({
         role: 'agent',
@@ -1124,6 +1244,7 @@
       });
       renderMessages();
       scheduleSave(s);
+      saveWorkspaceState();
       return;
     }
 
@@ -1143,23 +1264,22 @@
     });
 
     renderMessages();
+    saveWorkspaceState();
 
     // Email Mode: update status based on submit action selector
     if(simMode === 'email'){
       var submitState = zdSubmitActionSelect.value || 'PENDING';
       setLinearState(submitState);
       scheduleSave(s);
+      saveWorkspaceState();
       return;
     }
 
-    // Live Chat Mode: trigger immediate customer reply
-    setBusy(true, s);
+    // Live Chat Mode: trigger immediate customer reply directly
     try {
       await triggerCustomerReply(s);
     } catch(e){
       showError(e.message || "Customer failed to respond. Please try sending again.", function(){ sendAgentMessage(text, wpm); });
-    } finally {
-      setBusy(false, s);
     }
   }
 
@@ -1192,6 +1312,7 @@
       s.feedback = raw;
       renderFeedback();
       scheduleSave(s);
+      saveWorkspaceState();
     } catch(e){
       showError(e.message || 'Could not generate feedback.', getFeedback);
     } finally {
@@ -1231,6 +1352,7 @@
       coachingContent.textContent = raw;
       coachingBox.hidden = false;
       scheduleSave(s);
+      saveWorkspaceState();
     } catch(e){
       showError(e.message || 'Could not generate post-drill review.', endConversation);
       s.ended = false;
@@ -1252,321 +1374,385 @@
       var res = await fetch('/api/agent/analytics?user=' + encodeURIComponent(loginProfile.id));
       if(!res.ok) return;
       var data = await res.json();
-      var k = (data.analytics && data.analytics.kpis) || {};
+      var analytics = data.analytics || {};
 
-      $('paKpiWpm').textContent = k.avgWpm ? k.avgWpm + ' WPM' : '—';
-      $('paKpiResp').textContent = k.avgResponseTimeSec ? k.avgResponseTimeSec + 's' : '—';
-      $('paKpiResRate').textContent = (k.resolvedRate ?? 0) + '%';
-      $('paKpiResCount').textContent = (k.resolvedCount || 0) + ' resolved';
-      $('paKpiAbandonRate').textContent = (k.abandonmentRate ?? 0) + '%';
-      $('paKpiAbandonCount').textContent = (k.abandonedCount || 0) + ' breaches';
-      $('paKpiChurnRate').textContent = (k.frustrationRecoveryRate ?? 100) + '%';
-      $('paKpiDocRate').textContent = (k.caseDocCompletionRate ?? 0) + '%';
-
-      // Speed Distribution Bars
-      var sDist = (data.analytics && data.analytics.speedDistribution) || { fast:0, standard:0, slow:0 };
-      var sTotal = (sDist.fast + sDist.standard + sDist.slow) || 1;
-      $('paSpeedDistBars').innerHTML = [
-        '<div class="dist-row"><span>Fast (≥60 WPM)</span><div class="dist-bar"><div class="bar-fill teal" style="width:' + Math.round((sDist.fast / sTotal)*100) + '%"></div></div><span>' + sDist.fast + '</span></div>',
-        '<div class="dist-row"><span>Standard (40-59 WPM)</span><div class="dist-bar"><div class="bar-fill blue" style="width:' + Math.round((sDist.standard / sTotal)*100) + '%"></div></div><span>' + sDist.standard + '</span></div>',
-        '<div class="dist-row"><span>Slow (&lt;40 WPM)</span><div class="dist-bar"><div class="bar-fill coral" style="width:' + Math.round((sDist.slow / sTotal)*100) + '%"></div></div><span>' + sDist.slow + '</span></div>'
-      ].join('');
-
-      // Response Time Distribution Bars
-      var rDist = (data.analytics && data.analytics.responseTimeDistribution) || { under30s:0, s30to60:0, s60to120:0, over120s:0 };
-      var rTotal = (rDist.under30s + rDist.s30to60 + rDist.s60to120 + rDist.over120s) || 1;
-      $('paRespDistBars').innerHTML = [
-        '<div class="dist-row"><span>Under 30s</span><div class="dist-bar"><div class="bar-fill teal" style="width:' + Math.round((rDist.under30s / rTotal)*100) + '%"></div></div><span>' + rDist.under30s + '</span></div>',
-        '<div class="dist-row"><span>30s - 60s</span><div class="dist-bar"><div class="bar-fill blue" style="width:' + Math.round((rDist.s30to60 / rTotal)*100) + '%"></div></div><span>' + rDist.s30to60 + '</span></div>',
-        '<div class="dist-row"><span>60s - 120s (Warning)</span><div class="dist-bar"><div class="bar-fill amber" style="width:' + Math.round((rDist.s60to120 / rTotal)*100) + '%"></div></div><span>' + rDist.s60to120 + '</span></div>',
-        '<div class="dist-row"><span>Over 120s (Critical)</span><div class="dist-bar"><div class="bar-fill coral" style="width:' + Math.round((rDist.over120s / rTotal)*100) + '%"></div></div><span>' + rDist.over120s + '</span></div>'
-      ].join('');
-
-      // Abandoned Sessions Table
-      var abRows = (data.analytics && data.analytics.abandonedSessions) || [];
-      if(abRows.length === 0){
-        $('paAbandonedTableBody').innerHTML = '<tr><td colspan="4" class="muted text-center" style="padding:16px;">No 7-minute breaches recorded! Excellent chat hold management.</td></tr>';
-      } else {
-        $('paAbandonedTableBody').innerHTML = abRows.map(function(item){
-          return '<tr><td><b>' + escapeHtml(item.ticketId) + '</b></td><td>' + escapeHtml(item.category) + '</td><td>' + Math.round((item.idleSec || 420) / 60) + ' mins idle</td><td><span class="text-coral">' + escapeHtml(item.text) + '</span></td></tr>';
-        }).join('');
-      }
-
-      // Recent Transcripts List
-      renderRecentTranscripts(data.analytics.recentSessions || []);
-
+      renderAnalyticsKpis(analytics.kpis || {});
+      renderSpeedDistribution(analytics.speedDistribution || {});
+      renderResponseDistribution(analytics.responseTimeDistribution || {});
+      renderCategoryBreakdown(analytics.categoryBreakdown || []);
+      renderWpmChart(analytics.wpmHistory || []);
+      renderAbandonedList(analytics.abandonedSessions || []);
+      renderResolvedList(analytics.resolvedSessions || []);
+      renderTranscriptsList(analytics.recentSessions || []);
     } catch(err){
       console.error('Failed to load trainee analytics:', err);
     }
   }
 
-  function renderRecentTranscripts(sessionsList){
-    var container = $('paSessionsList');
-    if(!container) return;
-    if(sessionsList.length === 0){
-      container.innerHTML = '<div class="muted text-center" style="padding:20px;">No recorded practice sessions yet.</div>';
-      return;
-    }
-    container.innerHTML = sessionsList.map(function(s){
-      return '<div class="pa-session-item" data-id="' + s.id + '">' +
-        '<div class="pa-si-header"><strong>' + escapeHtml(s.ticketId || s.id) + '</strong><span class="zd-badge zd-badge-' + (s.status||'open').toLowerCase() + '">' + s.status + '</span></div>' +
-        '<div class="pa-si-sub">' + escapeHtml(s.product || 'Wyze Product') + ' · ' + (s.avgWpm ? s.avgWpm + ' WPM' : 'Untimed') + '</div>' +
-        '<div class="pa-si-date">' + new Date(s.createdAt).toLocaleDateString() + ' ' + fmtTime(s.createdAt) + '</div>' +
-        '</div>';
-    }).join('');
-
-    container.querySelectorAll('.pa-session-item').forEach(function(el){
-      el.addEventListener('click', async function(){
-        container.querySelectorAll('.pa-session-item').forEach(function(i){ i.classList.remove('selected'); });
-        el.classList.add('selected');
-        var sId = el.getAttribute('data-id');
-        var res = await fetch('/api/session?id=' + encodeURIComponent(sId));
-        if(res.ok){
-          var resData = await res.json();
-          renderTranscriptDetail(resData.data);
-        }
-      });
-    });
+  function renderAnalyticsKpis(k){
+    $('kpiTotalDrills').textContent = k.totalSessions || 0;
+    $('kpiResolvedRate').textContent = (k.resolvedRate || 0) + '%';
+    $('kpiAvgWpm').textContent = k.avgWpm ? (k.avgWpm + ' WPM') : '—';
+    $('kpiAvgResponse').textContent = k.avgResponseTimeSec != null ? (k.avgResponseTimeSec + 's') : '—';
+    $('kpiAbandonmentRate').textContent = (k.abandonmentRate || 0) + '%';
+    $('kpiFrustrationRate').textContent = (k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100) + '%';
   }
 
-  function renderTranscriptDetail(sData){
-    var view = $('paTranscriptView');
-    if(!view || !sData) return;
-    var msgs = sData.messages || [];
-    var html = '<div class="pa-detail-header"><h3>Transcript: ' + escapeHtml(sData.ticketId || sData.id) + '</h3><p class="muted">' + (sData.persona ? escapeHtml(sData.persona.name + ' · ' + sData.persona.product) : '') + '</p></div>';
-    html += '<div class="pa-transcript-msgs">';
-    msgs.forEach(function(m){
-      var isAgent = m.role === 'agent';
-      html += '<div class="msg-row ' + (isAgent ? 'from-agent' : 'from-customer') + '">' +
-        '<div class="msg-content"><div class="bubble">' + escapeHtml(m.text) + '</div></div>' +
-        '<div class="msg-time">' + (isAgent ? 'Agent' : 'Customer') + ' · ' + fmtTime(m.ts) + '</div></div>';
-    });
-    html += '</div>';
-    view.innerHTML = html;
+  function renderSpeedDistribution(s){
+    var total = (s.fast || 0) + (s.standard || 0) + (s.slow || 0) || 1;
+    var fastPct = Math.round(((s.fast || 0) / total) * 100);
+    var stdPct = Math.round(((s.standard || 0) / total) * 100);
+    var slowPct = Math.round(((s.slow || 0) / total) * 100);
+
+    $('barFast').style.width = fastPct + '%';
+    $('barStd').style.width = stdPct + '%';
+    $('barSlow').style.width = slowPct + '%';
+
+    $('cntFast').textContent = (s.fast || 0) + ' (' + fastPct + '%)';
+    $('cntStd').textContent = (s.standard || 0) + ' (' + stdPct + '%)';
+    $('cntSlow').textContent = (s.slow || 0) + ' (' + slowPct + '%)';
+  }
+
+  function renderResponseDistribution(r){
+    var total = (r.under30s || 0) + (r.s30to60 || 0) + (r.s60to120 || 0) + (r.over120s || 0) || 1;
+    var u30 = Math.round(((r.under30s || 0) / total) * 100);
+    var s60 = Math.round(((r.s30to60 || 0) / total) * 100);
+    var s120 = Math.round(((r.s60to120 || 0) / total) * 100);
+    var o120 = Math.round(((r.over120s || 0) / total) * 100);
+
+    $('barU30').style.width = u30 + '%';
+    $('barS60').style.width = s60 + '%';
+    $('barS120').style.width = s120 + '%';
+    $('barO120').style.width = o120 + '%';
+
+    $('cntU30').textContent = (r.under30s || 0) + ' (' + u30 + '%)';
+    $('cntS60').textContent = (r.s30to60 || 0) + ' (' + s60 + '%)';
+    $('cntS120').textContent = (r.s60to120 || 0) + ' (' + s120 + '%)';
+    $('cntO120').textContent = (r.over120s || 0) + ' (' + o120 + '%)';
+  }
+
+  function renderCategoryBreakdown(categories){
+    var wrap = $('categoryBreakdownWrap');
+    if(!wrap) return;
+    if(categories.length === 0){
+      wrap.innerHTML = '<div class="muted text-center" style="padding: 20px;">No scenario data recorded yet.</div>';
+      return;
+    }
+    wrap.innerHTML = categories.map(function(c){
+      var resRate = Math.round((c.resolved / (c.total || 1)) * 100);
+      return '<div class="cat-stat-card">' +
+        '<div class="cat-stat-header"><strong>' + escapeHtml(c.category) + '</strong><span>' + c.total + ' drills</span></div>' +
+        '<div class="cat-stat-meta">' +
+          '<span>Resolution: <b>' + resRate + '%</b></span>' +
+          '<span>Abandoned: <b>' + c.abandoned + '</b></span>' +
+          '<span>Avg Speed: <b>' + (c.avgWpm ? c.avgWpm + ' WPM' : '—') + '</b></span>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  function renderWpmChart(history){
+    var chart = $('wpmSparkline');
+    if(!chart) return;
+    if(history.length === 0){
+      chart.innerHTML = '<div class="muted text-center" style="padding: 20px;">Complete timed chats to see your speed trajectory.</div>';
+      return;
+    }
+    var maxWpm = Math.max.apply(null, history.map(function(h){ return h.wpm; }).concat([80]));
+    chart.innerHTML = history.slice(0, 15).reverse().map(function(h){
+      var hPct = Math.round((h.wpm / maxWpm) * 100);
+      return '<div class="spark-col" title="' + h.ticketId + ': ' + h.wpm + ' WPM">' +
+        '<div class="spark-bar" style="height:' + hPct + '%"></div>' +
+        '<span class="spark-lbl">' + h.wpm + '</span></div>';
+    }).join('');
+  }
+
+  function renderAbandonedList(abandoned){
+    var list = $('abandonedChatList');
+    if(!list) return;
+    if(abandoned.length === 0){
+      list.innerHTML = '<div class="success-callout">🎉 Zero abandoned chats! Outstanding responsiveness and customer engagement.</div>';
+      return;
+    }
+    list.innerHTML = abandoned.map(function(a){
+      return '<div class="drill-session-item border-abandoned">' +
+        '<div class="ds-head"><strong>' + a.ticketId + '</strong> · ' + escapeHtml(a.category) + ' · <span class="text-danger">' + fmtTime(a.date) + '</span></div>' +
+        '<div class="ds-body">Customer outburst: <em>"' + escapeHtml(a.text) + '"</em></div>' +
+        '<div class="ds-foot">Inactive idle duration: <b>' + a.idleSec + ' seconds</b> (> 7 min threshold)</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function renderResolvedList(resolved){
+    var list = $('resolvedChatList');
+    if(!list) return;
+    if(resolved.length === 0){
+      list.innerHTML = '<div class="muted text-center" style="padding: 20px;">No resolved conversations logged yet.</div>';
+      return;
+    }
+    list.innerHTML = resolved.map(function(r){
+      return '<div class="drill-session-item border-resolved">' +
+        '<div class="ds-head"><strong>' + r.ticketId + '</strong> · ' + escapeHtml(r.category) + ' · <span class="text-success">' + fmtTime(r.date) + '</span></div>' +
+        '<div class="ds-foot">Handled in <b>' + r.durationMin + ' min</b>' + (r.wpm ? ' · Session Speed: <b>' + r.wpm + ' WPM</b>' : '') + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function renderTranscriptsList(sessions){
+    var list = $('transcriptsList');
+    if(!list) return;
+    if(sessions.length === 0){
+      list.innerHTML = '<div class="muted text-center" style="padding: 20px;">No session transcripts recorded yet.</div>';
+      return;
+    }
+    list.innerHTML = sessions.map(function(s){
+      return '<div class="transcript-row">' +
+        '<div><strong>' + escapeHtml(s.ticketId || s.id) + '</strong> · ' + escapeHtml(s.customerName) + ' (' + escapeHtml(s.product) + ')' +
+        '<div class="muted">' + escapeHtml(s.category) + ' · ' + fmtTime(s.createdAt) + '</div></div>' +
+        '<div class="transcript-actions">' +
+          '<span class="zd-badge zd-badge-' + (s.status||'open').toLowerCase() + '">' + s.status + '</span>' +
+        '</div></div>';
+    }).join('');
   }
 
   async function triggerAiInsights(){
-    $('paExecutiveSummary').textContent = 'AI Coach synthesizing your performance metrics across all Wyze scenarios…';
-    $('refreshAiBtn').disabled = true;
-    try {
-      var aRes = await fetch('/api/agent/analytics?user=' + encodeURIComponent(loginProfile.id));
-      var aData = await aRes.json();
-      var kpis = (aData.analytics && aData.analytics.kpis) || {};
+    var aiBox = $('aiInsightsContent');
+    var aiSpinner = $('aiInsightsSpinner');
+    aiBox.textContent = '';
+    aiSpinner.hidden = false;
 
-      var res = await fetch('/api/agent/ai-insights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          traineeName: loginProfile.name,
-          kpis: kpis,
-          categoryBreakdown: aData.analytics.categoryBreakdown || []
-        })
-      });
-      if(res.ok){
-        var data = await res.json();
-        var ins = data.insights || {};
-        $('paOverallGrade').textContent = ins.overallGrade || 'Solid';
-        $('paExecutiveSummary').textContent = ins.executiveSummary || 'Good progress across support drills.';
-        $('paStrengthsList').innerHTML = (ins.strengths || []).map(function(s){ return '<li>' + escapeHtml(s) + '</li>'; }).join('');
-        $('paGrowthList').innerHTML = (ins.growthAreas || []).map(function(s){ return '<li>' + escapeHtml(s) + '</li>'; }).join('');
-        $('paChurnAdvice').textContent = ins.churnPreventionAdvice || '';
-        $('paSpeedAdvice').textContent = ins.slaSpeedAdvice || '';
-        $('paNextGoal').textContent = ins.nextDrillGoal || '';
-      }
+    try {
+      var res = await fetch('/api/agent/analytics?user=' + encodeURIComponent(loginProfile.id));
+      var data = await res.json();
+      var k = (data.analytics && data.analytics.kpis) || {};
+
+      var prompt = [
+        "You are an Elite Contact Center QA Director analyzing a trainee agent's metric report for Wyze Support:",
+        "- Total Drills: " + (k.totalSessions || 0),
+        "- Resolution Rate: " + (k.resolvedRate || 0) + "%",
+        "- Abandonment Rate: " + (k.abandonmentRate || 0) + "%",
+        "- Average Typing Speed: " + (k.avgWpm || 0) + " WPM",
+        "- Average Response Time: " + (k.avgResponseTimeSec || 0) + "s",
+        "- Frustration Recovery Rate: " + (k.frustrationRecoveryRate || 100) + "%",
+        "Generate a structured, actionable coaching analysis in under 180 words with 3 distinct bullets:",
+        "1. Core Superpower",
+        "2. High-Impact Blindspot",
+        "3. Concrete Action Drill for next shift"
+      ].join('\n');
+
+      var raw = await runModel([{ role: 'user', content: prompt }]);
+      aiSpinner.hidden = true;
+      aiBox.textContent = raw;
     } catch(e){
-      console.error('AI Insights error:', e);
-    } finally {
-      $('refreshAiBtn').disabled = false;
+      aiSpinner.hidden = true;
+      aiBox.textContent = "Insights temporarily offline. Continue your practice drills!";
     }
   }
 
   /* ---------- Leadership Admin Console ---------- */
-  var adminUnlocked = false;
-  var currentTrainees = [];
-
-  function openAdminConsole(){
-    adminConsoleModal.hidden = false;
-    if(!adminUnlocked){
-      $('adminPasscodeGate').hidden = false;
-      $('adminDashboardView').hidden = true;
-      $('adminGatePasscode').value = '';
-      $('adminGateStatus').textContent = '';
-      $('adminGatePasscode').focus();
-    } else {
-      loadAdminTrainees();
-    }
-  }
-
-  async function unlockAdminGate(){
-    var code = $('adminGatePasscode').value.trim();
-    if(code.toLowerCase() === TRAINER_PASSCODE){
-      adminUnlocked = true;
-      $('adminPasscodeGate').hidden = true;
-      $('adminDashboardView').hidden = false;
-      loadAdminTrainees();
-    } else {
-      $('adminGateStatus').textContent = 'Incorrect leadership passcode.';
-    }
-  }
-
   async function loadAdminTrainees(){
+    var body = $('adminTraineesTableBody') || $('adminTraineeTableBody');
+    if(!body) return;
+    body.innerHTML = '<tr><td colspan="8" class="text-center muted" style="padding: 24px;">Loading trainee records from database…</td></tr>';
     try {
       var res = await fetch('/api/admin/trainees?key=' + encodeURIComponent(TRAINER_PASSCODE));
-      if(!res.ok) return;
+      if(!res.ok){
+        body.innerHTML = '<tr><td colspan="8" class="text-center text-danger" style="padding: 24px;">Access denied or database error.</td></tr>';
+        return;
+      }
       var data = await res.json();
-      currentTrainees = data.trainees || [];
-      renderAdminTrainees();
-    } catch(e){
-      console.error('Admin trainees fetch error:', e);
+      var trainees = data.trainees || [];
+      renderAdminTraineesTable(trainees);
+    } catch(err){
+      body.innerHTML = '<tr><td colspan="8" class="text-center text-danger" style="padding: 24px;">Failed to load trainees.</td></tr>';
     }
   }
 
-  function renderAdminTrainees(){
-    var query = $('adminSearchInput').value.trim().toLowerCase();
-    var filter = $('adminStatusFilter').value;
-
-    var filtered = currentTrainees.filter(function(t){
-      var matchQ = !query || t.name.toLowerCase().includes(query) || t.email.toLowerCase().includes(query);
-      var matchF = filter === 'all' || (filter === 'active' && t.isActive) || (filter === 'deactivated' && !t.isActive);
-      return matchQ && matchF;
-    });
-
-    $('adminTotalTraineesCount').textContent = currentTrainees.length;
-    $('adminActiveCount').textContent = currentTrainees.filter(function(t){ return t.isActive; }).length;
-
-    var tbody = $('adminTraineesTableBody');
-    if(filtered.length === 0){
-      tbody.innerHTML = '<tr><td colspan="9" class="muted text-center py-4">No matching trainees found.</td></tr>';
+  function renderAdminTraineesTable(trainees){
+    var body = $('adminTraineesTableBody') || $('adminTraineeTableBody');
+    if(!body) return;
+    if(trainees.length === 0){
+      body.innerHTML = '<tr><td colspan="8" class="text-center muted" style="padding: 24px;">No trainee accounts registered yet. Use "Invite Trainee" above.</td></tr>';
       return;
     }
-
-    tbody.innerHTML = filtered.map(function(t){
+    body.innerHTML = trainees.map(function(t){
       return '<tr>' +
-        '<td><b>' + escapeHtml(t.name) + '</b><br><small class="muted">' + escapeHtml(t.email) + '</small></td>' +
-        '<td><span class="zd-badge ' + (t.isActive ? 'zd-badge-solved' : 'zd-badge-onhold') + '">' + (t.isActive ? 'ACTIVE' : 'DEACTIVATED') + '</span></td>' +
-        '<td>' + (t.lastActiveAt ? fmtTime(t.lastActiveAt) + '<br><small class="muted">' + (t.lastTicketId || '') + '</small>' : 'Never') + '</td>' +
-        '<td>' + t.totalDrills + '</td>' +
+        '<td><div class="trainee-cell">' + avatarMarkup(t.avatarId || 'pip', 'trainee-avatar') +
+          '<div><strong class="clickable-trainee" data-id="' + t.id + '">' + escapeHtml(t.name) + '</strong>' +
+          '<div class="muted">' + escapeHtml(t.email) + '</div></div></div></td>' +
+        '<td>' + (t.isActive ? '<span class="status-badge badge-active">Active</span>' : '<span class="status-badge badge-inactive">Deactivated</span>') + '</td>' +
+        '<td><b>' + t.totalDrills + '</b></td>' +
         '<td>' + t.resolvedRate + '%</td>' +
         '<td>' + (t.avgWpm ? t.avgWpm + ' WPM' : '—') + '</td>' +
-        '<td>' + t.frustrationRecoveryRate + '%</td>' +
-        '<td>' + t.caseDocScore + '%</td>' +
-        '<td style="text-align:right;">' +
-          '<button type="button" class="btn btn-sm btn-ghost admin-drill-btn" data-id="' + t.id + '" title="View Dedicated Analytics">📊 Drill Down</button> ' +
-          '<button type="button" class="btn btn-sm btn-ghost admin-reset-btn" data-id="' + t.id + '" title="Generate Password Reset">🔑 Reset PW</button> ' +
-          '<button type="button" class="btn btn-sm ' + (t.isActive ? 'btn-ghost' : 'btn-primary') + ' admin-toggle-btn" data-id="' + t.id + '" data-active="' + (t.isActive ? '0':'1') + '">' + (t.isActive ? 'Deactivate' : 'Activate') + '</button>' +
-        '</td>' +
-        '</tr>';
+        '<td>' + (t.abandonedCount > 0 ? '<span class="text-danger font-bold">' + t.abandonedCount + '</span>' : '0') + '</td>' +
+        '<td>' + (t.lastTicketId ? '<code>' + t.lastTicketId + '</code>' : '—') + '</td>' +
+        '<td><div class="admin-actions-cell">' +
+          '<button type="button" class="btn btn-xs btn-ghost btn-drill" data-id="' + t.id + '" title="View complete performance drill-down">Drill-Down</button>' +
+          '<button type="button" class="btn btn-xs btn-ghost btn-reset" data-id="' + t.id + '" title="Trigger password reset verification code">Reset PW</button>' +
+          '<button type="button" class="btn btn-xs ' + (t.isActive ? 'btn-danger-ghost' : 'btn-success-ghost') + ' btn-toggle" data-id="' + t.id + '" data-active="' + (t.isActive ? '1' : '0') + '">' +
+          (t.isActive ? 'Deactivate' : 'Activate') + '</button>' +
+        '</div></td>' +
+      '</tr>';
     }).join('');
 
-    // Attach actions
-    tbody.querySelectorAll('.admin-drill-btn').forEach(function(btn){
+    // Attach row events
+    body.querySelectorAll('.clickable-trainee, .btn-drill').forEach(function(el){
+      el.addEventListener('click', function(){
+        var id = el.getAttribute('data-id');
+        openAdminDrillDown(id);
+      });
+    });
+
+    body.querySelectorAll('.btn-reset').forEach(function(btn){
       btn.addEventListener('click', function(){
-        var uId = btn.getAttribute('data-id');
-        var trainee = currentTrainees.find(function(x){ return x.id === uId; });
-        if(trainee){
-          loginProfile = { id: trainee.id, name: trainee.name, email: trainee.email, avatarId: trainee.avatarId };
-          loadTraineeAnalytics();
-          profileAnalyticsModal.hidden = false;
-        }
+        var id = btn.getAttribute('data-id');
+        adminTriggerForgotPw(id);
       });
     });
 
-    tbody.querySelectorAll('.admin-reset-btn').forEach(function(btn){
-      btn.addEventListener('click', async function(){
-        var uId = btn.getAttribute('data-id');
-        var res = await fetch('/api/admin/trainees', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'trigger-reset', userId: uId })
-        });
-        if(res.ok){
-          var resData = await res.json();
-          $('adminResetBody').innerHTML = '<p>A 6-digit password reset code has been issued for <b>' + escapeHtml(resData.name) + '</b> (' + escapeHtml(resData.email) + '):</p>' +
-            '<div class="admin-code-box"><code>' + resData.code + '</code></div>' +
-            '<p class="muted">Provide this verification code directly to the trainee agent to allow them to reset their credentials.</p>';
-          adminResetModal.hidden = false;
-        }
+    body.querySelectorAll('.btn-toggle').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-id');
+        var cur = btn.getAttribute('data-active') === '1';
+        adminToggleAccount(id, !cur);
       });
     });
+  }
 
-    tbody.querySelectorAll('.admin-toggle-btn').forEach(function(btn){
-      btn.addEventListener('click', async function(){
-        var uId = btn.getAttribute('data-id');
-        var wantActive = btn.getAttribute('data-active') === '1';
-        await fetch('/api/admin/trainees', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'toggle-status', userId: uId, active: wantActive })
-        });
-        loadAdminTrainees();
+  async function openAdminDrillDown(traineeId){
+    try {
+      var res = await fetch('/api/agent/analytics?user=' + encodeURIComponent(traineeId));
+      if(!res.ok) return;
+      var data = await res.json();
+      var analytics = data.analytics || {};
+
+      $('paAgentName').textContent = 'Trainee: ' + traineeId;
+      $('paAgentEmail').textContent = 'Supervisory Leadership Drill-Down View';
+      $('paAvatarWrap').innerHTML = avatarMarkup('pip', 'pa-avatar-art');
+
+      profileAnalyticsModal.hidden = false;
+      renderAnalyticsKpis(analytics.kpis || {});
+      renderSpeedDistribution(analytics.speedDistribution || {});
+      renderResponseDistribution(analytics.responseTimeDistribution || {});
+      renderCategoryBreakdown(analytics.categoryBreakdown || []);
+      renderWpmChart(analytics.wpmHistory || []);
+      renderAbandonedList(analytics.abandonedSessions || []);
+      renderResolvedList(analytics.resolvedSessions || []);
+      renderTranscriptsList(analytics.recentSessions || []);
+    } catch(e){
+      console.error('Error opening drill down:', e);
+    }
+  }
+
+  async function adminTriggerForgotPw(identifier){
+    try {
+      var res = await fetch('/api/admin/trainees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'trigger_reset', identifier: identifier })
       });
-    });
+      var data = await res.json();
+      if(res.ok){
+        if(adminResetModal) adminResetModal.hidden = false;
+        var rTarget = $('adminResetBody') || $('adminResetContent');
+        if(rTarget){
+          rTarget.innerHTML = '<p>A password reset code was successfully dispatched for <b>' + escapeHtml(data.name || data.email) + '</b> (' + escapeHtml(data.email) + ').</p>' +
+            '<div class="admin-code-box">Verification Code: <code>' + data.code + '</code></div>' +
+            '<small class="muted">Expires in 60 minutes. Provide this code to the trainee to reset their password on the login screen.</small>';
+        }
+      }
+    } catch(e){}
+  }
+
+  async function adminToggleAccount(userId, newActive){
+    try {
+      await fetch('/api/admin/trainees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'toggle_status', userId: userId, isActive: newActive })
+      });
+      loadAdminTrainees();
+    } catch(e){}
   }
 
   /* ---------- Zendesk Views Modal ---------- */
   function openZdViews(){
     zdViewsModal.hidden = false;
-    renderZdViewsTable('all');
-  }
-
-  function updateZdViewsCounter(){
-    var count = emailSessions.filter(function(s){ return !!s.persona; }).length;
-    if(zdViewsCounter) zdViewsCounter.textContent = count;
+    renderZdViewsTable('ALL');
   }
 
   function renderZdViewsTable(filter){
-    var tbody = $('zdViewsTableBody');
-    if(!tbody) return;
-    var allTickets = [];
-
-    // Include all active email sessions
-    emailSessions.forEach(function(s, idx){
-      if(s.persona){
-        allTickets.push({ session: s, index: idx, id: s.sessionId, ticketId: s.ticketId, status: s.status, subject: s.emailSubject || s.persona.issueCategory, name: s.persona.name, updated: s.createdAt });
-      }
+    var body = $('zdViewsTableBody');
+    if(!body) return;
+    var list = emailSessions.filter(function(s){
+      if(!s.ticketId && !s.persona) return false;
+      if(filter === 'ALL') return true;
+      return (s.status || 'NEW') === filter;
     });
 
-    var filtered = allTickets.filter(function(t){
-      return filter === 'all' || t.status === filter;
-    });
-
-    $('zdFilterAllCount').textContent = allTickets.length;
-    ['NEW', 'OPEN', 'PENDING', 'ON_HOLD', 'SOLVED'].forEach(function(st){
-      var el = $('zdFilter' + st.replace('_', '') + 'Count');
-      if(el) el.textContent = allTickets.filter(function(x){ return x.status === st; }).length;
-    });
-
-    if(filtered.length === 0){
-      tbody.innerHTML = '<tr><td colspan="6" class="muted text-center" style="padding:28px;text-align:center;">No tickets in this view yet.</td></tr>';
+    if(list.length === 0){
+      body.innerHTML = '<tr><td colspan="7" class="text-center muted" style="padding: 24px;">No email tickets matching filter: ' + filter + '</td></tr>';
       return;
     }
 
-    tbody.innerHTML = filtered.map(function(t){
+    body.innerHTML = list.map(function(s, idx){
+      var statusClass = 'zd-badge-' + (s.status || 'NEW').toLowerCase().replace('_', '');
+      var waitStr = '—';
+      if(s.status === 'PENDING' && s.emailNextReplyTs){
+        var rem = Math.max(1, Math.round((s.emailNextReplyTs - Date.now()) / 60000));
+        waitStr = rem + ' min wait';
+      }
       return '<tr>' +
-        '<td><span class="zd-badge zd-badge-' + t.status.toLowerCase().replace('_', '') + '">' + t.status + '</span></td>' +
-        '<td><b>' + escapeHtml(t.ticketId) + '</b></td>' +
-        '<td>' + escapeHtml(t.subject) + '</td>' +
-        '<td>' + escapeHtml(t.name) + '</td>' +
-        '<td>' + fmtTime(t.updated) + '</td>' +
-        '<td style="text-align:right;"><button type="button" class="btn btn-sm btn-primary zd-open-ticket-btn" data-idx="' + t.index + '">Open Ticket</button></td>' +
-        '</tr>';
+        '<td><strong>' + s.ticketId + '</strong></td>' +
+        '<td>' + escapeHtml(s.emailSubject || (s.persona ? s.persona.issueCategory : 'Email Inquiry')) + '</td>' +
+        '<td>' + (s.persona ? escapeHtml(s.persona.name) : 'Customer') + '</td>' +
+        '<td><span class="zd-badge ' + statusClass + '">' + (s.status || 'NEW') + '</span></td>' +
+        '<td>' + (s.createdAt ? fmtTime(s.createdAt) : '—') + '</td>' +
+        '<td>' + waitStr + '</td>' +
+        '<td><button type="button" class="btn btn-xs btn-primary btn-zd-open" data-slot="' + idx + '">Open Ticket</button></td>' +
+      '</tr>';
     }).join('');
 
-    tbody.querySelectorAll('.zd-open-ticket-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var idx = parseInt(btn.getAttribute('data-idx'), 10);
-        activateSlot(idx);
+    body.querySelectorAll('.btn-zd-open').forEach(function(b){
+      b.addEventListener('click', function(){
+        var slot = parseInt(b.getAttribute('data-slot'), 10) || 0;
         zdViewsModal.hidden = true;
+        activateSlot(slot);
       });
     });
   }
 
+  function updateZdViewsCounter(){
+    if(!zdViewsCounter) return;
+    var count = emailSessions.filter(function(s){ return s.ticketId || s.persona; }).length;
+    zdViewsCounter.textContent = count;
+  }
+
+  /* ---------- Case Pane Drawer & Details ---------- */
+  function openCase(){
+    caseOpen = true;
+    casePane.hidden = false;
+    casePane.setAttribute('aria-hidden', 'false');
+    casePane.classList.add('open');
+    applyNotes(state);
+  }
+
+  function closeCaseFn(){
+    captureNotes();
+    doSave(state);
+    caseOpen = false;
+    casePane.classList.remove('open');
+    casePane.hidden = true;
+    casePane.setAttribute('aria-hidden', 'true');
+  }
+
   /* ---------- Authentication Flows ---------- */
   function setupAuthHandlers(){
-    // Tabs
+    // Tab switching
     tabSignIn.addEventListener('click', function(){
       tabSignIn.classList.add('active');
+      tabSignIn.setAttribute('aria-selected', 'true');
       tabSignUp.classList.remove('active');
+      tabSignUp.setAttribute('aria-selected', 'false');
       signInView.hidden = false;
       signUpView.hidden = true;
       forgotPasswordView.hidden = true;
@@ -1578,55 +1764,61 @@
 
     tabSignUp.addEventListener('click', function(){
       tabSignUp.classList.add('active');
+      tabSignUp.setAttribute('aria-selected', 'true');
       tabSignIn.classList.remove('active');
+      tabSignIn.setAttribute('aria-selected', 'false');
       signUpView.hidden = false;
       signInView.hidden = true;
       forgotPasswordView.hidden = true;
+      signUpDetailsStep.hidden = false;
+      signUpAvatarStep.hidden = true;
+      signInSwitchRow.hidden = true;
       signUpSwitchRow.hidden = false;
-      signInSwitchRow.hidden = true;
       forgotSwitchRow.hidden = true;
-      setStatus('Register your unique trainee account with your ECE email.');
-    });
-
-    forgotPassLink.addEventListener('click', function(){
-      forgotPasswordView.hidden = false;
-      signInView.hidden = true;
-      signUpView.hidden = true;
-      forgotSwitchRow.hidden = false;
-      signInSwitchRow.hidden = true;
-      signUpSwitchRow.hidden = true;
-      forgotStep1.hidden = false;
-      forgotStep2.hidden = true;
-      setStatus('Enter your ECE email to reset your credentials.');
+      setStatus('Create your unique account for progress tracking.');
     });
 
     switchToSignUp.addEventListener('click', function(){ tabSignUp.click(); });
     switchToSignIn.addEventListener('click', function(){ tabSignIn.click(); });
     backToSignInFromForgot.addEventListener('click', function(){ tabSignIn.click(); });
+
+    forgotPassLink.addEventListener('click', function(){
+      signInView.hidden = true;
+      signUpView.hidden = true;
+      forgotPasswordView.hidden = false;
+      forgotStep1.hidden = false;
+      forgotStep2.hidden = true;
+      signInSwitchRow.hidden = true;
+      signUpSwitchRow.hidden = true;
+      forgotSwitchRow.hidden = false;
+      setStatus('Verify your corporate ECE address to reset password.');
+    });
+
     cancelForgotBtn.addEventListener('click', function(){ tabSignIn.click(); });
 
-    // Multi-step signup
+    // Multi-step sign up
     continueSignUpBtn.addEventListener('click', function(){
       var email = $('signUpEmail').value.trim();
       var name = $('signUpName').value.trim();
-      var p1 = $('signUpPassword').value;
-      var p2 = $('signUpRepeatPassword').value;
+      var pw = $('signUpPassword').value;
+      var rpw = $('signUpRepeatPassword').value;
 
-      if(!email || !name || !p1){
-        setStatus('Please fill out all required account fields.', true);
+      if(!email || !name || !pw || !rpw){
+        setStatus('Please complete all required fields.', true);
         return;
       }
-      if(p1.length < 6){
-        setStatus('Password must be at least 6 characters.', true);
+      if(pw !== rpw){
+        setStatus('Passwords do not match. Please verify.', true);
         return;
       }
-      if(p1 !== p2){
-        setStatus('Passwords do not match. Please re-enter.', true);
+      if(pw.length < 6){
+        setStatus('Password must be at least 6 characters long.', true);
         return;
       }
+
       signUpDetailsStep.hidden = true;
       signUpAvatarStep.hidden = false;
-      setStatus('Choose your mascot avatar to finalize account setup.');
+      setStatus('Select your representative support avatar.');
     });
 
     backToSignUpDetailsBtn.addEventListener('click', function(){
@@ -1639,8 +1831,8 @@
       ev.preventDefault();
       var email = $('signInEmail').value.trim();
       var password = $('signInPassword').value;
-      setStatus('Authenticating with ECE directory…');
 
+      setStatus('Authenticating credentials…');
       try {
         var res = await fetch('/api/auth/signin', {
           method: 'POST',
@@ -1765,7 +1957,15 @@
   }
 
   function initializeWorkspace(){
-    if(workspaceInitialized) return;
+    // Restore persistent session from local storage so refreshing preserves the conversation
+    var restored = restoreWorkspaceState();
+    if(workspaceInitialized){
+      renderTabs();
+      renderPersonaBar();
+      renderMessages();
+      refreshControls();
+      return;
+    }
     workspaceInitialized = true;
     renderAvatarChoices();
     renderTabs();
@@ -1799,20 +1999,46 @@
 
     twoChatsToggle.addEventListener('change', function(){
       twoChats = twoChatsToggle.checked;
-      if(twoChats && chatSessions.length < 2){
+      if(twoChats && chatSessions.length === 1){
         chatSessions.push(newSession('chat'));
       }
       renderTabs();
+      saveWorkspaceState();
     });
 
     timerToggle.addEventListener('change', function(){
       timerOn = timerToggle.checked;
       replyTimer.hidden = !timerOn;
+      saveWorkspaceState();
     });
 
-    // Theme Switcher with smooth transition
     themeSelect.addEventListener('change', function(){
       document.documentElement.setAttribute('data-theme', themeSelect.value);
+      try { localStorage.setItem('ecewise:theme', themeSelect.value); } catch(e){}
+    });
+    try {
+      var savedTheme = localStorage.getItem('ecewise:theme');
+      if(savedTheme){
+        themeSelect.value = savedTheme;
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      }
+    } catch(e){}
+
+    // Clear Chat Button
+    clearChatBtn.addEventListener('click', function(){
+      if(state.busy || state.ended || !state.persona) return;
+      if(!confirm('Clear conversation and start fresh with this ticket?')) return;
+      state.messages = [];
+      state.typeStart = null;
+      renderMessages();
+      scheduleSave(state);
+      saveWorkspaceState();
+    });
+
+    // Retry Button
+    retryBtn.addEventListener('click', function(){
+      clearError();
+      if(typeof lastFailedAction === 'function') lastFailedAction();
     });
 
     // Zendesk Composer Navigation
@@ -1884,14 +2110,16 @@
 
     // Case Fields
     Object.keys(caseFields).forEach(function(k){
-      caseFields[k].addEventListener('input', scheduleSave);
+      caseFields[k].addEventListener('input', function(){
+        scheduleSave();
+        saveWorkspaceState();
+      });
     });
 
     // Quick Chips
     document.querySelectorAll('.quick-chip').forEach(function(chip){
       chip.addEventListener('click', function(){
-        categorySelect.value = chip.dataset.category || 'random';
-        emotionSelect.value = chip.dataset.emotion || 'random';
+        if(emotionSelect) emotionSelect.value = chip.dataset.emotion || 'random';
         startScenario();
       });
     });
@@ -1918,88 +2146,130 @@
       { btn: $('paTabTranscripts'), panel: $('paPanelTranscripts') }
     ];
     paTabs.forEach(function(tab){
-      if(!tab.btn) return;
-      tab.btn.addEventListener('click', function(){
-        paTabs.forEach(function(t){
-          t.btn.classList.remove('active');
-          t.btn.setAttribute('aria-selected', 'false');
-          t.panel.hidden = true;
+      if(tab.btn && tab.panel){
+        tab.btn.addEventListener('click', function(){
+          paTabs.forEach(function(t){
+            if(t.btn) t.btn.classList.remove('active');
+            if(t.panel) t.panel.hidden = true;
+          });
+          tab.btn.classList.add('active');
+          tab.panel.hidden = false;
         });
-        tab.btn.classList.add('active');
-        tab.btn.setAttribute('aria-selected', 'true');
-        tab.panel.hidden = false;
-      });
-    });
-
-    // Leadership Admin Console
-    adminConsoleBtn.addEventListener('click', openAdminConsole);
-    closeAdminConsole.addEventListener('click', function(){ adminConsoleModal.hidden = true; });
-    $('adminGateUnlockBtn').addEventListener('click', unlockAdminGate);
-    $('adminGatePasscode').addEventListener('keydown', function(ev){
-      if(ev.key === 'Enter') unlockAdminGate();
-    });
-    $('adminSearchInput').addEventListener('input', renderAdminTrainees);
-    $('adminStatusFilter').addEventListener('change', renderAdminTrainees);
-
-    // Admin Invite Modal
-    $('adminInviteBtn').addEventListener('click', function(){
-      adminInviteModal.hidden = false;
-      $('inviteSuccessCard').hidden = true;
-      $('adminInviteForm').hidden = false;
-    });
-    closeAdminInvite.addEventListener('click', function(){ adminInviteModal.hidden = true; });
-    cancelAdminInvite.addEventListener('click', function(){ adminInviteModal.hidden = true; });
-    $('adminInviteForm').addEventListener('submit', async function(ev){
-      ev.preventDefault();
-      var email = $('inviteEmail').value.trim();
-      var name = $('inviteName').value.trim();
-      var pw = $('inviteTempPassword').value.trim();
-      var res = await fetch('/api/admin/trainees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'invite', email: email, name: name, tempPassword: pw })
-      });
-      if(res.ok){
-        var resData = await res.json();
-        $('adminInviteForm').hidden = true;
-        $('inviteSuccessCard').hidden = false;
-        $('inviteSuccessBody').innerHTML = '<p>Trainee account created for <b>' + escapeHtml(name) + '</b> (' + escapeHtml(email) + ').</p>' +
-          '<div class="admin-code-box">Temporary Password: <code>' + (resData.tempPassword || 'Wyze2026!') + '</code></div>';
-        loadAdminTrainees();
       }
     });
 
-    closeAdminResetModal.addEventListener('click', function(){ adminResetModal.hidden = true; });
-    dismissAdminResetModal.addEventListener('click', function(){ adminResetModal.hidden = true; });
+    // Leadership Admin Console Modal
+    on(adminConsoleBtn, 'click', function(){
+      if(adminConsoleModal) adminConsoleModal.hidden = false;
+      if(trainerAccess){
+        if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = true;
+        if($('adminDashboardView')) $('adminDashboardView').hidden = false;
+        loadAdminTrainees();
+      } else {
+        if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = false;
+        if($('adminDashboardView')) $('adminDashboardView').hidden = true;
+      }
+    });
+
+    on(closeAdminConsole, 'click', function(){
+      if(adminConsoleModal) adminConsoleModal.hidden = true;
+    });
+
+    on('adminGateUnlockBtn', 'click', function(){
+      var val = ($('adminGatePasscode') ? $('adminGatePasscode').value : '').trim().toLowerCase();
+      if(val === TRAINER_PASSCODE){
+        trainerAccess = true;
+        if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = true;
+        if($('adminDashboardView')) $('adminDashboardView').hidden = false;
+        loadAdminTrainees();
+      } else {
+        if($('adminGateStatus')) $('adminGateStatus').textContent = 'Invalid passcode.';
+      }
+    });
+
+    on('refreshAdminTraineesBtn', 'click', loadAdminTrainees);
+
+    // Admin Invite Trainee Modal
+    on('adminInviteBtn', 'click', function(){
+      if(adminInviteModal) adminInviteModal.hidden = false;
+      if($('adminInviteForm')) $('adminInviteForm').hidden = false;
+      if($('inviteSuccessCard')) $('inviteSuccessCard').hidden = true;
+      if($('inviteEmail')) $('inviteEmail').value = '';
+      if($('inviteName')) $('inviteName').value = '';
+      if($('inviteTempPassword')) $('inviteTempPassword').value = '';
+    });
+    on('openInviteModalBtn', 'click', function(){
+      if(adminInviteModal) adminInviteModal.hidden = false;
+      if($('adminInviteForm')) $('adminInviteForm').hidden = false;
+      if($('inviteSuccessCard')) $('inviteSuccessCard').hidden = true;
+      if($('inviteEmail')) $('inviteEmail').value = '';
+      if($('inviteName')) $('inviteName').value = '';
+      if($('inviteTempPassword')) $('inviteTempPassword').value = '';
+    });
+
+    on(closeAdminInvite, 'click', function(){ if(adminInviteModal) adminInviteModal.hidden = true; });
+    on(cancelAdminInvite, 'click', function(){ if(adminInviteModal) adminInviteModal.hidden = true; });
+
+    on('adminInviteForm', 'submit', async function(ev){
+      ev.preventDefault();
+      var email = $('inviteEmail') ? $('inviteEmail').value.trim() : '';
+      var name = $('inviteName') ? $('inviteName').value.trim() : '';
+      var pw = $('inviteTempPassword') ? $('inviteTempPassword').value.trim() : '';
+      try {
+        var res = await fetch('/api/admin/trainees', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'invite', email: email, name: name, tempPassword: pw })
+        });
+        if(res.ok){
+          var resData = await res.json();
+          if($('adminInviteForm')) $('adminInviteForm').hidden = true;
+          if($('inviteSuccessCard')) $('inviteSuccessCard').hidden = false;
+          if($('inviteSuccessBody')){
+            $('inviteSuccessBody').innerHTML = '<p>Trainee account created for <b>' + escapeHtml(name) + '</b> (' + escapeHtml(email) + ').</p>' +
+              '<div class="admin-code-box">Temporary Password: <code>' + (resData.tempPassword || 'Wyze2026!') + '</code></div>';
+          }
+          loadAdminTrainees();
+        }
+      } catch(e){}
+    });
+
+    on(closeAdminResetModal, 'click', function(){ if(adminResetModal) adminResetModal.hidden = true; });
+    on(dismissAdminResetModal, 'click', function(){ if(adminResetModal) adminResetModal.hidden = true; });
+    on('dismissAdminResetModal', 'click', function(){ if(adminResetModal) adminResetModal.hidden = true; });
+
 
     // History Modal
-    historyBtn.addEventListener('click', openHistory);
-    $('closeHistory').addEventListener('click', function(){ historyModal.hidden = true; });
-    trainerPassBtn.addEventListener('click', function(){
-      if(trainerPassInput.value.trim().toLowerCase() === TRAINER_PASSCODE){
+    on(historyBtn, 'click', openHistory);
+    on('closeHistory', 'click', function(){ if(historyModal) historyModal.hidden = true; });
+    on(trainerPassBtn, 'click', function(){
+      if(trainerPassInput && trainerPassInput.value.trim().toLowerCase() === TRAINER_PASSCODE){
         trainerAccess = true;
-        trainerPassStatus.textContent = 'Unlocked (Leadership access active)';
+        if(trainerPassStatus) trainerPassStatus.textContent = 'Unlocked (Leadership access active)';
         openHistory();
       } else {
-        trainerPassStatus.textContent = 'Invalid passcode.';
+        if(trainerPassStatus) trainerPassStatus.textContent = 'Invalid passcode.';
       }
     });
 
     // Info Modal
-    infoBtn.addEventListener('click', function(){ infoModal.hidden = false; });
-    $('closeInfo').addEventListener('click', function(){ infoModal.hidden = true; });
+    on(infoBtn, 'click', function(){ if(infoModal) infoModal.hidden = false; });
+    on('closeInfo', 'click', function(){ if(infoModal) infoModal.hidden = true; });
 
     // Sign out
-    signOutBtn.addEventListener('click', function(){
+    on(signOutBtn, 'click', function(){
       loginProfile = null;
-      try { localStorage.removeItem('ecewise:auth_user'); } catch(e){}
-      appRoot.hidden = true;
-      loginScreen.hidden = false;
+      try {
+        localStorage.removeItem('ecewise:auth_user');
+      } catch(e){}
+      if(appRoot) appRoot.hidden = true;
+      if(loginScreen) loginScreen.hidden = false;
       setStatus('Signed out. Please sign in to resume your training sessions.');
     });
 
     // Copy notes
-    copyBtn.addEventListener('click', async function(){
+    on(copyBtn, 'click', async function(){
+
       var lines = ['Ticket: ' + (state.ticketId || '')];
       state.messages.forEach(function(m){
         lines.push((m.role === 'agent' ? 'Agent: ' : 'Customer: ') + m.text);
@@ -2021,6 +2291,7 @@
     setInterval(function(){
       checkChatAbandonment();
       updatePendingBanner();
+      checkPendingEmailReplies();
     }, 1000);
   }
 
