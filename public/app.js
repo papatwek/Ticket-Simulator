@@ -839,27 +839,29 @@
   }
 
   async function runModel(messages, opts){
-    opts = opts || {};
-    try {
-      var res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: messages,
-          schema: opts.schema,
-          json: opts.json
-        })
-      });
-      if(!res.ok){
-        var errData = await res.json().catch(function(){ return {}; });
-        throw new Error(errData.error || "Couldn't reach the simulator model — try again.");
-      }
-      var data = await res.json();
-      return data.content;
-    } catch(e){
-      throw new Error(e.message || "Couldn't reach the simulator model — try again.");
-    }
+  opts = opts || {};
+  try {
+    // We completely bypass websim and talk directly to your Vercel backend
+    var response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: messages,
+        schema: opts.schema,
+        sessionId: opts.sessionId // This will no longer be stripped!
+      })
+    });
+    
+    if (!response.ok) throw new Error("Backend failed");
+    
+    // Extract the AI text from the response
+    var data = await response.json();
+    return data.content; 
+    
+  } catch(e){
+    throw new Error("Couldn't reach the simulator model — try again.");
   }
+}
 
   function anyBusy(){
     return sessions.some(function(s){ return s.busy; });
