@@ -222,7 +222,7 @@
   <main class="workspace">
 
     <section class="pane chat-pane" aria-label="Simulated customer chat">
-      <div class="chat-header">
+      <div class="chat-header" id="chatHeaderBar">
         <div class="chat-id">
           <div class="chat-tabs" id="chatTabs" role="tablist"></div>
           <span class="ticket-id" id="ticketId">No active case</span>
@@ -232,16 +232,46 @@
         <div class="chat-meta" id="chatMeta"></div>
       </div>
 
-      <!-- Dedicated Email Simulation Ticket Header & Interval Controls -->
+      <!-- Zendesk 3-Ticket Concurrency Tab Bar (Email Mode Only) -->
+      <div class="zd-tabs-strip" id="zdTabsStrip" hidden>
+        <div class="zd-tabs-group" id="zdTabsGroup" role="tablist" aria-label="Concurrent Email Tickets">
+          <!-- Populated dynamically: 3 concurrent email ticket tabs -->
+        </div>
+        <div class="zd-strip-actions">
+          <button type="button" class="btn btn-sm btn-ghost" id="zdNewEmailBtn" title="Load a new customer email scenario into active slot">+ New Email</button>
+          <button type="button" class="zd-views-btn" id="openZdViewsBtn" title="View all current email tickets by status (Open, Pending, On-hold, Solved)">
+            <span>📋 Views</span>
+            <span class="zd-views-counter" id="zdViewsCounter">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dedicated Zendesk Email Simulation Ticket Header & Interval Controls -->
       <div class="email-ticket-header" id="emailTicketHeader" hidden>
-        <div class="email-subject-row">
-          <span class="email-pill">EMAIL TICKET</span>
-          <span class="email-subject-text" id="emailSubjectText">No active email ticket</span>
+        <div class="zd-header-main-row">
+          <div class="zd-header-title-block">
+            <div class="email-subject-row">
+              <span class="zd-badge zd-badge-new" id="zdStatusBadge">NEW</span>
+              <span class="email-subject-text" id="emailSubjectText">No active email ticket</span>
+            </div>
+            <div class="email-participants-row">
+              <div class="email-participant"><span class="email-meta-label">Requester:</span> <span id="emailCustomerFrom" class="email-meta-val">—</span></div>
+              <div class="email-participant"><span class="email-meta-label">Assignee:</span> <span id="emailAssigneeVal" class="email-meta-val">Trainee Agent</span></div>
+              <div class="email-participant"><span class="email-meta-label">Channel:</span> <span class="email-meta-val">Wyze Support Email</span></div>
+            </div>
+          </div>
+          <div class="zd-status-control">
+            <label class="zd-status-select-label" for="zdStatusSelect">Ticket State:</label>
+            <select id="zdStatusSelect" class="zd-status-select" title="Update linear ticket journey state">
+              <option value="NEW">🟡 New (Just arrived, unreviewed)</option>
+              <option value="OPEN">🔴 Open (Assigned, awaiting resolution)</option>
+              <option value="PENDING">🔵 Pending (Waiting customer response)</option>
+              <option value="ON_HOLD">⚫ On-hold (Waiting internal/vendor)</option>
+              <option value="SOLVED">⚪ Solved (Resolution provided)</option>
+            </select>
+          </div>
         </div>
-        <div class="email-participants-row">
-          <div class="email-participant"><span class="email-meta-label">From:</span> <span id="emailCustomerFrom" class="email-meta-val">—</span></div>
-          <div class="email-participant"><span class="email-meta-label">To:</span> <span class="email-meta-val">Wyze Customer Support &lt;support@wyze.com&gt;</span></div>
-        </div>
+
         <div class="email-interval-row">
           <div class="interval-label-group">
             <span class="interval-icon">⏱️</span>
@@ -254,12 +284,13 @@
           </div>
           <span class="interval-note muted">(Simulated wait between 30m and 2h)</span>
         </div>
+
         <div class="email-pending-banner" id="emailPendingBanner" hidden>
           <div class="email-pending-content">
             <span class="pending-icon">⏳</span>
             <div>
-              <strong>Email dispatched. Customer is currently offline.</strong>
-              <div class="email-pending-sub">Projected customer reply in <span id="emailPendingMins" class="highlight-wait">45 minutes</span> (approx. <span id="emailClockStamp">11:15 AM</span>).</div>
+              <strong>Email dispatched. Ticket in Pending state.</strong>
+              <div class="email-pending-sub">Projected customer response in <span id="emailPendingMins" class="highlight-wait">45 minutes</span> (approx. <span id="emailClockStamp">11:15 AM</span>).</div>
             </div>
           </div>
           <button type="button" class="btn btn-sm btn-primary" id="emailFastForwardBtn">⏩ Advance Time &amp; Receive Reply</button>
@@ -299,9 +330,26 @@
         <span></span><span></span><span></span>
       </div>
 
+      <!-- Zendesk Composer Navigation (Public reply vs Internal note) -->
+      <div class="zd-composer-nav" id="zdComposerNav" hidden>
+        <button type="button" class="zd-nav-tab active" id="zdNavPublicReply">💬 Public Reply</button>
+        <button type="button" class="zd-nav-tab zd-tab-internal" id="zdNavInternalNote">🔒 Internal Note</button>
+      </div>
+
       <form class="chat-input" id="chatForm">
         <textarea id="agentInput" placeholder="Type your reply as the agent… (Enter to send, Shift+Enter for a new line)" disabled rows="2"></textarea>
         <button type="button" class="btn btn-ghost" id="clearChatBtn" title="Archive this chat with an audit entry and require a new customer" disabled>Clear chat</button>
+        
+        <!-- Zendesk Submit Bar for Email Mode -->
+        <div class="zd-submit-bar" id="zdSubmitBar" hidden>
+          <select id="zdSubmitActionSelect" class="zd-submit-select" title="Choose ticket status on submission">
+            <option value="PENDING">Submit as Pending (Waiting customer)</option>
+            <option value="OPEN">Submit as Open (Follow-up needed)</option>
+            <option value="ON_HOLD">Submit as On-hold (Waiting 3rd party)</option>
+            <option value="SOLVED">Submit as Solved (Issue resolved)</option>
+          </select>
+        </div>
+
         <button type="submit" class="btn btn-primary" id="sendBtn" disabled>Send</button>
       </form>
     </section>
@@ -778,6 +826,70 @@
     <div class="admin-reset-body" id="adminResetBody"></div>
     <div class="modal-actions">
       <button type="button" class="btn btn-primary" id="dismissAdminResetModal">Done</button>
+    </div>
+  </div>
+<!-- Modal: Zendesk Email Ticket Views (Open, Pending, On-hold, Solved) -->
+<div class="modal" id="zdViewsModal" hidden>
+  <div class="modal-content zd-views-modal-content" role="dialog" aria-modal="true" aria-labelledby="zdViewsTitle">
+    <div class="zd-views-header">
+      <div>
+        <h2 id="zdViewsTitle" style="margin:0 0 4px;font-size:18px;font-weight:800;">📋 Zendesk Email Ticket Views</h2>
+        <p class="muted" style="margin:0;font-size:12.5px;">Monitor and access all email support tickets along their linear journey.</p>
+      </div>
+      <button type="button" class="modal-close" id="closeZdViewsBtn" aria-label="Close">&times;</button>
+    </div>
+
+    <!-- Filter Bar with Color-Coded Counts -->
+    <div class="zd-views-filter-bar">
+      <button type="button" class="zd-filter-pill active" data-filter="all">
+        <span>All Tickets</span>
+        <span class="zd-filter-count" id="zdFilterAllCount">0</span>
+      </button>
+      <button type="button" class="zd-filter-pill" data-filter="NEW">
+        <span class="zd-badge zd-badge-new">New</span>
+        <span class="zd-filter-count" id="zdFilterNewCount">0</span>
+      </button>
+      <button type="button" class="zd-filter-pill" data-filter="OPEN">
+        <span class="zd-badge zd-badge-open">Open</span>
+        <span class="zd-filter-count" id="zdFilterOpenCount">0</span>
+      </button>
+      <button type="button" class="zd-filter-pill" data-filter="PENDING">
+        <span class="zd-badge zd-badge-pending">Pending</span>
+        <span class="zd-filter-count" id="zdFilterPendingCount">0</span>
+      </button>
+      <button type="button" class="zd-filter-pill" data-filter="ON_HOLD">
+        <span class="zd-badge zd-badge-onhold">On-hold</span>
+        <span class="zd-filter-count" id="zdFilterOnHoldCount">0</span>
+      </button>
+      <button type="button" class="zd-filter-pill" data-filter="SOLVED">
+        <span class="zd-badge zd-badge-solved">Solved</span>
+        <span class="zd-filter-count" id="zdFilterSolvedCount">0</span>
+      </button>
+    </div>
+
+    <!-- Ticket Views Table -->
+    <div class="zd-views-table-wrap">
+      <table class="zd-views-table">
+        <thead>
+          <tr>
+            <th style="width:110px;">Status</th>
+            <th style="width:110px;">Ticket ID</th>
+            <th>Subject / Inquiry</th>
+            <th>Requester</th>
+            <th>Updated</th>
+            <th style="text-align:right;width:150px;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="zdViewsTableBody">
+          <tr>
+            <td colspan="6" class="muted text-center" style="padding:28px;text-align:center;">No tickets in this view yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px;">
+      <button type="button" class="btn btn-ghost" id="dismissZdViewsBtn">Close Views</button>
     </div>
   </div>
 </div>

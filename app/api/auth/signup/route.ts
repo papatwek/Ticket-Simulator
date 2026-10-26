@@ -1,33 +1,51 @@
 import { NextResponse } from 'next/server';
+import { createUser } from '@/lib/db';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase (ensure these environment variables are set in Vercel)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, name, avatar } = body; // Adjust these fields based on your UI
+    const { email, name, password, avatarId, avatar } = body;
 
-    // Insert the new trainee into Supabase
-    const { data, error } = await supabase
-      .from('trainees')
-      .insert([
-        { email: email, name: name, avatar: avatar }
-      ])
-      .select()
-      .single();
+    const chosenAvatar = avatarId || avatar || 'pip';
 
-    if (error) {
-      console.error("Supabase insert error:", error);
-      return NextResponse.json({ error: 'Failed to create account' }, { status: 500 });
+    // 1. Try Supabase insert if configured
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('trainees')
+          .insert([
+            { email: (email || '').trim().toLowerCase(), name: (name || '').trim(), avatar: chosenAvatar }
+          ])
+          .select()
+          .single();
+
+        if (!error && data) {
+          // Also sync to local DB for offline access
+          try { createUser(email, name, password || 'P@ssw0rd2026', chosenAvatar); } catch {}
+          return NextResponse.json({ success: true, user: data });
+        }
+      } catch (err) {
+        console.warn('Supabase insert error in signup, falling back to local DB:', err);
+      }
     }
 
-    return NextResponse.json({ success: true, user: data });
-  } catch (error) {
-    console.error("Signup routing error:", error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // 2. Local DB User Registration
+    const result = createUser(email, name, password, chosenAvatar);
+    return NextResponse.json({ success: true, user: result.user });
+  } catch (error: any) {
+    console.error('Signup routing error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to create trainee account' },
+      { status: 400 }
+    );
   }
 }

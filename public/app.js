@@ -226,8 +226,34 @@
     };
   }
 
+  function newEmailSession(slotNum){
+    return {
+      slot: slotNum || 1,
+      sessionId: null,
+      ticketId: null,
+      createdAt: null,
+      updatedAt: null,
+      persona: null,
+      messages: [],
+      status: 'NEW', // Linear Zendesk states: 'NEW', 'OPEN', 'PENDING', 'ON_HOLD', 'SOLVED'
+      busy: false,
+      feedback: null,
+      ended: false,
+      hasUnread: false,
+      traineeName: '',
+      avatarId: 'pip',
+      lob: '',
+      notes: { fCustomerName:'', fEmail:'', fProduct:'', fRecap:'', fResources:'', fNextSteps:'', fEscalation:'' }
+    };
+  }
+
   var sessions = [newSession()];
   var activeIndex = 0;
+  var emailSessions = [newEmailSession(1), newEmailSession(2), newEmailSession(3)];
+  var activeEmailIndex = 0;
+  var zdComposerMode = 'public'; // 'public' or 'internal'
+  var zdViewsFilter = 'all'; // 'all', 'NEW', 'OPEN', 'PENDING', 'ON_HOLD', 'SOLVED'
+  var archivedEmailTickets = [];
   var state = sessions[0];
   var trainerMode = false;
   var twoChats = false;
@@ -341,6 +367,23 @@
   var emailPendingMins = $('emailPendingMins');
   var emailClockStamp = $('emailClockStamp');
   var emailFastForwardBtn = $('emailFastForwardBtn');
+  var zdTabsStrip = $('zdTabsStrip');
+  var zdTabsGroup = $('zdTabsGroup');
+  var zdNewEmailBtn = $('zdNewEmailBtn');
+  var openZdViewsBtn = $('openZdViewsBtn');
+  var zdViewsCounter = $('zdViewsCounter');
+  var zdStatusBadge = $('zdStatusBadge');
+  var zdStatusSelect = $('zdStatusSelect');
+  var emailAssigneeVal = $('emailAssigneeVal');
+  var zdComposerNav = $('zdComposerNav');
+  var zdNavPublicReply = $('zdNavPublicReply');
+  var zdNavInternalNote = $('zdNavInternalNote');
+  var zdSubmitBar = $('zdSubmitBar');
+  var zdSubmitActionSelect = $('zdSubmitActionSelect');
+  var zdViewsModal = $('zdViewsModal');
+  var closeZdViewsBtn = $('closeZdViewsBtn');
+  var dismissZdViewsBtn = $('dismissZdViewsBtn');
+  var zdViewsTableBody = $('zdViewsTableBody');
   var adminConsoleBtn = $('adminConsoleBtn');
   var adminConsoleModal = $('adminConsoleModal');
   var closeAdminConsole = $('closeAdminConsole');
@@ -466,30 +509,152 @@
     if(themeSelect) themeSelect.value = currentTheme;
   }
 
+  function zdStatusBadgeClass(st){
+    var s = (st || 'NEW').toUpperCase();
+    if(s === 'NEW') return 'zd-badge zd-badge-new';
+    if(s === 'OPEN') return 'zd-badge zd-badge-open';
+    if(s === 'PENDING') return 'zd-badge zd-badge-pending';
+    if(s === 'ON_HOLD') return 'zd-badge zd-badge-onhold';
+    if(s === 'SOLVED') return 'zd-badge zd-badge-solved';
+    return 'zd-badge zd-badge-new';
+  }
+
   function setSimulationMode(mode){
     currentSimMode = mode === 'email' ? 'email' : 'chat';
     if(modeChatBtn) modeChatBtn.classList.toggle('active', currentSimMode === 'chat');
     if(modeEmailBtn) modeEmailBtn.classList.toggle('active', currentSimMode === 'email');
+    
+    // Toggle header bars and email cockpit
+    var chatHeaderBar = $('chatHeaderBar');
+    if(chatHeaderBar) chatHeaderBar.hidden = currentSimMode === 'email';
+    if(zdTabsStrip) zdTabsStrip.hidden = currentSimMode !== 'email';
     if(emailTicketHeader) emailTicketHeader.hidden = currentSimMode !== 'email';
+    if(zdComposerNav) zdComposerNav.hidden = currentSimMode !== 'email';
+    if(zdSubmitBar) zdSubmitBar.hidden = currentSimMode !== 'email';
     if(speedBar) speedBar.hidden = currentSimMode === 'email';
     if(replyTimer) replyTimer.hidden = currentSimMode === 'email' || !timerOn;
-    if(agentInput){
-      agentInput.placeholder = currentSimMode === 'email' ?
-        'Draft your customer email response… (Click Send Email to transmit)' :
-        'Type your reply as the agent… (Enter to send, Shift+Enter for a new line)';
+
+    // Switch active state pointer
+    if(currentSimMode === 'email'){
+      captureNotes();
+      state = emailSessions[activeEmailIndex];
+      // Linear journey rule: if ticket has arrived as NEW and agent is now viewing it, transition to OPEN
+      if(state.persona && state.status === 'NEW'){
+        state.status = 'OPEN';
+        state.messages.push({
+          role: 'audit',
+          text: 'Ticket opened by ' + (loginProfile ? loginProfile.name : 'Agent') + '. Status moved from NEW to OPEN.',
+          ts: Date.now()
+        });
+      }
+      state.hasUnread = false;
+    } else {
+      captureNotes();
+      state = sessions[activeIndex];
     }
-    if(sendBtn){
-      sendBtn.textContent = currentSimMode === 'email' ? 'Send Email' : 'Send';
-    }
-    updateEmailHeaderInfo();
+
+    applyNotes(state);
+    updateComposerPlaceholders();
+    renderTabs();
+    renderZdTabs();
+    renderPersonaBar();
     renderMessages();
+    renderAnswerKey();
+    updateEmailHeaderInfo();
+    updateZdViewsCounter();
+    refreshControls();
+  }
+
+  function updateComposerPlaceholders(){
+    if(!agentInput) return;
+    if(currentSimMode === 'email'){
+      if(zdComposerMode === 'internal'){
+        agentInput.placeholder = 'Add an internal note (only visible to support agents and leadership)...';
+        if(sendBtn) sendBtn.textContent = 'Save Internal Note';
+        if(chatForm) chatForm.classList.add('zd-internal-mode');
+      } else {
+        agentInput.placeholder = 'Draft your customer email response… (Click Submit below to transmit)';
+        var actionLabel = zdSubmitActionSelect ? zdSubmitActionSelect.options[zdSubmitActionSelect.selectedIndex].text.split('(')[0].trim() : 'Submit as Pending';
+        if(sendBtn) sendBtn.textContent = actionLabel;
+        if(chatForm) chatForm.classList.remove('zd-internal-mode');
+      }
+    } else {
+      agentInput.placeholder = 'Type your reply as the agent… (Enter to send, Shift+Enter for a new line)';
+      if(sendBtn) sendBtn.textContent = 'Send';
+      if(chatForm) chatForm.classList.remove('zd-internal-mode');
+    }
+  }
+
+  function activateEmailTicket(idx){
+    if(idx === activeEmailIndex && state === emailSessions[idx]) return;
+    captureNotes();
+    quietSave(state);
+    activeEmailIndex = idx;
+    state = emailSessions[idx];
+    state.hasUnread = false;
+
+    // Linear journey rule:
+    // "New: The email just arrived. No agent has looked at it or commented on it yet.
+    // Open: An agent has been assigned or has opened the ticket, but the customer is still waiting for a resolution."
+    if(state.persona && state.status === 'NEW'){
+      state.status = 'OPEN';
+      state.messages.push({
+        role: 'audit',
+        text: 'Ticket opened by ' + (loginProfile ? loginProfile.name : 'Agent') + '. Status moved from NEW to OPEN.',
+        ts: Date.now()
+      });
+      scheduleSave(state);
+      pushServerSession(state);
+    }
+
+    applyNotes(state);
+    renderZdTabs();
+    renderPersonaBar();
+    renderMessages();
+    renderFeedback();
+    renderAnswerKey();
+    updateEmailHeaderInfo();
+    updateZdViewsCounter();
+    updateComposerPlaceholders();
+    refreshControls();
+  }
+
+  function renderZdTabs(){
+    if(!zdTabsGroup) return;
+    zdTabsGroup.innerHTML = '';
+    emailSessions.forEach(function(es, i){
+      var tabBtn = document.createElement('button');
+      tabBtn.type = 'button';
+      tabBtn.className = 'zd-ticket-tab' + (i === activeEmailIndex ? ' active' : '');
+      tabBtn.setAttribute('role', 'tab');
+      tabBtn.setAttribute('aria-selected', i === activeEmailIndex ? 'true' : 'false');
+      
+      var badgeClass = zdStatusBadgeClass(es.status);
+      var badgeLabel = es.status === 'ON_HOLD' ? 'On-hold' : (es.status.charAt(0) + es.status.slice(1).toLowerCase());
+      var ticketLabel = es.ticketId ? es.ticketId : ('Ticket ' + (i + 1));
+      var customerSnippet = es.persona ? (' · ' + es.persona.name) : ' (idle)';
+
+      var unreadHtml = es.hasUnread ? '<span class="zd-tab-dot-unread" title="New customer reply"></span>' : '';
+
+      tabBtn.innerHTML = unreadHtml +
+        '<span>Ticket ' + (i + 1) + ': <strong>' + escapeHtml(ticketLabel) + '</strong>' + escapeHtml(customerSnippet) + '</span>' +
+        '<span class="' + badgeClass + '">' + escapeHtml(badgeLabel) + '</span>';
+
+      tabBtn.addEventListener('click', function(){ activateEmailTicket(i); });
+      zdTabsGroup.appendChild(tabBtn);
+    });
   }
 
   function updateEmailHeaderInfo(){
     if(currentSimMode !== 'email') return;
     if(!state || !state.persona){
-      if(emailSubjectText) emailSubjectText.textContent = 'No active email ticket';
+      if(emailSubjectText) emailSubjectText.textContent = 'No active email ticket in this slot';
       if(emailCustomerFrom) emailCustomerFrom.textContent = 'Customer <pending>';
+      if(zdStatusBadge){
+        zdStatusBadge.className = 'zd-badge zd-badge-new';
+        zdStatusBadge.textContent = 'NEW';
+      }
+      if(zdStatusSelect) zdStatusSelect.value = 'NEW';
       return;
     }
     if(emailSubjectText){
@@ -498,6 +663,124 @@
     if(emailCustomerFrom){
       emailCustomerFrom.textContent = state.persona.name + ' <' + state.persona.email + '>';
     }
+    if(emailAssigneeVal){
+      emailAssigneeVal.textContent = loginProfile ? (loginProfile.name + ' (You)') : 'Trainee Agent';
+    }
+    if(zdStatusBadge){
+      zdStatusBadge.className = zdStatusBadgeClass(state.status);
+      zdStatusBadge.textContent = state.status === 'ON_HOLD' ? 'ON-HOLD' : state.status;
+    }
+    if(zdStatusSelect){
+      zdStatusSelect.value = state.status;
+    }
+  }
+
+  function getAllEmailTickets(){
+    var list = [];
+    var seenIds = Object.create(null);
+    emailSessions.forEach(function(es){
+      if(es && es.ticketId){
+        seenIds[es.ticketId] = true;
+        list.push(es);
+      }
+    });
+    archivedEmailTickets.forEach(function(arch){
+      if(arch && arch.ticketId && !seenIds[arch.ticketId]){
+        seenIds[arch.ticketId] = true;
+        list.push(arch);
+      }
+    });
+    return list;
+  }
+
+  function updateZdViewsCounter(){
+    var all = getAllEmailTickets();
+    if(zdViewsCounter) zdViewsCounter.textContent = all.length;
+    var counts = { NEW: 0, OPEN: 0, PENDING: 0, ON_HOLD: 0, SOLVED: 0 };
+    all.forEach(function(t){
+      if(counts[t.status] != null) counts[t.status]++;
+    });
+    if($('zdFilterAllCount')) $('zdFilterAllCount').textContent = all.length;
+    if($('zdFilterNewCount')) $('zdFilterNewCount').textContent = counts.NEW;
+    if($('zdFilterOpenCount')) $('zdFilterOpenCount').textContent = counts.OPEN;
+    if($('zdFilterPendingCount')) $('zdFilterPendingCount').textContent = counts.PENDING;
+    if($('zdFilterOnHoldCount')) $('zdFilterOnHoldCount').textContent = counts.ON_HOLD;
+    if($('zdFilterSolvedCount')) $('zdFilterSolvedCount').textContent = counts.SOLVED;
+  }
+
+  function openZdViews(){
+    if(!zdViewsModal) return;
+    zdViewsModal.hidden = false;
+    renderZdViewsTable();
+  }
+
+  function closeZdViews(){
+    if(zdViewsModal) zdViewsModal.hidden = true;
+  }
+
+  function renderZdViewsTable(){
+    if(!zdViewsTableBody) return;
+    updateZdViewsCounter();
+    var all = getAllEmailTickets();
+    var filtered = all.filter(function(t){
+      if(zdViewsFilter === 'all') return true;
+      return t.status === zdViewsFilter;
+    });
+
+    if(!filtered.length){
+      zdViewsTableBody.innerHTML = '<tr><td colspan="6" class="muted text-center" style="padding:28px;text-align:center;">No tickets in this view (' + escapeHtml(zdViewsFilter) + ').</td></tr>';
+      return;
+    }
+
+    zdViewsTableBody.innerHTML = filtered.map(function(t){
+      var badgeClass = zdStatusBadgeClass(t.status);
+      var badgeLabel = t.status === 'ON_HOLD' ? 'On-hold' : (t.status.charAt(0) + t.status.slice(1).toLowerCase());
+      var subject = t.persona ? ('Wyze ' + (t.persona.product || 'Device') + ' - ' + (t.persona.issueCategory || 'Inquiry')) : 'Customer Inquiry';
+      var requester = t.persona ? (t.persona.name + ' (' + t.persona.email + ')') : '—';
+      var updatedStr = t.updatedAt || t.createdAt ? fmtTime(t.updatedAt || t.createdAt) : 'Just now';
+
+      // Check if ticket is currently loaded in one of the 3 active slots
+      var loadedSlotIndex = emailSessions.findIndex(function(es){ return es.ticketId === t.ticketId; });
+
+      var actionHtml = '';
+      if(loadedSlotIndex !== -1){
+        actionHtml = '<button type="button" class="btn btn-xs btn-primary btn-open-slot" data-slot="' + loadedSlotIndex + '">Jump to Tab ' + (loadedSlotIndex + 1) + '</button>';
+      } else {
+        actionHtml = '<button type="button" class="btn btn-xs btn-outline btn-load-into-active" data-id="' + escapeHtml(t.ticketId || '') + '">Load into Tab ' + (activeEmailIndex + 1) + '</button>';
+      }
+
+      return '<tr>' +
+        '<td><span class="' + badgeClass + '">' + escapeHtml(badgeLabel) + '</span></td>' +
+        '<td><strong class="mono">' + escapeHtml(t.ticketId || 'WZ-NEW') + '</strong></td>' +
+        '<td><strong>' + escapeHtml(subject) + '</strong></td>' +
+        '<td>' + escapeHtml(requester) + '</td>' +
+        '<td><span class="muted text-xs">' + updatedStr + '</span></td>' +
+        '<td style="text-align:right;">' + actionHtml + '</td>' +
+      '</tr>';
+    }).join('');
+
+    // Attach click events
+    zdViewsTableBody.querySelectorAll('.btn-open-slot').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var slot = parseInt(btn.getAttribute('data-slot'), 10);
+        closeZdViews();
+        activateEmailTicket(slot);
+      });
+    });
+
+    zdViewsTableBody.querySelectorAll('.btn-load-into-active').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var tid = btn.getAttribute('data-id');
+        var targetTicket = archivedEmailTickets.find(function(item){ return item.ticketId === tid; });
+        if(targetTicket){
+          captureNotes();
+          emailSessions[activeEmailIndex] = targetTicket;
+          state = emailSessions[activeEmailIndex];
+          closeZdViews();
+          activateEmailTicket(activeEmailIndex);
+        }
+      });
+    });
   }
 
   function genId(prefix){
@@ -622,6 +905,22 @@
         auditRow.className = 'chat-audit';
         auditRow.textContent = m.text + ' · ' + fmtTime(m.ts);
         frag.appendChild(auditRow);
+        return;
+      }
+
+      if(m.role === 'internal_note'){
+        var noteItem = document.createElement('div');
+        noteItem.className = 'email-thread-item bubble-internal-note';
+        noteItem.innerHTML = '<div class="email-thread-head" style="background:rgba(234,179,8,0.18);border-bottom:1px solid rgba(234,179,8,0.3);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">' +
+          '<div class="email-thread-sender" style="display:flex;align-items:center;gap:8px;">' +
+            '<span style="font-size:16px;">🔒</span>' +
+            '<div><div class="email-sender-name" style="color:#78350F;font-weight:700;">' + escapeHtml(loginProfile ? loginProfile.name : 'Agent') + ' <span style="font-size:11px;font-weight:700;background:#FDE047;color:#854D0E;padding:2px 6px;border-radius:4px;margin-left:6px;">INTERNAL NOTE</span></div>' +
+            '<div class="email-sender-role" style="color:#92400E;font-size:11.5px;">Private • Visible to ECE agents & leadership only</div></div>' +
+          '</div>' +
+          '<div class="email-thread-time" style="font-size:12px;color:#92400E;">' + fmtTime(m.ts) + '</div>' +
+        '</div>' +
+        '<div class="email-thread-body" style="padding:14px 16px;font-style:italic;line-height:1.55;">' + escapeHtml(m.text) + '</div>';
+        frag.appendChild(noteItem);
         return;
       }
 
@@ -1891,7 +2190,8 @@
       s.sessionId = genId('sess');
       s.ticketId = genTicketId();
       s.createdAt = Date.now();
-      s.status = 'OPEN';
+      s.updatedAt = s.createdAt;
+      s.status = currentSimMode === 'email' ? 'NEW' : 'OPEN';
       s.messages = [{ role: 'customer', text: persona.openingMessage, ts: Date.now(), gapSec: null }];
       s.feedback = null;
       s.avgWpm = null;
@@ -1899,6 +2199,12 @@
       Object.keys(s.notes).forEach(function(k){ s.notes[k] = ''; });
       s.traineeName = loginProfile ? loginProfile.name : '';
       s.lob = '';
+
+      if(currentSimMode === 'email'){
+        var already = archivedEmailTickets.some(function(item){ return item.ticketId === s.ticketId; });
+        if(!already) archivedEmailTickets.unshift(s);
+      }
+
       if(s === state){
         if(emailPendingBanner) emailPendingBanner.hidden = true;
         clearCaseFields();
@@ -1906,6 +2212,8 @@
         renderPersonaBar();
         renderMessages();
         renderTabs();
+        renderZdTabs();
+        updateZdViewsCounter();
         renderAnswerKey();
         renderFeedback();
         updateCaseLabel();
@@ -2013,13 +2321,48 @@
     var prevTs = lastCustomerTs(s);
     var agentTs = Date.now();
     var gapSec = prevTs != null ? Math.max(0, Math.round((agentTs - prevTs) / 1000)) : null;
+
+    // 1. Zendesk Internal Note submission
+    if(isEmail && zdComposerMode === 'internal'){
+      var chosenStatus = zdSubmitActionSelect ? zdSubmitActionSelect.value : s.status;
+      s.status = chosenStatus;
+      s.updatedAt = agentTs;
+      s.messages.push({ role: 'internal_note', text: text, ts: agentTs });
+      if(s === state){
+        renderMessages();
+        renderPersonaBar();
+        renderZdTabs();
+        updateZdViewsCounter();
+        if(agentInput) agentInput.value = '';
+      }
+      scheduleSave(s);
+      pushServerSession(s);
+      return;
+    }
+
+    // 2. Public Reply submission
     var holdSeconds = promisedHoldSeconds(text);
     s.holdDeadline = holdSeconds == null ? null : agentTs + holdSeconds * 1000;
     s.holdMinutes = holdSeconds == null ? null : holdSeconds / 60;
     s.gentleCheckInSent = false;
     s.abandoned = false;
+
+    if(isEmail){
+      var chosenStatus = zdSubmitActionSelect ? zdSubmitActionSelect.value : 'PENDING';
+      s.status = chosenStatus;
+      s.updatedAt = agentTs;
+      if(s.status === 'SOLVED') s.ended = true;
+    }
+
     s.messages.push({ role: 'agent', text: text, ts: agentTs, wpm: isEmail ? null : (wpm || null), gapSec: gapSec });
-    if(s === state){ renderMessages(); if(!isEmail) updateSpeedUI(); }
+    if(s === state){
+      renderMessages();
+      renderPersonaBar();
+      renderZdTabs();
+      updateZdViewsCounter();
+      if(!isEmail) updateSpeedUI();
+      if(agentInput) agentInput.value = '';
+    }
     scheduleSave(s);
     pushServerSession(s);
     setBusy(true, s);
@@ -2069,7 +2412,10 @@
         throw new Error("The customer didn't respond — try sending again.");
       }
       parsed.message = repairInfoRefusal(parsed.message, text, s.persona);
-      if(parsed && parsed.status) s.status = parsed.status;
+
+      if(!isEmail && parsed && parsed.status){
+        s.status = parsed.status;
+      }
 
       if(isEmail){
         if(emailPendingBanner) emailPendingBanner.hidden = true;
@@ -2080,7 +2426,27 @@
           text: '⏩ Time advanced +' + waitMins + 'm · Customer email reply received',
           ts: emailCustTs - 1000
         });
+
+        // Linear Zendesk Reopen rule:
+        // "In Zendesk, customers can reply to a Solved ticket to reopen it back to 'Open'."
+        if(s.status === 'SOLVED'){
+          s.status = 'OPEN';
+          s.ended = false;
+          s.messages.push({
+            role: 'audit',
+            text: '🔄 Customer replied to solved ticket — Ticket reopened to OPEN.',
+            ts: emailCustTs - 500
+          });
+        } else if(s.status === 'PENDING' || s.status === 'ON_HOLD'){
+          s.status = 'OPEN';
+        }
+
+        if(s !== state){
+          s.hasUnread = true;
+        }
+
         s.messages.push({ role: 'customer', text: parsed.message, ts: emailCustTs, gapSec: emailGap });
+        s.updatedAt = emailCustTs;
       } else {
         var custTs = Date.now();
         var agentPrevTs = null;
@@ -2090,6 +2456,8 @@
       }
 
       if(s === state){ renderMessages(); renderPersonaBar(); }
+      renderZdTabs();
+      updateZdViewsCounter();
       scheduleSave(s);
       pushServerSession(s);
     } catch(e){
@@ -3420,9 +3788,78 @@
     });
   }
 
-  /* Simulation Mode Switcher Listeners */
+  /* Simulation Mode & Zendesk Email Listeners */
   if(modeChatBtn) modeChatBtn.addEventListener('click', function(){ setSimulationMode('chat'); });
   if(modeEmailBtn) modeEmailBtn.addEventListener('click', function(){ setSimulationMode('email'); });
+  if(zdNewEmailBtn) zdNewEmailBtn.addEventListener('click', function(){ startScenario(); });
+
+  if(openZdViewsBtn) openZdViewsBtn.addEventListener('click', openZdViews);
+  if(closeZdViewsBtn) closeZdViewsBtn.addEventListener('click', closeZdViews);
+  if(dismissZdViewsBtn) dismissZdViewsBtn.addEventListener('click', closeZdViews);
+  if(zdViewsModal){
+    zdViewsModal.addEventListener('click', function(ev){
+      if(ev.target === zdViewsModal) closeZdViews();
+    });
+  }
+
+  // Views Filter Pills
+  document.querySelectorAll('.zd-filter-pill').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.zd-filter-pill').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      zdViewsFilter = btn.getAttribute('data-filter') || 'all';
+      renderZdViewsTable();
+    });
+  });
+
+  // Zendesk Status Select Dropdown Listener
+  if(zdStatusSelect){
+    zdStatusSelect.addEventListener('change', function(){
+      var newStatus = zdStatusSelect.value;
+      if(state && state.persona){
+        var oldStatus = state.status;
+        state.status = newStatus;
+        state.updatedAt = Date.now();
+        if(newStatus === 'SOLVED') state.ended = true;
+        else state.ended = false;
+        state.messages.push({
+          role: 'audit',
+          text: 'Ticket state changed from ' + oldStatus + ' to ' + newStatus + ' by ' + (loginProfile ? loginProfile.name : 'Agent') + '.',
+          ts: Date.now()
+        });
+        renderPersonaBar();
+        renderZdTabs();
+        renderMessages();
+        updateZdViewsCounter();
+        scheduleSave(state);
+        pushServerSession(state);
+      }
+    });
+  }
+
+  // Composer Navigation: Public Reply vs Internal Note
+  if(zdNavPublicReply){
+    zdNavPublicReply.addEventListener('click', function(){
+      zdComposerMode = 'public';
+      zdNavPublicReply.classList.add('active');
+      if(zdNavInternalNote) zdNavInternalNote.classList.remove('active');
+      updateComposerPlaceholders();
+    });
+  }
+  if(zdNavInternalNote){
+    zdNavInternalNote.addEventListener('click', function(){
+      zdComposerMode = 'internal';
+      zdNavInternalNote.classList.add('active');
+      if(zdNavPublicReply) zdNavPublicReply.classList.remove('active');
+      updateComposerPlaceholders();
+    });
+  }
+  if(zdSubmitActionSelect){
+    zdSubmitActionSelect.addEventListener('change', function(){
+      updateComposerPlaceholders();
+    });
+  }
+
   if(emailFastForwardBtn){
     emailFastForwardBtn.addEventListener('click', function(){
       if(emailPendingBanner) emailPendingBanner.hidden = true;

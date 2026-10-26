@@ -2620,16 +2620,190 @@ select.tb-select:focus {
 }
 
 /* ==========================================================================
-   Email Ticketing Simulation Styles
+   Zendesk-Structured Email Ticketing Simulation
    ========================================================================== */
+
+/* Color Coding for Zendesk Ticket States:
+   New: Yellow | Open: Red | Pending: Blue | On-hold: Black | Solved: Gray */
+.zd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.zd-badge-new {
+  background: #EAB308 !important;
+  color: #1F2937 !important;
+  border-color: #CA8A04 !important;
+  box-shadow: 0 1px 3px rgba(234, 179, 8, 0.25);
+}
+
+.zd-badge-open {
+  background: #EF4444 !important;
+  color: #FFFFFF !important;
+  border-color: #DC2626 !important;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.25);
+}
+
+.zd-badge-pending {
+  background: #3B82F6 !important;
+  color: #FFFFFF !important;
+  border-color: #2563EB !important;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.25);
+}
+
+.zd-badge-onhold {
+  background: #111827 !important;
+  color: #FFFFFF !important;
+  border-color: #374151 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.zd-badge-solved {
+  background: #6B7280 !important;
+  color: #FFFFFF !important;
+  border-color: #4B5563 !important;
+  box-shadow: 0 1px 3px rgba(107, 114, 128, 0.2);
+}
+
+/* Zendesk 3-Ticket Concurrency Tab Bar */
+.zd-tabs-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--ink);
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.zd-tabs-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.zd-ticket-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 8px 8px 0 0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: none;
+  color: #D1D5DB;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.zd-ticket-tab:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+
+.zd-ticket-tab.active {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--line);
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.zd-ticket-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--panel);
+}
+
+.zd-tab-dot-unread {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #EF4444;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.zd-strip-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zd-views-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zd-views-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.zd-views-counter {
+  background: var(--accent);
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* Zendesk Ticket Header */
 .email-ticket-header {
   background: var(--panel-subtle);
   border-bottom: 1px solid var(--line);
-  padding: 12px 18px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   animation: fadeIn 0.2s ease;
+}
+
+.zd-header-main-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.zd-header-title-block {
+  flex: 1;
+  min-width: 280px;
 }
 
 .email-subject-row {
@@ -2637,23 +2811,39 @@ select.tb-select:focus {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-}
-
-.email-pill {
-  display: inline-block;
-  background: #0284c7;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
-  border-radius: 4px;
+  margin-bottom: 4px;
 }
 
 .email-subject-text {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.zd-status-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zd-status-select-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.zd-status-select {
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  background: var(--panel);
+  color: var(--text);
+  transition: all 0.2s ease;
 }
 
 .email-participants-row {
@@ -2760,40 +2950,229 @@ select.tb-select:focus {
   font-weight: 700;
 }
 
-/* Email Thread Message Items */
-.email-thread-item {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-m);
-  margin-bottom: 14px;
-  overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+/* Zendesk Composer Header: Public Reply vs Internal Note */
+.zd-composer-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  background: var(--panel-subtle);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
-.email-thread-header {
+.zd-nav-tab {
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zd-nav-tab:hover {
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.zd-nav-tab.active {
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.zd-nav-tab.zd-tab-internal.active {
+  background: #FEF08A;
+  color: #713F12;
+}
+
+[data-theme="dark"] .zd-nav-tab.zd-tab-internal.active {
+  background: #713F12;
+  color: #FEF08A;
+}
+
+/* Internal Note mode styles on textarea */
+.zd-internal-mode #agentInput {
+  background: #FFFBEB !important;
+  border-color: #FCD34D !important;
+  color: #78350F !important;
+}
+
+[data-theme="dark"] .zd-internal-mode #agentInput {
+  background: #272210 !important;
+  border-color: #78350F !important;
+  color: #FDE68A !important;
+}
+
+/* Zendesk Submit Bar */
+.zd-submit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.zd-submit-select {
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Internal Note bubble in transcript */
+.bubble-internal-note {
+  background: #FEF9C3 !important;
+  border: 1px solid #FDE047 !important;
+  color: #713F12 !important;
+  box-shadow: 0 1px 4px rgba(234, 179, 8, 0.15) !important;
+}
+
+[data-theme="dark"] .bubble-internal-note {
+  background: #282415 !important;
+  border-color: #854D0E !important;
+  color: #FEF08A !important;
+}
+
+.internal-note-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #854D0E;
+  margin-bottom: 4px;
+}
+
+/* Zendesk Views Modal */
+.zd-views-modal-content {
+  max-width: 960px;
+  width: 94vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.zd-views-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  background: var(--panel-subtle);
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--line);
-  font-size: 12px;
+  margin-bottom: 16px;
 }
 
-.email-sender-info {
+.zd-views-filter-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
-  color: var(--text);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
-.email-thread-body {
-  padding: 16px;
-  font-size: 13.5px;
-  line-height: 1.6;
+.zd-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--panel-subtle);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zd-filter-pill:hover {
+  background: var(--panel);
   color: var(--text);
-  white-space: pre-wrap;
+  border-color: var(--accent);
+}
+
+.zd-filter-pill.active {
+  background: var(--ink);
+  color: #FFFFFF;
+  border-color: var(--ink);
+}
+
+.zd-filter-count {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+}
+
+.zd-views-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--panel);
+}
+
+.zd-views-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.zd-views-table th {
+  background: var(--panel-subtle);
+  padding: 10px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.zd-views-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.zd-views-table tr:hover td {
+  background: var(--panel-subtle);
+}
+
+.zd-views-table tr:last-child td {
+  border-bottom: none;
+}
+
+.zd-reopen-banner {
+  background: #FEF3C7;
+  border: 1px solid #F59E0B;
+  color: #92400E;
+  padding: 8px 14px;
+  border-radius: var(--radius-s);
+  font-size: 12.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 /* ==========================================================================

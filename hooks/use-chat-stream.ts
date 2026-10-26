@@ -3,23 +3,33 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client (Use environment variables in production)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
 
 export function useChatStream(sessionId: string) {
   const [messages, setMessages] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!sessionId) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
     // 1. Fetch initial chat history from the database
     const fetchHistory = async () => {
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
-      if (data) setMessages(data);
+      try {
+        const { data } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('session_id', sessionId)
+          .order('created_at', { ascending: true });
+        if (data) setMessages(data);
+      } catch (e) {
+        console.warn('Failed to fetch chat history from Supabase:', e);
+      }
     };
     fetchHistory();
 
@@ -32,21 +42,19 @@ export function useChatStream(sessionId: string) {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `session_id=eq.${sessionId}`, // Only listen to this specific chat
+          filter: `session_id=eq.${sessionId}`,
         },
         (payload) => {
-          console.log('New message payload received:', payload.new);
-          // Append the new AI or User message to the UI instantly
           setMessages((prev) => [...prev, payload.new]);
         }
       )
       .subscribe();
 
-    // Cleanup subscription when the user leaves the chat page
+    // Cleanup subscription when session changes
     return () => {
       supabase.removeChannel(channel);
     };
   }, [sessionId]);
 
-  return messages;
+  return { messages };
 }
