@@ -34,8 +34,6 @@
   var SIMULATOR_PASSCODE = 'wyzewizard2026';
   var loginProfile = null;
   var workspaceInitialized = false;
-  var currentTheme = 'wyze';
-
   var AVATARS = [
     {
       id: 'pip',
@@ -133,7 +131,7 @@
       for(var i = 0; i < localStorage.length; i++){
         var key = localStorage.key(i) || '';
         if(key.indexOf('ecewise:') !== 0 ||
-           (!key.includes(':session-index') && !key.includes(':live-sessions') && !key.includes(':session:'))) continue;
+            (!key.includes(':session-index') && !key.includes(':live-sessions') && !key.includes(':session:'))) continue;
         try { collect(JSON.parse(localStorage.getItem(key) || 'null')); } catch(e){}
       }
       if(names.length !== stored.length){
@@ -211,8 +209,6 @@
       busy: false,
       holdDeadline: null,
       holdMinutes: null,
-      gentleCheckInSent: false,
-      abandoned: false,
       feedback: null,
       typeStart: null,
       ended: false,
@@ -226,34 +222,8 @@
     };
   }
 
-  function newEmailSession(slotNum){
-    return {
-      slot: slotNum || 1,
-      sessionId: null,
-      ticketId: null,
-      createdAt: null,
-      updatedAt: null,
-      persona: null,
-      messages: [],
-      status: 'NEW', // Linear Zendesk states: 'NEW', 'OPEN', 'PENDING', 'ON_HOLD', 'SOLVED'
-      busy: false,
-      feedback: null,
-      ended: false,
-      hasUnread: false,
-      traineeName: '',
-      avatarId: 'pip',
-      lob: '',
-      notes: { fCustomerName:'', fEmail:'', fProduct:'', fRecap:'', fResources:'', fNextSteps:'', fEscalation:'' }
-    };
-  }
-
   var sessions = [newSession()];
   var activeIndex = 0;
-  var emailSessions = [newEmailSession(1), newEmailSession(2), newEmailSession(3)];
-  var activeEmailIndex = 0;
-  var zdComposerMode = 'public'; // 'public' or 'internal'
-  var zdViewsFilter = 'all'; // 'all', 'NEW', 'OPEN', 'PENDING', 'ON_HOLD', 'SOLVED'
-  var archivedEmailTickets = [];
   var state = sessions[0];
   var trainerMode = false;
   var twoChats = false;
@@ -261,12 +231,6 @@
   var caseOpen = false;
   var trainerAccess = false;
   var TRAINER_PASSCODE = 'wyzeleadership';
-  var currentSimMode = 'chat'; // 'chat' or 'email'
-  var emailPendingTimeout = null;
-  var emailPendingArrival = null;
-  var adminTraineesData = [];
-  var currentAdminView = 'table';
-  var analyticsTargetUser = null;
 
   function $(id){ return document.getElementById(id); }
   function avatarMarkup(id, extraClass){
@@ -276,29 +240,16 @@
   }
   function renderAvatarChoices(){
     var choices = $('avatarChoices');
-    if(!choices) return;
     choices.innerHTML = AVATARS.map(function(avatar, index){
       return '<label class="avatar-choice">' +
-        '<input type="radio" name="signUpAvatar" value="' + avatar.id + '"' + (index === 0 ? ' checked' : '') + ' required>' +
+        '<input type="radio" name="loginAvatar" value="' + avatar.id + '"' + (index === 0 ? ' checked' : '') + ' required>' +
         '<span class="avatar-choice-card">' + avatarMarkup(avatar.id, 'avatar-choice-art') +
         '<span class="avatar-choice-name">' + escapeHtml(avatar.name) + '</span></span></label>';
     }).join('');
   }
-
-  /* DOM elements */
   var loginScreen = $('loginScreen');
+  var loginForm = $('loginForm');
   var loginStatus = $('loginStatus');
-  var authTabs = $('authTabs');
-  var tabSignIn = $('tabSignIn');
-  var tabSignUp = $('tabSignUp');
-  var signInView = $('signInView');
-  var signUpView = $('signUpView');
-  var forgotPasswordView = $('forgotPasswordView');
-  var signInForm = $('signInForm');
-  var signUpForm = $('signUpForm');
-  var forgotPasswordForm = $('forgotPasswordForm');
-  var signOutBtn = $('signOutBtn');
-
   var appRoot = $('appRoot');
   var agentIdentity = $('agentIdentity');
   var welcomeModal = $('welcomeModal');
@@ -320,7 +271,6 @@
   var trainerModeToggle = $('trainerModeToggle');
   var twoChatsToggle = $('twoChatsToggle');
   var timerToggle = $('timerToggle');
-  var themeSelect = $('themeSelect');
   var answerKey = $('answerKey');
   var answerKeyContent = $('answerKeyContent');
   var feedbackBox = $('feedbackBox');
@@ -356,60 +306,6 @@
   var coachingBox = $('coachingBox');
   var coachingContent = $('coachingContent');
 
-  var modeChatBtn = $('modeChatBtn');
-  var modeEmailBtn = $('modeEmailBtn');
-  var emailTicketHeader = $('emailTicketHeader');
-  var emailSubjectText = $('emailSubjectText');
-  var emailCustomerFrom = $('emailCustomerFrom');
-  var emailMinMins = $('emailMinMins');
-  var emailMaxMins = $('emailMaxMins');
-  var emailPendingBanner = $('emailPendingBanner');
-  var emailPendingMins = $('emailPendingMins');
-  var emailClockStamp = $('emailClockStamp');
-  var emailFastForwardBtn = $('emailFastForwardBtn');
-  var zdTabsStrip = $('zdTabsStrip');
-  var zdTabsGroup = $('zdTabsGroup');
-  var zdNewEmailBtn = $('zdNewEmailBtn');
-  var openZdViewsBtn = $('openZdViewsBtn');
-  var zdViewsCounter = $('zdViewsCounter');
-  var zdStatusBadge = $('zdStatusBadge');
-  var zdStatusSelect = $('zdStatusSelect');
-  var emailAssigneeVal = $('emailAssigneeVal');
-  var zdComposerNav = $('zdComposerNav');
-  var zdNavPublicReply = $('zdNavPublicReply');
-  var zdNavInternalNote = $('zdNavInternalNote');
-  var zdSubmitBar = $('zdSubmitBar');
-  var zdSubmitActionSelect = $('zdSubmitActionSelect');
-  var zdViewsModal = $('zdViewsModal');
-  var closeZdViewsBtn = $('closeZdViewsBtn');
-  var dismissZdViewsBtn = $('dismissZdViewsBtn');
-  var zdViewsTableBody = $('zdViewsTableBody');
-  var adminConsoleBtn = $('adminConsoleBtn');
-  var adminConsoleModal = $('adminConsoleModal');
-  var closeAdminConsole = $('closeAdminConsole');
-  var adminPasscodeGate = $('adminPasscodeGate');
-  var adminGatePasscode = $('adminGatePasscode');
-  var adminGateUnlockBtn = $('adminGateUnlockBtn');
-  var adminGateStatus = $('adminGateStatus');
-  var adminDashboardView = $('adminDashboardView');
-  var adminSearchInput = $('adminSearchInput');
-  var adminStatusFilter = $('adminStatusFilter');
-  var adminViewTableBtn = $('adminViewTableBtn');
-  var adminViewCardsBtn = $('adminViewCardsBtn');
-  var adminInviteBtn = $('adminInviteBtn');
-  var adminTraineesTableBody = $('adminTraineesTableBody');
-  var adminCardsView = $('adminCardsView');
-  var adminInviteModal = $('adminInviteModal');
-  var closeAdminInvite = $('closeAdminInvite');
-  var cancelAdminInvite = $('cancelAdminInvite');
-  var adminInviteForm = $('adminInviteForm');
-  var inviteSuccessCard = $('inviteSuccessCard');
-  var inviteSuccessBody = $('inviteSuccessBody');
-  var adminResetModal = $('adminResetModal');
-  var closeAdminResetModal = $('closeAdminResetModal');
-  var dismissAdminResetModal = $('dismissAdminResetModal');
-  var adminResetBody = $('adminResetBody');
-
   var caseFields = {
     fCustomerName: $('fCustomerName'),
     fEmail: $('fEmail'),
@@ -429,359 +325,6 @@
   var TIMER_WARN = 60;    // seconds in the yellow zone
   var TIMER_DANGER = 120; // seconds before it turns red
   var HISTORY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
-  var ABANDON_TIMEOUT_MS = 7 * 60 * 1000; // 7 minutes of total silence triggers customer abandonment
-
-  var ABANDON_OUTBURSTS = [
-    "Seven minutes of complete silence?! No one is answering, no updates, nothing. Wyze customer support has completely wasted my time today. I am closing this chat, disconnecting my devices, and taking my business elsewhere!",
-    "I have been waiting here for over 7 minutes with zero response or acknowledgment. This is absolutely terrible support. I cannot waste any more time staring at a blank screen. I'm leaving this chat and escalating this complaint directly to corporate customer relations.",
-    "Hello?! 7 whole minutes with no reply at all. It's obvious nobody cares to assist or even check in. What an unacceptable support experience. I am leaving this chat right now.",
-    "Still nothing after 7 minutes? This is ridiculous. I asked for help with my Wyze setup and was completely ignored. I am closing this session and disputing my Cam Plus subscription with my bank.",
-    "I've been sitting here for 7 minutes waiting for any kind of update. Clearly no agent is actively working on this. I'm ending this chat and posting about this awful support experience on the Wyze community forum."
-  ];
-
-  function setLoginStatus(msg, isError, isSuccess){
-    if(!loginStatus) return;
-    loginStatus.textContent = msg;
-    loginStatus.classList.remove('error', 'success');
-    if(isError) loginStatus.classList.add('error');
-    if(isSuccess) loginStatus.classList.add('success');
-    var banner = $('loginStatusBanner');
-    if(banner){
-      banner.classList.remove('error', 'success');
-      if(isError) banner.classList.add('error');
-      if(isSuccess) banner.classList.add('success');
-    }
-    var dot = $('loginStatusDot');
-    if(dot){
-      dot.className = 'status-dot ' + (isError ? 'dot-error' : (isSuccess ? 'dot-success' : 'dot-normal'));
-    }
-  }
-
-  function setAuthTab(mode){
-    var signInRow = $('signInSwitchRow');
-    var signUpRow = $('signUpSwitchRow');
-    var forgotRow = $('forgotSwitchRow');
-    if(mode === 'signIn'){
-      if(tabSignIn) { tabSignIn.classList.add('active'); tabSignIn.setAttribute('aria-selected', 'true'); }
-      if(tabSignUp) { tabSignUp.classList.remove('active'); tabSignUp.setAttribute('aria-selected', 'false'); }
-      if(signInView) signInView.hidden = false;
-      if(signUpView) signUpView.hidden = true;
-      if(forgotPasswordView) forgotPasswordView.hidden = true;
-      if(authTabs) authTabs.hidden = false;
-      if(signInRow) signInRow.hidden = false;
-      if(signUpRow) signUpRow.hidden = true;
-      if(forgotRow) forgotRow.hidden = true;
-      setLoginStatus('Sign in with your registered ECE credentials.', false);
-      if($('signInEmail')) $('signInEmail').focus();
-    } else if(mode === 'signUp'){
-      if(tabSignUp) { tabSignUp.classList.add('active'); tabSignUp.setAttribute('aria-selected', 'true'); }
-      if(tabSignIn) { tabSignIn.classList.remove('active'); tabSignIn.setAttribute('aria-selected', 'false'); }
-      if(signUpView) signUpView.hidden = false;
-      if(signInView) signInView.hidden = true;
-      if(forgotPasswordView) forgotPasswordView.hidden = true;
-      if(authTabs) authTabs.hidden = false;
-      if(signInRow) signInRow.hidden = true;
-      if(signUpRow) signUpRow.hidden = false;
-      if(forgotRow) forgotRow.hidden = true;
-      if($('signUpDetailsStep')) $('signUpDetailsStep').hidden = false;
-      if($('signUpAvatarStep')) $('signUpAvatarStep').hidden = true;
-      setLoginStatus('Create your unique trainee account with your ECE corporate email.', false);
-      if($('signUpEmail')) $('signUpEmail').focus();
-    } else if(mode === 'forgot'){
-      if(forgotPasswordView) forgotPasswordView.hidden = false;
-      if(signInView) signInView.hidden = true;
-      if(signUpView) signUpView.hidden = true;
-      if(authTabs) authTabs.hidden = true;
-      if(signInRow) signInRow.hidden = true;
-      if(signUpRow) signUpRow.hidden = true;
-      if(forgotRow) forgotRow.hidden = false;
-      if($('forgotStep1')) $('forgotStep1').hidden = false;
-      if($('forgotStep2')) $('forgotStep2').hidden = true;
-      if($('securityDispatchCard')) $('securityDispatchCard').hidden = true;
-      setLoginStatus('Enter your ECE email to receive a password reset code.', false);
-      if($('forgotEmail')) $('forgotEmail').focus();
-    }
-  }
-
-  function applyTheme(themeName){
-    currentTheme = themeName || 'wyze';
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    if(themeSelect) themeSelect.value = currentTheme;
-  }
-
-  function zdStatusBadgeClass(st){
-    var s = (st || 'NEW').toUpperCase();
-    if(s === 'NEW') return 'zd-badge zd-badge-new';
-    if(s === 'OPEN') return 'zd-badge zd-badge-open';
-    if(s === 'PENDING') return 'zd-badge zd-badge-pending';
-    if(s === 'ON_HOLD') return 'zd-badge zd-badge-onhold';
-    if(s === 'SOLVED') return 'zd-badge zd-badge-solved';
-    return 'zd-badge zd-badge-new';
-  }
-
-  function setSimulationMode(mode){
-    currentSimMode = mode === 'email' ? 'email' : 'chat';
-    if(modeChatBtn) modeChatBtn.classList.toggle('active', currentSimMode === 'chat');
-    if(modeEmailBtn) modeEmailBtn.classList.toggle('active', currentSimMode === 'email');
-    
-    // Toggle header bars and email cockpit
-    var chatHeaderBar = $('chatHeaderBar');
-    if(chatHeaderBar) chatHeaderBar.hidden = currentSimMode === 'email';
-    if(zdTabsStrip) zdTabsStrip.hidden = currentSimMode !== 'email';
-    if(emailTicketHeader) emailTicketHeader.hidden = currentSimMode !== 'email';
-    if(zdComposerNav) zdComposerNav.hidden = currentSimMode !== 'email';
-    if(zdSubmitBar) zdSubmitBar.hidden = currentSimMode !== 'email';
-    if(speedBar) speedBar.hidden = currentSimMode === 'email';
-    if(replyTimer) replyTimer.hidden = currentSimMode === 'email' || !timerOn;
-
-    // Switch active state pointer
-    if(currentSimMode === 'email'){
-      captureNotes();
-      state = emailSessions[activeEmailIndex];
-      // Linear journey rule: if ticket has arrived as NEW and agent is now viewing it, transition to OPEN
-      if(state.persona && state.status === 'NEW'){
-        state.status = 'OPEN';
-        state.messages.push({
-          role: 'audit',
-          text: 'Ticket opened by ' + (loginProfile ? loginProfile.name : 'Agent') + '. Status moved from NEW to OPEN.',
-          ts: Date.now()
-        });
-      }
-      state.hasUnread = false;
-    } else {
-      captureNotes();
-      state = sessions[activeIndex];
-    }
-
-    applyNotes(state);
-    updateComposerPlaceholders();
-    renderTabs();
-    renderZdTabs();
-    renderPersonaBar();
-    renderMessages();
-    renderAnswerKey();
-    updateEmailHeaderInfo();
-    updateZdViewsCounter();
-    refreshControls();
-  }
-
-  function updateComposerPlaceholders(){
-    if(!agentInput) return;
-    if(currentSimMode === 'email'){
-      if(zdComposerMode === 'internal'){
-        agentInput.placeholder = 'Add an internal note (only visible to support agents and leadership)...';
-        if(sendBtn) sendBtn.textContent = 'Save Internal Note';
-        if(chatForm) chatForm.classList.add('zd-internal-mode');
-      } else {
-        agentInput.placeholder = 'Draft your customer email response… (Click Submit below to transmit)';
-        var actionLabel = zdSubmitActionSelect ? zdSubmitActionSelect.options[zdSubmitActionSelect.selectedIndex].text.split('(')[0].trim() : 'Submit as Pending';
-        if(sendBtn) sendBtn.textContent = actionLabel;
-        if(chatForm) chatForm.classList.remove('zd-internal-mode');
-      }
-    } else {
-      agentInput.placeholder = 'Type your reply as the agent… (Enter to send, Shift+Enter for a new line)';
-      if(sendBtn) sendBtn.textContent = 'Send';
-      if(chatForm) chatForm.classList.remove('zd-internal-mode');
-    }
-  }
-
-  function activateEmailTicket(idx){
-    if(idx === activeEmailIndex && state === emailSessions[idx]) return;
-    captureNotes();
-    quietSave(state);
-    activeEmailIndex = idx;
-    state = emailSessions[idx];
-    state.hasUnread = false;
-
-    // Linear journey rule:
-    // "New: The email just arrived. No agent has looked at it or commented on it yet.
-    // Open: An agent has been assigned or has opened the ticket, but the customer is still waiting for a resolution."
-    if(state.persona && state.status === 'NEW'){
-      state.status = 'OPEN';
-      state.messages.push({
-        role: 'audit',
-        text: 'Ticket opened by ' + (loginProfile ? loginProfile.name : 'Agent') + '. Status moved from NEW to OPEN.',
-        ts: Date.now()
-      });
-      scheduleSave(state);
-      pushServerSession(state);
-    }
-
-    applyNotes(state);
-    renderZdTabs();
-    renderPersonaBar();
-    renderMessages();
-    renderFeedback();
-    renderAnswerKey();
-    updateEmailHeaderInfo();
-    updateZdViewsCounter();
-    updateComposerPlaceholders();
-    refreshControls();
-  }
-
-  function renderZdTabs(){
-    if(!zdTabsGroup) return;
-    zdTabsGroup.innerHTML = '';
-    emailSessions.forEach(function(es, i){
-      var tabBtn = document.createElement('button');
-      tabBtn.type = 'button';
-      tabBtn.className = 'zd-ticket-tab' + (i === activeEmailIndex ? ' active' : '');
-      tabBtn.setAttribute('role', 'tab');
-      tabBtn.setAttribute('aria-selected', i === activeEmailIndex ? 'true' : 'false');
-      
-      var badgeClass = zdStatusBadgeClass(es.status);
-      var badgeLabel = es.status === 'ON_HOLD' ? 'On-hold' : (es.status.charAt(0) + es.status.slice(1).toLowerCase());
-      var ticketLabel = es.ticketId ? es.ticketId : ('Ticket ' + (i + 1));
-      var customerSnippet = es.persona ? (' · ' + es.persona.name) : ' (idle)';
-
-      var unreadHtml = es.hasUnread ? '<span class="zd-tab-dot-unread" title="New customer reply"></span>' : '';
-
-      tabBtn.innerHTML = unreadHtml +
-        '<span>Ticket ' + (i + 1) + ': <strong>' + escapeHtml(ticketLabel) + '</strong>' + escapeHtml(customerSnippet) + '</span>' +
-        '<span class="' + badgeClass + '">' + escapeHtml(badgeLabel) + '</span>';
-
-      tabBtn.addEventListener('click', function(){ activateEmailTicket(i); });
-      zdTabsGroup.appendChild(tabBtn);
-    });
-  }
-
-  function updateEmailHeaderInfo(){
-    if(currentSimMode !== 'email') return;
-    if(!state || !state.persona){
-      if(emailSubjectText) emailSubjectText.textContent = 'No active email ticket in this slot';
-      if(emailCustomerFrom) emailCustomerFrom.textContent = 'Customer <pending>';
-      if(zdStatusBadge){
-        zdStatusBadge.className = 'zd-badge zd-badge-new';
-        zdStatusBadge.textContent = 'NEW';
-      }
-      if(zdStatusSelect) zdStatusSelect.value = 'NEW';
-      return;
-    }
-    if(emailSubjectText){
-      emailSubjectText.textContent = 'Re: [' + (state.ticketId || 'WZ-NEW') + '] Wyze ' + (state.persona.product || 'Device') + ' - ' + (state.persona.issueCategory || 'Inquiry');
-    }
-    if(emailCustomerFrom){
-      emailCustomerFrom.textContent = state.persona.name + ' <' + state.persona.email + '>';
-    }
-    if(emailAssigneeVal){
-      emailAssigneeVal.textContent = loginProfile ? (loginProfile.name + ' (You)') : 'Trainee Agent';
-    }
-    if(zdStatusBadge){
-      zdStatusBadge.className = zdStatusBadgeClass(state.status);
-      zdStatusBadge.textContent = state.status === 'ON_HOLD' ? 'ON-HOLD' : state.status;
-    }
-    if(zdStatusSelect){
-      zdStatusSelect.value = state.status;
-    }
-  }
-
-  function getAllEmailTickets(){
-    var list = [];
-    var seenIds = Object.create(null);
-    emailSessions.forEach(function(es){
-      if(es && es.ticketId){
-        seenIds[es.ticketId] = true;
-        list.push(es);
-      }
-    });
-    archivedEmailTickets.forEach(function(arch){
-      if(arch && arch.ticketId && !seenIds[arch.ticketId]){
-        seenIds[arch.ticketId] = true;
-        list.push(arch);
-      }
-    });
-    return list;
-  }
-
-  function updateZdViewsCounter(){
-    var all = getAllEmailTickets();
-    if(zdViewsCounter) zdViewsCounter.textContent = all.length;
-    var counts = { NEW: 0, OPEN: 0, PENDING: 0, ON_HOLD: 0, SOLVED: 0 };
-    all.forEach(function(t){
-      if(counts[t.status] != null) counts[t.status]++;
-    });
-    if($('zdFilterAllCount')) $('zdFilterAllCount').textContent = all.length;
-    if($('zdFilterNewCount')) $('zdFilterNewCount').textContent = counts.NEW;
-    if($('zdFilterOpenCount')) $('zdFilterOpenCount').textContent = counts.OPEN;
-    if($('zdFilterPendingCount')) $('zdFilterPendingCount').textContent = counts.PENDING;
-    if($('zdFilterOnHoldCount')) $('zdFilterOnHoldCount').textContent = counts.ON_HOLD;
-    if($('zdFilterSolvedCount')) $('zdFilterSolvedCount').textContent = counts.SOLVED;
-  }
-
-  function openZdViews(){
-    if(!zdViewsModal) return;
-    zdViewsModal.hidden = false;
-    renderZdViewsTable();
-  }
-
-  function closeZdViews(){
-    if(zdViewsModal) zdViewsModal.hidden = true;
-  }
-
-  function renderZdViewsTable(){
-    if(!zdViewsTableBody) return;
-    updateZdViewsCounter();
-    var all = getAllEmailTickets();
-    var filtered = all.filter(function(t){
-      if(zdViewsFilter === 'all') return true;
-      return t.status === zdViewsFilter;
-    });
-
-    if(!filtered.length){
-      zdViewsTableBody.innerHTML = '<tr><td colspan="6" class="muted text-center" style="padding:28px;text-align:center;">No tickets in this view (' + escapeHtml(zdViewsFilter) + ').</td></tr>';
-      return;
-    }
-
-    zdViewsTableBody.innerHTML = filtered.map(function(t){
-      var badgeClass = zdStatusBadgeClass(t.status);
-      var badgeLabel = t.status === 'ON_HOLD' ? 'On-hold' : (t.status.charAt(0) + t.status.slice(1).toLowerCase());
-      var subject = t.persona ? ('Wyze ' + (t.persona.product || 'Device') + ' - ' + (t.persona.issueCategory || 'Inquiry')) : 'Customer Inquiry';
-      var requester = t.persona ? (t.persona.name + ' (' + t.persona.email + ')') : '—';
-      var updatedStr = t.updatedAt || t.createdAt ? fmtTime(t.updatedAt || t.createdAt) : 'Just now';
-
-      // Check if ticket is currently loaded in one of the 3 active slots
-      var loadedSlotIndex = emailSessions.findIndex(function(es){ return es.ticketId === t.ticketId; });
-
-      var actionHtml = '';
-      if(loadedSlotIndex !== -1){
-        actionHtml = '<button type="button" class="btn btn-xs btn-primary btn-open-slot" data-slot="' + loadedSlotIndex + '">Jump to Tab ' + (loadedSlotIndex + 1) + '</button>';
-      } else {
-        actionHtml = '<button type="button" class="btn btn-xs btn-outline btn-load-into-active" data-id="' + escapeHtml(t.ticketId || '') + '">Load into Tab ' + (activeEmailIndex + 1) + '</button>';
-      }
-
-      return '<tr>' +
-        '<td><span class="' + badgeClass + '">' + escapeHtml(badgeLabel) + '</span></td>' +
-        '<td><strong class="mono">' + escapeHtml(t.ticketId || 'WZ-NEW') + '</strong></td>' +
-        '<td><strong>' + escapeHtml(subject) + '</strong></td>' +
-        '<td>' + escapeHtml(requester) + '</td>' +
-        '<td><span class="muted text-xs">' + updatedStr + '</span></td>' +
-        '<td style="text-align:right;">' + actionHtml + '</td>' +
-      '</tr>';
-    }).join('');
-
-    // Attach click events
-    zdViewsTableBody.querySelectorAll('.btn-open-slot').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var slot = parseInt(btn.getAttribute('data-slot'), 10);
-        closeZdViews();
-        activateEmailTicket(slot);
-      });
-    });
-
-    zdViewsTableBody.querySelectorAll('.btn-load-into-active').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var tid = btn.getAttribute('data-id');
-        var targetTicket = archivedEmailTickets.find(function(item){ return item.ticketId === tid; });
-        if(targetTicket){
-          captureNotes();
-          emailSessions[activeEmailIndex] = targetTicket;
-          state = emailSessions[activeEmailIndex];
-          closeZdViews();
-          activateEmailTicket(activeEmailIndex);
-        }
-      });
-    });
-  }
 
   function genId(prefix){
     return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
@@ -838,30 +381,28 @@
     return 'muted';
   }
 
+  /* ---------- DIRECT FETCH BYPASS ---------- */
   async function runModel(messages, opts){
-  opts = opts || {};
-  try {
-    // We completely bypass websim and talk directly to your Vercel backend
-    var response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: messages,
-        schema: opts.schema,
-        sessionId: opts.sessionId // This will no longer be stripped!
-      })
-    });
-    
-    if (!response.ok) throw new Error("Backend failed");
-    
-    // Extract the AI text from the response
-    var data = await response.json();
-    return data.content; 
-    
-  } catch(e){
-    throw new Error("Couldn't reach the simulator model — try again.");
+    opts = opts || {};
+    try {
+      var response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messages,
+          schema: opts.schema,
+          sessionId: opts.sessionId
+        })
+      });
+
+      if (!response.ok) throw new Error("Backend failed");
+
+      var data = await response.json();
+      return data.content; 
+    } catch(e){
+      throw new Error("Couldn't reach the simulator model — try again.");
+    }
   }
-}
 
   function anyBusy(){
     return sessions.some(function(s){ return s.busy; });
@@ -902,55 +443,13 @@
     }
     var frag = document.createDocumentFragment();
     state.messages.forEach(function(m){
-      if(m.role === 'audit'){
-        var auditRow = document.createElement('div');
-        auditRow.className = 'chat-audit';
-        auditRow.textContent = m.text + ' · ' + fmtTime(m.ts);
-        frag.appendChild(auditRow);
-        return;
-      }
-
-      if(m.role === 'internal_note'){
-        var noteItem = document.createElement('div');
-        noteItem.className = 'email-thread-item bubble-internal-note';
-        noteItem.innerHTML = '<div class="email-thread-head" style="background:rgba(234,179,8,0.18);border-bottom:1px solid rgba(234,179,8,0.3);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">' +
-          '<div class="email-thread-sender" style="display:flex;align-items:center;gap:8px;">' +
-            '<span style="font-size:16px;">🔒</span>' +
-            '<div><div class="email-sender-name" style="color:#78350F;font-weight:700;">' + escapeHtml(loginProfile ? loginProfile.name : 'Agent') + ' <span style="font-size:11px;font-weight:700;background:#FDE047;color:#854D0E;padding:2px 6px;border-radius:4px;margin-left:6px;">INTERNAL NOTE</span></div>' +
-            '<div class="email-sender-role" style="color:#92400E;font-size:11.5px;">Private • Visible to ECE agents & leadership only</div></div>' +
-          '</div>' +
-          '<div class="email-thread-time" style="font-size:12px;color:#92400E;">' + fmtTime(m.ts) + '</div>' +
-        '</div>' +
-        '<div class="email-thread-body" style="padding:14px 16px;font-style:italic;line-height:1.55;">' + escapeHtml(m.text) + '</div>';
-        frag.appendChild(noteItem);
-        return;
-      }
-
-      if(currentSimMode === 'email'){
-        var emailItem = document.createElement('div');
-        emailItem.className = 'email-thread-item ' + (m.role === 'agent' ? 'email-from-agent' : 'email-from-customer');
-        var senderLabel = m.role === 'agent'
-          ? (loginProfile ? loginProfile.name : 'Support Agent') + ' <support@wyze.com>'
-          : (state.persona ? (state.persona.name + ' <' + state.persona.email + '>') : 'Customer');
-        var delayTag = '';
-        if(m.gapSec != null && m.gapSec > 0){
-          var mins = Math.round(m.gapSec / 60);
-          delayTag = '<span class="email-delay-tag">⏱️ +' + (mins >= 60 ? (Math.floor(mins/60) + 'h ' + (mins%60) + 'm') : (mins + 'm')) + ' wait</span>';
-        }
-        emailItem.innerHTML = '<div class="email-thread-head">' +
-          '<div class="email-thread-sender">' +
-            (m.role === 'agent' ? avatarMarkup(state.avatarId || (loginProfile && loginProfile.avatarId) || 'pip', 'email-sender-avatar') : '<span class="email-customer-avatar">👤</span>') +
-            '<div><div class="email-sender-name">' + escapeHtml(senderLabel) + '</div>' +
-            '<div class="email-sender-role">' + (m.role === 'agent' ? 'Wyze Customer Support Tier 1' : 'Verified Customer') + '</div></div>' +
-          '</div>' +
-          '<div class="email-thread-time">' + fmtTime(m.ts) + delayTag + '</div>' +
-        '</div>' +
-        '<div class="email-thread-body">' + escapeHtml(m.text) + '</div>';
-        frag.appendChild(emailItem);
-        return;
-      }
-
       var row = document.createElement('div');
+      if(m.role === 'audit'){
+        row.className = 'chat-audit';
+        row.textContent = m.text + ' · ' + fmtTime(m.ts);
+        frag.appendChild(row);
+        return;
+      }
       row.className = 'msg-row ' + (m.role === 'agent' ? 'from-agent' : 'from-customer');
       var content = document.createElement('div');
       content.className = 'msg-content';
@@ -960,7 +459,7 @@
         content.appendChild(avatarHolder.firstElementChild);
       }
       var bubble = document.createElement('div');
-      bubble.className = 'bubble' + (m.abandonment ? ' bubble-abandonment' : '');
+      bubble.className = 'bubble';
       bubble.textContent = m.text;
       var metaEl = document.createElement('div');
       metaEl.className = 'msg-time';
@@ -979,7 +478,6 @@
 
   function renderPersonaBar(){
     renderAgentIdentity();
-    updateEmailHeaderInfo();
     if(!state.persona){
       ticketIdEl.textContent = 'No active case';
       statusPill.hidden = true;
@@ -989,7 +487,7 @@
     ticketIdEl.textContent = state.ticketId + ' · ' + state.persona.product;
     statusPill.hidden = false;
     statusPill.dataset.status = state.status.toLowerCase();
-    statusPill.textContent = state.status === 'OPEN' ? 'Open' : (state.status === 'ESCALATED' ? 'Escalated' : (state.status === 'ABANDONED' ? 'Abandoned' : (state.status === 'CLEARED' ? 'Cleared' : 'Resolved')));
+    statusPill.textContent = state.status === 'OPEN' ? 'Open' : (state.status === 'ESCALATED' ? 'Escalated' : 'Resolved');
     var color = guessEmotionColor(state.persona.emotionalState);
     chatMeta.innerHTML = '<span class="dot dot-' + color + '"></span>' +
       escapeHtml(state.persona.emotionalState) + ' · ' + escapeHtml(state.persona.issueCategory);
@@ -1105,16 +603,8 @@
     renderAnswerKey();
     coachingBox.hidden = true;
     avgWpmBox.hidden = true;
-    if(state.status === 'ABANDONED'){
-      endBtn.textContent = 'Ended (Abandoned)';
-      endBtn.dataset.ended = 'true';
-    } else if(state.ended){
-      endBtn.textContent = 'Ended';
-      endBtn.dataset.ended = 'true';
-    } else {
-      endBtn.textContent = 'End conversation';
-      delete endBtn.dataset.ended;
-    }
+    endBtn.textContent = 'End conversation';
+    delete endBtn.dataset.ended;
     updateCaseLabel();
     refreshControls();
     updateSpeedUI();
@@ -1164,8 +654,6 @@
       status: s.status,
       holdDeadline: s.holdDeadline,
       holdMinutes: s.holdMinutes,
-      gentleCheckInSent: !!s.gentleCheckInSent,
-      abandoned: !!s.abandoned,
       feedback: s.feedback,
       notes: {
         customerName: s.notes.fCustomerName,
@@ -1196,8 +684,6 @@
     s.status = p.status || 'OPEN';
     s.holdDeadline = p.holdDeadline || null;
     s.holdMinutes = p.holdMinutes || null;
-    s.gentleCheckInSent = !!p.gentleCheckInSent;
-    s.abandoned = !!p.abandoned;
     s.feedback = p.feedback || null;
     s.avgWpm = p.avgWpm || null;
     s.coachingPoints = p.coachingPoints || null;
@@ -1233,21 +719,17 @@
     var next = previous.catch(function(){}).then(function(){
       return fetch('/api/session', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-websim-user-id': (loginProfile && loginProfile.userId) || 'trainee_local',
-          'x-websim-username': (loginProfile && loginProfile.name) || 'trainee'
-        },
+        headers: { 'content-type': 'application/json' },
         body: payload
       });
     }).then(function(response){
       if(s === state){
         if(response.ok) saveIndicator.textContent = 'Saved to team history';
         else if(response.status === 401) saveIndicator.textContent = 'Saved locally · sign in to share';
-        else saveIndicator.textContent = 'Saved locally';
+        else saveIndicator.textContent = 'Saved locally · team sync failed';
       }
     }).catch(function(){
-      if(s === state) saveIndicator.textContent = 'Saved locally';
+      if(s === state) saveIndicator.textContent = 'Saved locally · team sync failed';
     });
     serverSaveQueues[s.sessionId] = next;
     return next;
@@ -1293,7 +775,6 @@
     replyTimer.hidden = !timerOn;
     fTraineeName.value = loginProfile ? loginProfile.name : (s.traineeName || '');
     fLob.value = s.lob || '';
-    if(s.theme) applyTheme(s.theme);
     ensureSlots();
   }
   function restoreLive(){
@@ -1316,7 +797,6 @@
     s.trainerMode = trainerMode;
     s.twoChats = twoChats;
     s.timerOn = timerOn;
-    s.theme = currentTheme;
     writeLS('settings', s);
   }
   function recordTraineeSummary(){
@@ -1350,270 +830,74 @@
     updateReplyTimer();
   }
 
-  function completeLogin(welcomeMsg){
+  loginForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    if(!$('avatarStep').hidden) {
+      /* Avatar step is the only submit-enabled step. */
+    } else {
+      $('continueLoginBtn').click();
+      return;
+    }
+    var username = $('loginUsername').value.trim().toLowerCase();
+    var passcode = $('loginPasscode').value;
+    var name = $('loginName').value.trim();
+    var selectedAvatar = $('loginForm').querySelector('input[name="loginAvatar"]:checked');
+    var avatarId = selectedAvatar ? selectedAvatar.value : AVATARS[0].id;
+    loginStatus.classList.remove('error');
+    if(username !== SIMULATOR_USERNAME || passcode !== SIMULATOR_PASSCODE){
+      loginStatus.textContent = 'The shared username or passcode is incorrect.';
+      loginStatus.classList.add('error');
+      return;
+    }
+    if(!name){
+      loginStatus.textContent = 'Enter your name to continue.';
+      loginStatus.classList.add('error');
+      return;
+    }
+
+    var platformUser = null;
+    try { platformUser = await websim.getUser(); } catch(e){}
+    loginProfile = { name: name, avatarId: avatarId, userId: platformUser ? platformUser.id : null };
+    $('loginPasscode').value = '';
     loginScreen.hidden = true;
     appRoot.hidden = false;
     appRoot.setAttribute('aria-hidden', 'false');
     var accountStatus = $('accountStatus');
-    if(accountStatus){
-      accountStatus.textContent = 'Signed in as ' + loginProfile.name + ' (' + (loginProfile.email || 'ECE') + ')';
+    if(platformUser){
+      accountStatus.textContent = 'Shared history is on · signed in to Websim';
       accountStatus.className = 'sync-status is-synced';
+    } else {
+      accountStatus.textContent = 'Local only · sign in to Websim to share team history';
+      accountStatus.className = 'sync-status';
     }
     initializeWorkspaceForLogin();
     if(!readLS('walkthrough-seen')) welcomeModal.hidden = false;
-    if(welcomeMsg) setLoginStatus(welcomeMsg, false, true);
-  }
+  });
 
-  function checkExistingAuth(){
-    try {
-      var saved = JSON.parse(localStorage.getItem('ecewise:auth-profile') || 'null');
-      if(saved && saved.userId && saved.name){
-        loginProfile = saved;
-        completeLogin('Welcome back, ' + loginProfile.name);
-        return true;
-      }
-    } catch(e){}
-    return false;
-  }
-
-  function handleSignOut(){
-    loginProfile = null;
-    try {
-      localStorage.removeItem('ecewise:auth-profile');
-    } catch(e){}
-    appRoot.hidden = true;
-    appRoot.setAttribute('aria-hidden', 'true');
-    loginScreen.hidden = false;
-    setAuthTab('signIn');
-    setLoginStatus('Signed out successfully.', false);
-    if($('signInPassword')) $('signInPassword').value = '';
-  }
-
-  /* --- Sign In Handler --- */
-  async function handleSignIn(ev){
-    ev.preventDefault();
-    var email = $('signInEmail').value.trim();
-    var password = $('signInPassword').value;
-
-    if(!email || !password){
-      setLoginStatus('Please enter both your ECE email and password.', true);
-      return;
-    }
-
-    setLoginStatus('Verifying credentials…', false);
-    try {
-      var res = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, password: password })
-      });
-      var data = await res.json();
-      if(!res.ok){
-        // Backward-compatibility: allow legacy credentials if used
-        if((email === SIMULATOR_USERNAME || email === 'admin') && password === SIMULATOR_PASSCODE){
-          loginProfile = {
-            name: 'Wyze Agent',
-            email: 'agent@ececontactcenters.com',
-            avatarId: 'pip',
-            userId: 'trainee_wyze_agent'
-          };
-          try { localStorage.setItem('ecewise:auth-profile', JSON.stringify(loginProfile)); } catch(e){}
-          completeLogin('Signed in with shared credentials.');
-          return;
-        }
-        setLoginStatus(data.error || 'Invalid ECE email or password.', true);
-        return;
-      }
-
-      loginProfile = {
-        name: data.user.name,
-        email: data.user.email,
-        avatarId: data.user.avatarId || 'pip',
-        userId: data.user.id
-      };
-      try {
-        localStorage.setItem('ecewise:auth-profile', JSON.stringify(loginProfile));
-      } catch(e){}
-
-      completeLogin('Signed in successfully.');
-    } catch(e){
-      setLoginStatus(e.message || 'Network error during sign in.', true);
-    }
-  }
-
-  /* --- Sign Up Continue Handler --- */
-  function handleSignUpContinue(){
-    var fields = [$('signUpEmail'), $('signUpName'), $('signUpPassword'), $('signUpRepeatPassword')];
+  $('continueLoginBtn').addEventListener('click', function(){
+    var fields = [$('loginUsername'), $('loginPasscode'), $('loginName')];
     for(var i = 0; i < fields.length; i++){
       if(!fields[i].reportValidity()) return;
     }
-
-    var email = $('signUpEmail').value.trim().toLowerCase();
-    var name = $('signUpName').value.trim();
-    var password = $('signUpPassword').value;
-    var repeatPassword = $('signUpRepeatPassword').value;
-
-    if(!email.includes('@') || (!email.includes('ece') && !email.endsWith('ececontactcenters.com'))){
-      setLoginStatus('Please enter a valid corporate ECE email (e.g. name@ececontactcenters.com).', true);
-      $('signUpEmail').focus();
+    loginStatus.classList.remove('error');
+    if($('loginUsername').value.trim().toLowerCase() !== SIMULATOR_USERNAME ||
+       $('loginPasscode').value !== SIMULATOR_PASSCODE){
+      loginStatus.textContent = 'The shared username or passcode is incorrect.';
+      loginStatus.classList.add('error');
+      $('loginPasscode').focus();
       return;
     }
-    if(password.length < 6){
-      setLoginStatus('Password must be at least 6 characters long.', true);
-      $('signUpPassword').focus();
-      return;
-    }
-    if(password !== repeatPassword){
-      setLoginStatus('Passwords do not match. Please verify and re-enter.', true);
-      $('signUpRepeatPassword').focus();
-      return;
-    }
-
-    setLoginStatus('Choose your support mascot below.', false);
-    $('signUpDetailsStep').hidden = true;
-    $('signUpAvatarStep').hidden = false;
-    var selected = $('avatarChoices').querySelector('input[name="signUpAvatar"]:checked');
+    loginStatus.textContent = 'Team history requires a signed-in Websim account.';
+    $('loginDetailsStep').hidden = true;
+    $('avatarStep').hidden = false;
+    var selected = $('avatarChoices').querySelector('input[name="loginAvatar"]:checked');
     if(selected) selected.focus();
-  }
-
-  /* --- Sign Up Submit Handler --- */
-  async function handleSignUp(ev){
-    ev.preventDefault();
-    var email = $('signUpEmail').value.trim().toLowerCase();
-    var name = $('signUpName').value.trim();
-    var password = $('signUpPassword').value;
-    var repeatPassword = $('signUpRepeatPassword').value;
-    var selectedAvatar = $('signUpForm').querySelector('input[name="signUpAvatar"]:checked');
-    var avatarId = selectedAvatar ? selectedAvatar.value : 'pip';
-
-    if(!email || !name || !password || !repeatPassword){
-      setLoginStatus('Please fill in all registration fields.', true);
-      return;
-    }
-    if(password !== repeatPassword){
-      setLoginStatus('Passwords do not match. Please verify and re-enter.', true);
-      return;
-    }
-
-    setLoginStatus('Creating your ECE trainee account…', false);
-    try {
-      var res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email,
-          name: name,
-          password: password,
-          repeatPassword: repeatPassword,
-          avatarId: avatarId
-        })
-      });
-      var data = await res.json();
-      if(!res.ok){
-        setLoginStatus(data.error || 'Failed to create account.', true);
-        return;
-      }
-
-      loginProfile = {
-        name: data.user.name,
-        email: data.user.email,
-        avatarId: data.user.avatarId || avatarId,
-        userId: data.user.id
-      };
-      try {
-        localStorage.setItem('ecewise:auth-profile', JSON.stringify(loginProfile));
-      } catch(e){}
-
-      completeLogin('Account registered! Welcome to the simulator.');
-    } catch(e){
-      setLoginStatus(e.message || 'Network error during signup.', true);
-    }
-  }
-
-  /* --- Forgot Password Handlers --- */
-  async function handleForgotRequest(){
-    var email = $('forgotEmail').value.trim().toLowerCase();
-    if(!email){
-      setLoginStatus('Please enter your ECE email address.', true);
-      $('forgotEmail').focus();
-      return;
-    }
-
-    setLoginStatus('Generating verification code…', false);
-    try {
-      var res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'request', email: email })
-      });
-      var data = await res.json();
-      if(!res.ok){
-        setLoginStatus(data.error || 'Could not find that ECE account.', true);
-        return;
-      }
-
-      $('forgotStep1').hidden = true;
-      $('forgotStep2').hidden = false;
-      $('securityDispatchCard').hidden = false;
-      $('dispatchBody').innerHTML =
-        'A password reset verification code has been dispatched for <b>' + escapeHtml(email) + '</b>:<br/>' +
-        'Security Code: <strong>' + escapeHtml(data.code) + '</strong> (Valid for 15 minutes)';
-      $('resetCode').value = data.code;
-      setLoginStatus('Verification code generated. Set your new password below.', false, true);
-      $('newPassword').focus();
-    } catch(e){
-      setLoginStatus(e.message || 'Network error requesting reset code.', true);
-    }
-  }
-
-  async function handleForgotReset(ev){
-    ev.preventDefault();
-    var email = $('forgotEmail').value.trim().toLowerCase();
-    var code = $('resetCode').value.trim();
-    var newPassword = $('newPassword').value;
-    var repeatPassword = $('repeatNewPassword').value;
-
-    if(!code || !newPassword || !repeatPassword){
-      setLoginStatus('Please complete all verification and password fields.', true);
-      return;
-    }
-    if(newPassword !== repeatPassword){
-      setLoginStatus('New passwords do not match. Please verify and re-enter.', true);
-      return;
-    }
-    if(newPassword.length < 6){
-      setLoginStatus('New password must be at least 6 characters.', true);
-      return;
-    }
-
-    setLoginStatus('Updating password…', false);
-    try {
-      var res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reset',
-          email: email,
-          code: code,
-          newPassword: newPassword,
-          repeatPassword: repeatPassword
-        })
-      });
-      var data = await res.json();
-      if(!res.ok){
-        setLoginStatus(data.error || 'Failed to reset password.', true);
-        return;
-      }
-
-      setAuthTab('signIn');
-      $('signInEmail').value = email;
-      $('signInPassword').value = '';
-      $('signInPassword').focus();
-      setLoginStatus('Password reset successfully! Please sign in with your new credentials.', false, true);
-    } catch(e){
-      setLoginStatus(e.message || 'Network error resetting password.', true);
-    }
-  }
+  });
+  $('backToDetailsBtn').addEventListener('click', function(){
+    $('avatarStep').hidden = true;
+    $('loginDetailsStep').hidden = false;
+    $('loginName').focus();
+  });
 
   async function openHistory(silent){
     if(!silent){
@@ -1658,11 +942,7 @@
       var owner = row.username ? ' <span class="hist-owner">@' + escapeHtml(row.username) + '</span>' : '';
       var meta = row.category || '';
       var isLive = row.ended === 0;
-      var statusHtml = isLive
-        ? '<span class="live-tag">LIVE</span>'
-        : (row.status === 'ABANDONED'
-          ? '<span class="status-pill" data-status="abandoned" style="font-size:10.5px;padding:1px 6px;">ABANDONED</span>'
-          : '<span class="hist-status-ok">' + escapeHtml(row.status || '') + '</span>');
+      var statusHtml = isLive ? '<span class="live-tag">LIVE</span>' : '<span class="hist-status-ok">' + escapeHtml(row.status || '') + '</span>';
       b.innerHTML =
         '<strong>' + escapeHtml(row.ticket_id || row.ticketId || '') + '</strong>' +
         (trainee ? ' · <b>' + escapeHtml(trainee) + '</b>' : '') + owner +
@@ -1772,7 +1052,7 @@
       var meta = (m.gapSec != null ? ' · +' + m.gapSec + 's wait' : '') + (m.role === 'agent' && m.wpm ? ' · ' + m.wpm + ' WPM' : '');
       html += '<div class="msg-row ' + (m.role === 'agent' ? 'from-agent' : 'from-customer') +
         '"><div class="msg-content">' + (m.role === 'agent' ? avatarMarkup(data.avatarId, 'message-avatar') : '') +
-        '<div class="bubble' + (m.abandonment ? ' bubble-abandonment' : '') + '">' + escapeHtml(m.text) + '</div></div>' +
+        '<div class="bubble">' + escapeHtml(m.text) + '</div></div>' +
         '<div class="msg-time">' + escapeHtml(who + ' · ' + fmtTime(m.ts) + meta) + '</div></div>';
     });
     html += '</div>';
@@ -1883,7 +1163,7 @@
   function openCase(){ setCaseOpen(true); }
   function closeCaseFn(){ setCaseOpen(false); }
 
-  /* ---------- Reply timer & Abandonment ---------- */
+  /* ---------- Reply timer ---------- */
   function promisedHoldSeconds(text){
     var value = String(text || '');
     var lower = value.toLowerCase();
@@ -1900,127 +1180,10 @@
       (/second|sec/.test(unit) ? amount : (/moment/.test(unit) ? amount * 60 : amount * 60));
     return Math.min(86400, Math.max(1, seconds));
   }
-
-  function lastAgentActivityTs(s){
-    for(var i = s.messages.length - 1; i >= 0; i--){
-      if(s.messages[i].role === 'agent') return s.messages[i].ts;
-    }
-    if(s.messages.length > 0 && s.messages[0].ts) return s.messages[0].ts;
-    return s.createdAt || null;
-  }
-
-  function customerAbandonOutburst(s, now, waitedSeconds){
-    var outburst = ABANDON_OUTBURSTS[Math.floor(Math.random() * ABANDON_OUTBURSTS.length)];
-    s.holdDeadline = null;
-    s.holdMinutes = null;
-    s.abandoned = true;
-    s.status = 'ABANDONED';
-    s.ended = true;
-
-    // 1. Customer bursts negative impression and leaves
-    s.messages.push({
-      role: 'customer',
-      text: outburst,
-      ts: now,
-      gapSec: waitedSeconds,
-      abandonment: true
-    });
-
-    // 2. Chat is automatically queued to end (audit entry appended)
-    s.messages.push({
-      role: 'audit',
-      text: 'Chat closed: Customer abandoned the chat due to 7 minutes of agent inactivity.',
-      ts: now + 50
-    });
-
-    if(s === state){
-      endBtn.textContent = 'Ended (Abandoned)';
-      endBtn.dataset.ended = 'true';
-      refreshControls();
-      renderMessages();
-      renderPersonaBar();
-    }
-
-    scheduleSave(s);
-    pushServerSession(s);
-
-    // Trigger auto QA review evaluating inactivity and abandonment
-    triggerAutoAbandonmentReview(s);
-  }
-
-  async function triggerAutoAbandonmentReview(s){
-    var avg = avgWpmValue(s);
-    s.avgWpm = avg;
-    if(s === state){
-      avgWpmBox.hidden = false;
-      avgWpmVal.textContent = avg ? avg + ' WPM' : '— (abandoned before completion)';
-    }
-
-    var p = s.persona;
-    if(!p) return;
-    var memory = await memoryNote((s.traineeName || fTraineeName.value || '').trim());
-    var transcript = s.messages.map(function(m){
-      return (m.role === 'audit' ? '[History]' : (m.role === 'agent' ? 'Agent' : 'Customer')) + ': ' + m.text;
-    }).join('\n');
-
-    var system = [
-      "You are a QA coach for a BPO contact-center team that handles live chat support for Wyze.",
-      memory ? memory : '',
-      "A customer just abandoned the chat after 7 minutes of total silence / no response from the trainee.",
-      "Produce a concise, constructive post-conversation review in plain text (no markdown headers, no asterisks).",
-      "Structure the response with these short sections, each 1-3 sentences:",
-      "Strengths: (note any earlier positives if present, or acknowledge the drill attempt)",
-      "Areas to improve: (focus on responsiveness, hold management, and customer empathy)",
-      "SOP / verification gaps: (call out the 7-minute inactivity threshold breach and lack of check-in/updates)",
-      "Overall rating (select from: Needs work / Developing / Solid / Excellent — note that 7-minute customer abandonment is typically Needs work):",
-      "Keep the whole thing under 220 words."
-    ].filter(function(x){ return x !== ''; }).join('\n');
-
-    var userMsg = [
-      "Trainee Name: " + (s.traineeName || fTraineeName.value.trim() || 'Not provided'),
-      "LOB: " + (s.lob || fLob.value.trim() || 'Not provided'),
-      "Average typing speed: " + (avg === null ? 'not measured' : avg + ' WPM'),
-      "Final conversation status: ABANDONED (Customer left after 7 minutes without an agent reply)",
-      "",
-      "Ground truth persona: " + JSON.stringify({ name:p.name, product:p.product, issueCategory:p.issueCategory, macAddress:p.macAddress, hiddenSummary:p.hiddenSummary }),
-      "",
-      "Full transcript:",
-      transcript,
-      "",
-      "Provide the abandonment QA coaching review now."
-    ].join('\n');
-
-    try {
-      var raw = await runModel(
-        [{ role: "system", content: system }, { role: "user", content: userMsg }]
-      );
-      s.coachingPoints = raw;
-      if(s === state){
-        coachingContent.textContent = raw;
-        coachingBox.hidden = false;
-      }
-      scheduleSave(s);
-      pushServerSession(s);
-    } catch(e){
-      // Non-fatal background review
-    }
-  }
-
   function customerWaitFollowUp(s, now){
-    if(currentSimMode === 'email') return; // Email simulation is asynchronous; 7m live outburst applies only to live chat
-    if(!s.persona || s.ended || s.busy || s.status === 'RESOLVED' || s.status === 'ABANDONED' || !s.messages.length) return;
+    if(!s.persona || s.ended || s.busy || s.status === 'RESOLVED' || !s.messages.length) return;
     var last = s.messages[s.messages.length - 1];
-
-    // Check 7-minute total inactivity outburst first
-    var waitStart = lastAgentActivityTs(s);
-    if(waitStart != null && (now - waitStart) >= ABANDON_TIMEOUT_MS && !s.abandoned && !s.ended){
-      customerAbandonOutburst(s, now, Math.round((now - waitStart) / 1000));
-      return;
-    }
-
-    // If agent already responded, customer isn't waiting for a gentle check-in
-    if(last.role !== 'customer' || last.autoFollowUp || s.gentleCheckInSent) return;
-
+    if(last.role !== 'customer' || last.autoFollowUp) return;
     var promised = s.holdDeadline != null;
     var deadline = promised ? s.holdDeadline : last.ts + 180000;
     if(now < deadline) return;
@@ -2050,7 +1213,6 @@
 
     s.holdDeadline = null;
     s.holdMinutes = null;
-    s.gentleCheckInSent = true;
     s.messages.push({
       role: 'customer',
       text: text,
@@ -2062,12 +1224,10 @@
     scheduleSave(s);
     pushServerSession(s);
   }
-
   function updateCustomerFollowUps(){
     var now = Date.now();
     sessions.forEach(function(session){ customerWaitFollowUp(session, now); });
   }
-
   function updateReplyTimer(){
     if(!timerOn){
       replyTimer.hidden = true;
@@ -2111,8 +1271,6 @@
     var emotion = EMOTION_LABELS[emotionSelect.value];
 
     s.ended = false;
-    s.abandoned = false;
-    s.gentleCheckInSent = false;
     s.holdDeadline = null;
     s.holdMinutes = null;
     s.avgWpm = null;
@@ -2179,9 +1337,12 @@
     };
 
     try {
+      s.sessionId = genId('sess');
+      s.ticketId = genTicketId();
+
       var raw = await runModel(
         [{ role: "system", content: system }, { role: "user", content: "Generate the persona and opening message now." }],
-        { schema: schema }
+        { schema: schema, sessionId: s.sessionId }
       );
       var persona = JSON.parse(raw);
       persona.name = makeUnusedCustomerName();
@@ -2189,11 +1350,9 @@
       recordUniqueCustomerName(persona.name);
       s.persona = persona;
       recordUsedProduct(persona);
-      s.sessionId = genId('sess');
-      s.ticketId = genTicketId();
+      
       s.createdAt = Date.now();
-      s.updatedAt = s.createdAt;
-      s.status = currentSimMode === 'email' ? 'NEW' : 'OPEN';
+      s.status = 'OPEN';
       s.messages = [{ role: 'customer', text: persona.openingMessage, ts: Date.now(), gapSec: null }];
       s.feedback = null;
       s.avgWpm = null;
@@ -2201,21 +1360,11 @@
       Object.keys(s.notes).forEach(function(k){ s.notes[k] = ''; });
       s.traineeName = loginProfile ? loginProfile.name : '';
       s.lob = '';
-
-      if(currentSimMode === 'email'){
-        var already = archivedEmailTickets.some(function(item){ return item.ticketId === s.ticketId; });
-        if(!already) archivedEmailTickets.unshift(s);
-      }
-
       if(s === state){
-        if(emailPendingBanner) emailPendingBanner.hidden = true;
         clearCaseFields();
-        updateEmailHeaderInfo();
         renderPersonaBar();
         renderMessages();
         renderTabs();
-        renderZdTabs();
-        updateZdViewsCounter();
         renderAnswerKey();
         renderFeedback();
         updateCaseLabel();
@@ -2236,21 +1385,9 @@
   /* ---------- Chat turn ---------- */
   function buildChatSystemPrompt(s){
     var p = s.persona;
-    var isEmail = currentSimMode === 'email';
     return [
-      "You are roleplaying as a customer named " + p.name + " reaching out to support for Wyze, a smart-home device brand.",
+      "You are roleplaying as a customer named " + p.name + " in a live chat with a support agent for Wyze, a smart-home device brand.",
       "Stay fully in character. Never mention you are an AI, a model, or a simulation, and never write the agent's lines.",
-      "",
-      "CRITICAL PERSONA INSTRUCTION - ZERO TECHNICAL KNOWLEDGE:",
-      "- You are an ordinary everyday customer who bought a Wyze product for home use. You have ZERO technical, networking, or engineering knowledge.",
-      "- You do NOT understand network subnets, IP protocols, DNS, 2.4GHz vs 5.0GHz frequency bands (unless the agent explains it in plain child-simple terms), hardware registers, or firmware partitions.",
-      "- You only describe plain visual and sensory symptoms: what color a light is blinking (e.g. 'the light on front is solid yellow', 'it flashes blue twice then stops'), sounds, physical camera location, or error messages directly shown in the Wyze app (e.g. 'it says Error code -90 connection timed out').",
-      "- If the agent gives you complicated technical instructions without explaining them simply, act confused and ask for clarification like a regular person ('I am not very good with tech, where do I find that?' or 'What does that mean?').",
-      "",
-      "SIMULATION CHANNEL & FORMAT: " + (isEmail ? "EMAIL SUPPORT TICKET" : "LIVE CHAT SUPPORT") + ".",
-      (isEmail ?
-        "- When replying by email, you do NOT need a formal letter format or corporate email greeting/signature. Real customers write emails casually, quickly from their phone ('Still not working. Sent from my iPhone'), or in short unstructured paragraphs. Write naturally however a customer would." :
-        "- When in live chat, reply concisely and directly like someone typing in a live chat window."),
       "",
       "Your full persona is fictional practice data. Reveal a specific fact only if the agent asks for that fact; otherwise do not volunteer personal details:",
       "Name: " + p.name,
@@ -2264,7 +1401,7 @@
       "Purchase date: " + p.purchaseDate,
       "Underlying issue: " + p.issueCategory,
       "",
-      "You already opened the inquiry with this message: \"" + p.openingMessage + "\"",
+      "You already opened the chat with this message: \"" + p.openingMessage + "\"",
       "",
       "Starting emotional state: " + p.emotionalState + ".",
       "Let your tone shift naturally: become more frustrated if the agent is dismissive or makes no progress; calm down as they listen and help. Show strong frustration only when warranted, with occasional CAPS or an exclamation point. Do not use profanity, insults, or explicit language.",
@@ -2284,6 +1421,10 @@
       "- Do not coach the agent, tell them what to do next, mention SOPs, or suggest troubleshooting steps. Ask for help or clarification only when a customer naturally would.",
       "- Share requested persona details accurately when asked. If a request is unclear, ask one brief customer-style clarification. If an action is impossible, explain that plainly and stay engaged.",
       "- Keep status OPEN while the issue remains, use ESCALATED only when the agent explicitly escalates, and use RESOLVED when the agent's actions plausibly fix the issue or the conversation naturally concludes.",
+      "",
+      "Style:",
+      "- Write like a real person typing in live chat: concise, natural, and specific. Do not narrate or decide the agent's actions.",
+      "- Give your name, email, phone, shipping address, MAC, order number, serial number, or purchase date when the agent asks for it. Use the invented details consistently.",
       "",
       "Respond ONLY with JSON: one field \"message\" with your reply, and one field \"status\" set to exactly one of OPEN, ESCALATED, or RESOLVED reflecting the issue's state after this exchange."
     ].join('\n');
@@ -2314,79 +1455,20 @@
     return null;
   }
 
-  var pendingEmailResolve = null;
-
   async function sendAgentMessage(text, wpm, s){
     s = s || state;
     clearError();
-    var isEmail = currentSimMode === 'email';
     var prevTs = lastCustomerTs(s);
     var agentTs = Date.now();
     var gapSec = prevTs != null ? Math.max(0, Math.round((agentTs - prevTs) / 1000)) : null;
-
-    // 1. Zendesk Internal Note submission
-    if(isEmail && zdComposerMode === 'internal'){
-      var chosenStatus = zdSubmitActionSelect ? zdSubmitActionSelect.value : s.status;
-      s.status = chosenStatus;
-      s.updatedAt = agentTs;
-      s.messages.push({ role: 'internal_note', text: text, ts: agentTs });
-      if(s === state){
-        renderMessages();
-        renderPersonaBar();
-        renderZdTabs();
-        updateZdViewsCounter();
-        if(agentInput) agentInput.value = '';
-      }
-      scheduleSave(s);
-      pushServerSession(s);
-      return;
-    }
-
-    // 2. Public Reply submission
     var holdSeconds = promisedHoldSeconds(text);
     s.holdDeadline = holdSeconds == null ? null : agentTs + holdSeconds * 1000;
     s.holdMinutes = holdSeconds == null ? null : holdSeconds / 60;
-    s.gentleCheckInSent = false;
-    s.abandoned = false;
-
-    if(isEmail){
-      var chosenStatus = zdSubmitActionSelect ? zdSubmitActionSelect.value : 'PENDING';
-      s.status = chosenStatus;
-      s.updatedAt = agentTs;
-      if(s.status === 'SOLVED') s.ended = true;
-    }
-
-    s.messages.push({ role: 'agent', text: text, ts: agentTs, wpm: isEmail ? null : (wpm || null), gapSec: gapSec });
-    if(s === state){
-      renderMessages();
-      renderPersonaBar();
-      renderZdTabs();
-      updateZdViewsCounter();
-      if(!isEmail) updateSpeedUI();
-      if(agentInput) agentInput.value = '';
-    }
+    s.messages.push({ role: 'agent', text: text, ts: agentTs, wpm: wpm || null, gapSec: gapSec });
+    if(s === state){ renderMessages(); updateSpeedUI(); }
     scheduleSave(s);
     pushServerSession(s);
     setBusy(true, s);
-
-    // Email simulation: calculate random customer response time between Min and Max minutes
-    var waitMins = 0;
-    var simulatedArrivalTs = agentTs;
-    if(isEmail){
-      var minM = parseInt(emailMinMins ? emailMinMins.value : 30, 10) || 30;
-      var maxM = parseInt(emailMaxMins ? emailMaxMins.value : 120, 10) || 120;
-      if(minM > maxM){ var swap = minM; minM = maxM; maxM = swap; }
-      minM = Math.max(15, minM);
-      maxM = Math.min(240, maxM);
-      waitMins = Math.floor(minM + Math.random() * (maxM - minM + 1));
-      simulatedArrivalTs = agentTs + (waitMins * 60 * 1000);
-      emailPendingArrival = simulatedArrivalTs;
-      if(emailPendingBanner){
-        emailPendingBanner.hidden = false;
-        if(emailPendingMins) emailPendingMins.textContent = waitMins + ' minutes';
-        if(emailClockStamp) emailClockStamp.textContent = fmtTime(simulatedArrivalTs);
-      }
-    }
 
     var history = s.messages.slice(1).filter(function(m){
       return m.role === 'agent' || m.role === 'customer';
@@ -2407,63 +1489,23 @@
     try {
       var raw = await runModel(
         [{ role: "system", content: buildChatSystemPrompt(s) }].concat(history),
-        { schema: schema }
+        { schema: schema, sessionId: s.sessionId }
       );
       var parsed = JSON.parse(raw);
       if(!parsed || typeof parsed.message !== 'string' || !parsed.message.trim()){
         throw new Error("The customer didn't respond — try sending again.");
       }
       parsed.message = repairInfoRefusal(parsed.message, text, s.persona);
-
-      if(!isEmail && parsed && parsed.status){
-        s.status = parsed.status;
-      }
-
-      if(isEmail){
-        if(emailPendingBanner) emailPendingBanner.hidden = true;
-        var emailCustTs = simulatedArrivalTs;
-        var emailGap = waitMins * 60;
-        s.messages.push({
-          role: 'audit',
-          text: '⏩ Time advanced +' + waitMins + 'm · Customer email reply received',
-          ts: emailCustTs - 1000
-        });
-
-        // Linear Zendesk Reopen rule:
-        // "In Zendesk, customers can reply to a Solved ticket to reopen it back to 'Open'."
-        if(s.status === 'SOLVED'){
-          s.status = 'OPEN';
-          s.ended = false;
-          s.messages.push({
-            role: 'audit',
-            text: '🔄 Customer replied to solved ticket — Ticket reopened to OPEN.',
-            ts: emailCustTs - 500
-          });
-        } else if(s.status === 'PENDING' || s.status === 'ON_HOLD'){
-          s.status = 'OPEN';
-        }
-
-        if(s !== state){
-          s.hasUnread = true;
-        }
-
-        s.messages.push({ role: 'customer', text: parsed.message, ts: emailCustTs, gapSec: emailGap });
-        s.updatedAt = emailCustTs;
-      } else {
-        var custTs = Date.now();
-        var agentPrevTs = null;
-        for(var i = s.messages.length - 1; i >= 0; i--){ if(s.messages[i].role === 'agent'){ agentPrevTs = s.messages[i].ts; break; } }
-        var custGap = agentPrevTs != null ? Math.max(0, Math.round((custTs - agentPrevTs) / 1000)) : null;
-        s.messages.push({ role: 'customer', text: parsed.message, ts: custTs, gapSec: custGap });
-      }
-
+      if(parsed && parsed.status) s.status = parsed.status;
+      var custTs = Date.now();
+      var agentPrevTs = null;
+      for(var i = s.messages.length - 1; i >= 0; i--){ if(s.messages[i].role === 'agent'){ agentPrevTs = s.messages[i].ts; break; } }
+      var custGap = agentPrevTs != null ? Math.max(0, Math.round((custTs - agentPrevTs) / 1000)) : null;
+      s.messages.push({ role: 'customer', text: parsed.message, ts: custTs, gapSec: custGap });
       if(s === state){ renderMessages(); renderPersonaBar(); }
-      renderZdTabs();
-      updateZdViewsCounter();
       scheduleSave(s);
       pushServerSession(s);
     } catch(e){
-      if(isEmail && emailPendingBanner) emailPendingBanner.hidden = true;
       s.messages.pop();
       if(s === state) renderMessages();
       showError(e.message || "The customer didn't respond — try sending again.", function(){ sendAgentMessage(text, wpm, s); });
@@ -2645,7 +1687,6 @@
     updateReplyTimer();
   }
 
-  /* Toolbar and General Event Listeners */
   newScenarioBtn.addEventListener('click', startScenario);
   clearChatBtn.addEventListener('click', clearConversation);
   chatForm.addEventListener('submit', function(ev){
@@ -2683,12 +1724,6 @@
     updateReplyTimer();
     saveSettings();
   });
-  if(themeSelect){
-    themeSelect.addEventListener('change', function(){
-      applyTheme(themeSelect.value);
-      saveSettings();
-    });
-  }
   caseBtn.addEventListener('click', openCase);
   closeCase.addEventListener('click', closeCaseFn);
   Object.keys(caseFields).forEach(function(k){ caseFields[k].addEventListener('input', scheduleSave); });
@@ -2724,28 +1759,8 @@
     m.addEventListener('click', function(ev){ if(ev.target === m) m.hidden = true; });
   });
   document.addEventListener('keydown', function(ev){
-    if(ev.key === 'Escape'){
-      historyModal.hidden = true;
-      infoModal.hidden = true;
-      if(profileAnalyticsModal) closeMyAnalytics();
-      if(adminConsoleModal) adminConsoleModal.hidden = true;
-      if(adminInviteModal) adminInviteModal.hidden = true;
-      if(adminResetModal) adminResetModal.hidden = true;
-      if(caseOpen) closeCaseFn();
-    }
+    if(ev.key === 'Escape'){ historyModal.hidden = true; infoModal.hidden = true; if(caseOpen) closeCaseFn(); }
   });
-
-  // Quick chip starters on empty state
-  document.addEventListener('click', function(ev){
-    var chip = ev.target.closest('.quick-chip');
-    if(!chip || state.busy) return;
-    var cat = chip.dataset.category || 'random';
-    var emo = chip.dataset.emotion || 'random';
-    categorySelect.value = cat;
-    emotionSelect.value = emo;
-    startScenario();
-  });
-
   copyBtn.addEventListener('click', async function(){
     var lines = [];
     if(state.ticketId) lines.push('Case: ' + state.ticketId);
@@ -2770,1104 +1785,6 @@
     setTimeout(function(){ copyBtn.textContent = 'Copy transcript & notes'; }, 1600);
   });
 
-  /* ========================================================================
-     TRAINEE PERFORMANCE COCKPIT & ANALYTICS LOGIC
-     ======================================================================== */
-  var profileAnalyticsModal = $('profileAnalyticsModal');
-  var myAnalyticsBtn = $('myAnalyticsBtn');
-  var closeProfileAnalytics = $('closeProfileAnalytics');
-  var refreshAiBtn = $('refreshAiBtn');
-
-  var currentAnalyticsData = null;
-  var currentAiInsights = null;
-  var selectedSessionRecord = null;
-  var currentTranscriptFilter = 'all';
-
-  function formatDuration(sec){
-    if(!sec || sec <= 0) return '0s';
-    var m = Math.floor(sec / 60);
-    var s = Math.round(sec % 60);
-    if(m === 0) return s + 's';
-    return m + 'm ' + s + 's';
-  }
-
-  async function openMyAnalytics(targetUser){
-    analyticsTargetUser = targetUser || null;
-    var profileToView = analyticsTargetUser || loginProfile;
-    if(!profileToView){
-      setLoginStatus('Please sign in with your ECE credentials to view performance analytics.', true);
-      loginScreen.hidden = false;
-      appRoot.hidden = true;
-      return;
-    }
-    if(!profileAnalyticsModal) return;
-    profileAnalyticsModal.hidden = false;
-
-    // Header subtitle
-    var subtitleEl = profileAnalyticsModal.querySelector('.pa-subtitle');
-    if(subtitleEl){
-      subtitleEl.textContent = analyticsTargetUser
-        ? ('Leadership Drill-Down Analytics • Trainee: ' + (profileToView.name || 'Agent'))
-        : 'ECE Live-Chat Agent Performance Cockpit • Wyze Support Division';
-    }
-
-    // Populate Agent Header Card
-    var avatarWrap = $('paAvatarWrap');
-    if(avatarWrap) avatarWrap.innerHTML = avatarMarkup(profileToView.avatarId || 'pip', 'pa-avatar-art');
-    var agentNameEl = $('paAgentName');
-    if(agentNameEl) agentNameEl.textContent = profileToView.name;
-    var agentEmailEl = $('paAgentEmail');
-    if(agentEmailEl) agentEmailEl.textContent = profileToView.email || 'ECE Trainee Account';
-
-    currentAiInsights = null;
-    await loadMyAnalyticsData(profileToView);
-  }
-
-  function closeMyAnalytics(){
-    if(profileAnalyticsModal) profileAnalyticsModal.hidden = true;
-    analyticsTargetUser = null;
-  }
-
-  async function loadMyAnalyticsData(profileToView){
-    profileToView = profileToView || analyticsTargetUser || loginProfile;
-    if(!profileToView) return;
-    try {
-      var userIdentifier = encodeURIComponent(profileToView.id || profileToView.userId || profileToView.name);
-      var res = await fetch('/api/agent/analytics?user=' + userIdentifier);
-      if(!res.ok){
-        throw new Error('Could not retrieve agent analytics.');
-      }
-      var json = await res.json();
-      currentAnalyticsData = json.analytics || json.data || {};
-      renderAnalyticsData(currentAnalyticsData);
-
-      // Auto-fetch AI insights if not loaded yet
-      if(!currentAiInsights && currentAnalyticsData){
-        loadAiInsights(currentAnalyticsData, false, profileToView);
-      }
-    } catch(err){
-      console.error(err);
-    }
-  }
-
-  function renderAnalyticsData(data){
-    if(!data) return;
-    var k = data.kpis || {};
-
-    // Header total chats
-    var totalBadge = $('paTotalChatsBadge');
-    if(totalBadge) totalBadge.textContent = (k.totalSessions || 0) + ' Practice Chats (7 Days)';
-
-    // KPI Cards
-    var wpmEl = $('paKpiWpm');
-    if(wpmEl) wpmEl.textContent = k.avgWpm ? (k.avgWpm + ' WPM') : '—';
-    var respSec = k.avgResponseLatencySec != null ? k.avgResponseLatencySec : (k.avgResponseTimeSec != null ? k.avgResponseTimeSec : null);
-    var respEl = $('paKpiResp');
-    if(respEl) respEl.textContent = respSec != null ? (respSec + 's') : '—';
-    var resRate = k.resolutionRate != null ? k.resolutionRate : (k.resolvedRate != null ? k.resolvedRate : 0);
-    var resRateEl = $('paKpiResRate');
-    if(resRateEl) resRateEl.textContent = resRate + '%';
-    var abnRate = k.abandonmentRate != null ? k.abandonmentRate : (k.abandonedRate != null ? k.abandonedRate : 0);
-    var abnRateEl = $('paKpiAbandonRate');
-    if(abnRateEl) abnRateEl.textContent = abnRate + '%';
-    var recRate = k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100;
-    var churnRateEl = $('paKpiChurnRate');
-    if(churnRateEl) churnRateEl.textContent = recRate + '%';
-    var docRate = k.caseDocumentationAvgScore != null ? k.caseDocumentationAvgScore : (k.caseDocCompletionRate != null ? k.caseDocCompletionRate : 0);
-    var docRateEl = $('paKpiDocRate');
-    if(docRateEl) docRateEl.textContent = docRate + '/100';
-
-    var churnCountEl = $('paKpiChurnCount');
-    if(churnCountEl){
-      churnCountEl.textContent = (k.customerFrustrationChurnRate != null ? (k.customerFrustrationChurnRate + '% churn rate') : 'De-escalation rate');
-    }
-
-    renderSpeedDistributions(data);
-    renderResolutionsAndAbandonment(data);
-    renderFrustrationAndChurn(data);
-    renderPastSessionTranscripts(data);
-  }
-
-  function renderSpeedDistributions(data){
-    var sDist = data.speedDistribution || {};
-    var rDist = data.responseDistribution || data.responseTimeDistribution || {};
-    var speedDist = {
-      '<30 WPM': sDist['<30 WPM'] != null ? sDist['<30 WPM'] : (sDist.slow || 0),
-      '30-45 WPM': sDist['30-45 WPM'] != null ? sDist['30-45 WPM'] : Math.round((sDist.standard || 0) * 0.6),
-      '45-60 WPM': sDist['45-60 WPM'] != null ? sDist['45-60 WPM'] : Math.round((sDist.standard || 0) * 0.4),
-      '60+ WPM': sDist['60+ WPM'] != null ? sDist['60+ WPM'] : (sDist.fast || 0)
-    };
-    var respDist = {
-      '<30s': rDist['<30s'] != null ? rDist['<30s'] : (rDist.under30s || 0),
-      '30-60s': rDist['30-60s'] != null ? rDist['30-60s'] : (rDist.s30to60 || 0),
-      '60-120s': rDist['60-120s'] != null ? rDist['60-120s'] : (rDist.s60to120 || 0),
-      '>120s': rDist['>120s'] != null ? rDist['>120s'] : (rDist.over120s || 0)
-    };
-    var totalSpeed = Math.max(1, (speedDist['<30 WPM'] || 0) + (speedDist['30-45 WPM'] || 0) + (speedDist['45-60 WPM'] || 0) + (speedDist['60+ WPM'] || 0));
-    var totalResp = Math.max(1, (respDist['<30s'] || 0) + (respDist['30-60s'] || 0) + (respDist['60-120s'] || 0) + (respDist['>120s'] || 0));
-
-    // Speed Distribution Bars
-    var speedBarsEl = $('paSpeedDistBars');
-    if(speedBarsEl){
-      var sRows = [
-        { key: '<30 WPM', label: '<30 WPM (Slow / Novice)', color: 'color-amber' },
-        { key: '30-45 WPM', label: '30-45 WPM (Developing / Acceptable)', color: 'color-blue' },
-        { key: '45-60 WPM', label: '45-60 WPM (Target Wyze SLA)', color: 'color-teal' },
-        { key: '60+ WPM', label: '60+ WPM (Pro Fast)', color: 'color-emerald' }
-      ];
-      speedBarsEl.innerHTML = sRows.map(function(item){
-        var count = speedDist[item.key] || 0;
-        var pct = Math.round((count / totalSpeed) * 100);
-        return '<div class="pa-dist-row">' +
-          '<div class="pa-dist-label"><span>' + item.label + '</span><strong>' + count + ' chats (' + pct + '%)</strong></div>' +
-          '<div class="pa-meter-track"><div class="pa-meter-fill ' + item.color + '" style="width:' + pct + '%;"></div></div>' +
-        '</div>';
-      }).join('');
-    }
-
-    // Response Wait Latency Bars
-    var respBarsEl = $('paRespDistBars');
-    if(respBarsEl){
-      var rRows = [
-        { key: '<30s', label: '<30s (Instant Acknowledgment)', color: 'color-emerald' },
-        { key: '30-60s', label: '30-60s (Standard BPO Handling)', color: 'color-teal' },
-        { key: '60-120s', label: '60-120s (Noticeable Lag)', color: 'color-amber' },
-        { key: '>120s', label: '>120s (Critical Churn Risk)', color: 'color-coral' }
-      ];
-      respBarsEl.innerHTML = rRows.map(function(item){
-        var count = respDist[item.key] || 0;
-        var pct = Math.round((count / totalResp) * 100);
-        return '<div class="pa-dist-row">' +
-          '<div class="pa-dist-label"><span>' + item.label + '</span><strong>' + count + ' msgs (' + pct + '%)</strong></div>' +
-          '<div class="pa-meter-track"><div class="pa-meter-fill ' + item.color + '" style="width:' + pct + '%;"></div></div>' +
-        '</div>';
-      }).join('');
-    }
-
-    // WPM Progression Table
-    var tableBody = $('paWpmTableBody');
-    if(tableBody){
-      var sessions = (data.sessions || data.recentSessions || []).slice(0, 15);
-      if(!sessions.length){
-        tableBody.innerHTML = '<tr><td colspan="5" class="muted text-center py-4">No completed chat drills yet.</td></tr>';
-      } else {
-        tableBody.innerHTML = sessions.map(function(s){
-          var dateVal = s.created_at || s.createdAt;
-          var dateStr = dateVal ? new Date(dateVal).toLocaleDateString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
-          var numWpm = s.avg_wpm || s.avgWpm;
-          var wpmVal = numWpm ? (numWpm + ' WPM') : '—';
-          var speedTier = !numWpm ? '<span class="status-badge">Unmeasured</span>' : (numWpm >= 50 ? '<span class="status-badge status-resolved">Fast (50+)</span>' : (numWpm >= 35 ? '<span class="status-badge" style="background:#e0f2fe;color:#0369a1;">Standard</span>' : '<span class="status-badge status-abandoned">Developing (<35)</span>'));
-          var outcomeBadge = s.status === 'RESOLVED' ? '<span class="status-badge status-resolved">Resolved</span>' : (s.status === 'ABANDONED' ? '<span class="status-badge status-abandoned">Abandoned</span>' : '<span class="status-badge">' + escapeHtml(s.status) + '</span>');
-          return '<tr>' +
-            '<td class="mono font-semibold">' + escapeHtml(s.ticket_id || s.ticketId || '—') + '</td>' +
-            '<td>' + dateStr + '</td>' +
-            '<td><strong>' + wpmVal + '</strong></td>' +
-            '<td>' + speedTier + '</td>' +
-            '<td>' + outcomeBadge + '</td>' +
-          '</tr>';
-        }).join('');
-      }
-    }
-  }
-
-  function renderResolutionsAndAbandonment(data){
-    var k = data.kpis || {};
-
-    // 7-Minute Abandonment Summary Box
-    var abnBox = $('paAbandonmentAnalysisContent');
-    if(abnBox){
-      var abnCount = k.abandonedSessions || k.abandonedCount || 0;
-      var abnRate = k.abandonmentRate || 0;
-      var statusColor = abnCount === 0 ? 'text-teal' : (abnCount <= 2 ? 'text-amber' : 'text-coral');
-      abnBox.innerHTML =
-        '<div class="pa-stat-highlight">' +
-          '<span class="stat-number ' + statusColor + '">' + abnCount + '</span>' +
-          '<span class="stat-desc">abandoned chats total (' + abnRate + '% of all sessions) caused by customer walkout after 7 minutes of silence.</span>' +
-        '</div>' +
-        '<p class="muted" style="margin-top:10px;font-size:0.875rem;">' +
-          (abnCount === 0
-            ? 'Excellent attendance! You have maintained proactive communication on every chat without letting customers disconnect.'
-            : 'Remember: simulated Wyze customers burst with negative impressions and terminate the chat automatically after 7 minutes without an agent reply. Send check-ins every 2–3 minutes while researching.') +
-        '</p>';
-    }
-
-    // Category Matrix
-    var catList = $('paCategoryList');
-    if(catList){
-      var cats = data.categoryBreakdown || [];
-      if(!cats.length){
-        catList.innerHTML = '<p class="muted text-sm py-2">No category data recorded yet.</p>';
-      } else {
-        catList.innerHTML = cats.map(function(c){
-          var resPercent = c.total > 0 ? Math.round((c.resolved / c.total) * 100) : 0;
-          return '<div class="pa-category-row">' +
-            '<div class="pa-category-meta">' +
-              '<span class="pa-cat-name">' + escapeHtml(c.category) + '</span>' +
-              '<span class="pa-cat-counts">' + c.total + ' chats · <span style="color:#0f766e;font-weight:600;">' + c.resolved + ' resolved</span> · <span style="color:#be123c;font-weight:600;">' + c.abandoned + ' abandoned</span></span>' +
-            '</div>' +
-            '<div class="pa-cat-rate"><span class="pa-rate-badge">' + resPercent + '% Res Rate</span></div>' +
-          '</div>';
-        }).join('');
-      }
-    }
-
-    // Abandoned Chat Drilldown Table
-    var abnTable = $('paAbandonedTableBody');
-    if(abnTable){
-      var abnSessions = (data.sessions || data.recentSessions || []).filter(function(s){ return s.abandoned || s.status === 'ABANDONED'; });
-      if(!abnSessions.length){
-        abnTable.innerHTML = '<tr><td colspan="4" class="text-teal text-center py-4 font-semibold">🎉 Zero abandoned chats recorded! Outstanding response SLA discipline.</td></tr>';
-      } else {
-        abnTable.innerHTML = abnSessions.map(function(s){
-          return '<tr>' +
-            '<td class="mono font-semibold">' + escapeHtml(s.ticket_id || s.ticketId || '—') + '</td>' +
-            '<td>' + escapeHtml(s.product || s.category || 'General Wyze') + '</td>' +
-            '<td class="text-coral font-semibold">≥ 7 min silence</td>' +
-            '<td><span class="muted text-xs">Customer outburst walkout (inactivity threshold reached)</span></td>' +
-          '</tr>';
-        }).join('');
-      }
-    }
-  }
-
-  function renderFrustrationAndChurn(data){
-    var k = data.kpis || {};
-    var recRate = k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100;
-    var churnRate = k.customerFrustrationChurnRate != null ? k.customerFrustrationChurnRate : 0;
-
-    var pctEl = $('paChurnPercent');
-    if(pctEl) pctEl.textContent = recRate + '%';
-    var descEl = $('paChurnDesc');
-    if(descEl){
-      if(recRate >= 80){
-        descEl.textContent = 'of frustrated or upset customers were successfully guided to positive resolution. Outstanding empathy!';
-      } else if(recRate >= 50){
-        descEl.textContent = 'of upset customers resolved. Moderate recovery rate; remember to validate frustration before troubleshooting.';
-      } else {
-        descEl.textContent = 'of upset customers resolved. High customer churn detected; avoid robotic canned replies and acknowledge delays.';
-      }
-    }
-  }
-
-  function renderPastSessionTranscripts(data){
-    var listEl = $('paSessionsList');
-    if(!listEl) return;
-    var rawSessions = (data.sessions && data.sessions.length) ? data.sessions : (data.recentSessions || []);
-    
-    // Merge local completed sessions so freshly finished sessions show immediately
-    var localIndex = readLS('session-index') || [];
-    var allSessions = rawSessions.slice();
-    localIndex.forEach(function(item){
-      var exists = allSessions.some(function(s){
-        return (s.id && s.id === item.id) || (s.ticket_id && s.ticket_id === item.ticketId) || (s.ticketId && s.ticketId === item.ticketId);
-      });
-      if(!exists){
-        var localFull = readLS('session:' + item.id);
-        allSessions.unshift({
-          id: item.id,
-          ticket_id: item.ticketId,
-          ticketId: item.ticketId,
-          customer_name: item.name,
-          product: (localFull && localFull.persona && localFull.persona.product) || 'Wyze Device',
-          category: item.category,
-          status: item.status,
-          created_at: item.createdAt || item.updatedAt,
-          createdAt: item.createdAt || item.updatedAt,
-          avg_wpm: (localFull && localFull.avgWpm) || null,
-          avgWpm: (localFull && localFull.avgWpm) || null,
-          messages: (localFull && localFull.messages) || [],
-          notes: (localFull && localFull.notes) || {},
-          coaching_points: (localFull && localFull.coachingPoints) || ''
-        });
-      }
-    });
-
-    var filtered = allSessions.filter(function(s){
-      if(currentTranscriptFilter === 'all') return true;
-      if(currentTranscriptFilter === 'resolved') return s.status === 'RESOLVED';
-      if(currentTranscriptFilter === 'escalated') return s.status === 'ESCALATED';
-      if(currentTranscriptFilter === 'abandoned') return s.status === 'ABANDONED' || s.abandoned;
-      return true;
-    });
-
-    if(!filtered.length){
-      listEl.innerHTML = '<div class="muted text-sm p-4 text-center">No past chats match the selected filter.</div>';
-      return;
-    }
-
-    listEl.innerHTML = filtered.map(function(s){
-      var isSelected = selectedSessionRecord && (selectedSessionRecord.id === s.id);
-      var statusClass = s.status === 'RESOLVED' ? 'status-resolved' : (s.status === 'ABANDONED' ? 'status-abandoned' : 'status-open');
-      var dateVal = s.created_at || s.createdAt;
-      var dateStr = dateVal ? new Date(dateVal).toLocaleDateString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
-      var wpm = s.avg_wpm || s.avgWpm;
-      return '<div class="pa-session-card' + (isSelected ? ' selected' : '') + '" data-id="' + escapeHtml(s.id) + '">' +
-        '<div class="pa-sc-header">' +
-          '<span class="mono font-semibold">' + escapeHtml(s.ticket_id || s.ticketId || 'WZ-000000') + '</span>' +
-          '<span class="status-badge ' + statusClass + '">' + escapeHtml(s.status) + '</span>' +
-        '</div>' +
-        '<div class="pa-sc-name">' + escapeHtml(s.customer_name || s.name || 'Customer') + ' · ' + escapeHtml(s.product || 'Wyze Device') + '</div>' +
-        '<div class="pa-sc-meta">' +
-          '<span>' + dateStr + '</span>' +
-          '<span>' + (wpm ? (wpm + ' WPM') : 'No WPM') + '</span>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-
-    listEl.querySelectorAll('.pa-session-card').forEach(function(card){
-      card.addEventListener('click', function(){
-        var id = card.getAttribute('data-id');
-        selectTranscriptSession(id, allSessions);
-      });
-    });
-
-    if(!selectedSessionRecord && filtered.length > 0){
-      selectTranscriptSession(filtered[0].id, allSessions);
-    }
-  }
-
-  function selectTranscriptSession(id, sessionPool){
-    var pool = sessionPool || (currentAnalyticsData ? (currentAnalyticsData.sessions || currentAnalyticsData.recentSessions || []) : []);
-    var found = pool.find(function(s){ return s.id === id; });
-    if(!found){
-      var localFull = readLS('session:' + id);
-      if(localFull){
-        found = {
-          id: id,
-          ticket_id: localFull.ticketId,
-          ticketId: localFull.ticketId,
-          customer_name: (localFull.persona && localFull.persona.name) || 'Customer',
-          product: (localFull.persona && localFull.persona.product) || 'Wyze Device',
-          category: (localFull.persona && localFull.persona.issueCategory) || 'General',
-          status: localFull.status,
-          created_at: localFull.createdAt,
-          messages: localFull.messages || [],
-          notes: localFull.notes || {},
-          coaching_points: localFull.coachingPoints || '',
-          avg_wpm: localFull.avgWpm
-        };
-      }
-    }
-    if(!found) return;
-
-    if(!found.messages || !found.messages.length){
-      var stored = readLS('session:' + found.id);
-      if(stored && stored.messages){
-        found.messages = stored.messages;
-        found.notes = stored.notes || found.notes;
-        found.coaching_points = stored.coachingPoints || found.coaching_points;
-      }
-    }
-
-    selectedSessionRecord = found;
-
-    var listEl = $('paSessionsList');
-    if(listEl){
-      listEl.querySelectorAll('.pa-session-card').forEach(function(c){
-        c.classList.toggle('selected', c.getAttribute('data-id') === id);
-      });
-    }
-
-    renderTranscriptDetail(found);
-  }
-
-  function renderTranscriptDetail(session){
-    var view = $('paTranscriptView');
-    if(!view) return;
-
-    var messages = [];
-    if(Array.isArray(session.messages)){
-      messages = session.messages;
-    } else if(session.transcript && Array.isArray(session.transcript)){
-      messages = session.transcript;
-    }
-
-    var notes = session.notes || {};
-    var coaching = session.coaching_points || session.coachingPoints || '';
-    var duration = session.durationSec ? formatDuration(session.durationSec) : '—';
-    var statusBadgeClass = session.status === 'RESOLVED' ? 'status-resolved' : (session.status === 'ABANDONED' ? 'status-abandoned' : 'status-open');
-
-    var msgHtml = '';
-    if(!messages.length){
-      msgHtml = '<p class="muted p-4">No chat messages recorded in this session transcript.</p>';
-    } else {
-      msgHtml = messages.map(function(m){
-        var isAgent = m.role === 'agent';
-        var isAudit = m.role === 'audit';
-        if(isAudit){
-          return '<div class="pa-msg-audit">ℹ️ ' + escapeHtml(m.text) + '</div>';
-        }
-        var senderName = isAgent ? (loginProfile ? loginProfile.name : 'You') : (session.customer_name || 'Customer');
-        var roleClass = isAgent ? 'pa-msg-agent' : 'pa-msg-customer';
-        var metaItems = [senderName];
-        if(m.ts) metaItems.push(fmtTime(m.ts));
-        if(m.wpm) metaItems.push(m.wpm + ' WPM');
-        if(m.gapSec) metaItems.push('+' + m.gapSec + 's wait');
-        return '<div class="pa-msg-item ' + roleClass + '">' +
-          '<div class="pa-msg-header">' + metaItems.join(' · ') + '</div>' +
-          '<div class="pa-msg-bubble' + (m.abandonment ? ' pa-msg-abandonment' : '') + '">' + escapeHtml(m.text) + '</div>' +
-        '</div>';
-      }).join('');
-    }
-
-    view.innerHTML =
-      '<div class="pa-detail-toolbar">' +
-        '<div>' +
-          '<h3 class="pa-detail-title mono">' + escapeHtml(session.ticket_id || 'WZ-000000') + ' <span class="status-badge ' + statusBadgeClass + '">' + escapeHtml(session.status) + '</span></h3>' +
-          '<div class="text-sm muted">' + escapeHtml(session.customer_name || 'Customer') + ' · ' + escapeHtml(session.product || 'Wyze Device') + ' (' + escapeHtml(session.category || 'General') + ') · Duration: ' + duration + '</div>' +
-        '</div>' +
-        '<button type="button" class="btn btn-sm btn-outline" id="paCopyTranscriptBtn">📋 Copy Full Transcript</button>' +
-      '</div>' +
-      '<div class="pa-messages-container">' + msgHtml + '</div>' +
-      '<div class="pa-case-notes-card">' +
-        '<h4>📑 Trainee Case Documentation Log</h4>' +
-        '<div class="pa-notes-grid">' +
-          '<div><span class="muted">Customer:</span> ' + escapeHtml(notes.customerName || notes.fCustomerName || '—') + '</div>' +
-          '<div><span class="muted">Email:</span> ' + escapeHtml(notes.email || notes.fEmail || '—') + '</div>' +
-          '<div><span class="muted">Product:</span> ' + escapeHtml(notes.product || notes.fProduct || '—') + '</div>' +
-          '<div><span class="muted">Escalation POC:</span> ' + escapeHtml(notes.escalation || notes.fEscalation || '—') + '</div>' +
-          '<div style="grid-column:1/-1;"><span class="muted">Recap / TS Performed:</span> ' + escapeHtml(notes.recap || notes.fRecap || '—') + '</div>' +
-          '<div style="grid-column:1/-1;"><span class="muted">Help Center Resources:</span> ' + escapeHtml(notes.resources || notes.fResources || '—') + '</div>' +
-          '<div style="grid-column:1/-1;"><span class="muted">Agreed Next Steps:</span> ' + escapeHtml(notes.nextSteps || notes.fNextSteps || '—') + '</div>' +
-        '</div>' +
-      '</div>' +
-      (coaching ? ('<div class="pa-coaching-card"><h4>🎯 Session QA Coaching Notes</h4><pre class="pa-coaching-text">' + escapeHtml(coaching) + '</pre></div>') : '');
-
-    var copyBtn = $('paCopyTranscriptBtn');
-    if(copyBtn){
-      copyBtn.addEventListener('click', async function(){
-        var lines = ['--- ECEWISE WYZE SIMULATOR CHAT TRANSCRIPT ---'];
-        lines.push('Ticket ID: ' + (session.ticket_id || 'WZ-000000'));
-        lines.push('Trainee: ' + (loginProfile ? loginProfile.name : 'Wyze Agent'));
-        lines.push('Customer: ' + (session.customer_name || 'Customer'));
-        lines.push('Product: ' + (session.product || 'Wyze Device'));
-        lines.push('Category: ' + (session.category || 'General'));
-        lines.push('Status: ' + session.status);
-        lines.push('Average WPM: ' + (session.avg_wpm || 'N/A'));
-        lines.push('');
-        messages.forEach(function(m){
-          var role = m.role === 'agent' ? 'Agent' : (m.role === 'audit' ? '[System Audit]' : 'Customer');
-          lines.push(role + ': ' + m.text);
-        });
-        if(notes.recap || notes.fRecap){
-          lines.push('\n[Case Notes]');
-          lines.push('Recap: ' + (notes.recap || notes.fRecap));
-          lines.push('Resources: ' + (notes.resources || notes.fResources));
-          lines.push('Next Steps: ' + (notes.nextSteps || notes.fNextSteps));
-        }
-        try {
-          await navigator.clipboard.writeText(lines.join('\n'));
-          copyBtn.textContent = 'Copied to Clipboard!';
-          setTimeout(function(){ copyBtn.textContent = '📋 Copy Full Transcript'; }, 1800);
-        } catch(e){
-          copyBtn.textContent = 'Failed to Copy';
-        }
-      });
-    }
-  }
-
-  async function loadAiInsights(analyticsData, forceRefresh, profileToView){
-    if(!analyticsData) return;
-    var target = profileToView || analyticsTargetUser || loginProfile;
-    var summaryEl = $('paExecutiveSummary');
-    var refreshBtn = $('refreshAiBtn');
-    if(refreshBtn) refreshBtn.disabled = true;
-    if(summaryEl) summaryEl.textContent = 'Synthesizing 7-day performance with Gemini QA coaching model…';
-
-    try {
-      var res = await fetch('/api/agent/ai-insights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentName: target ? target.name : 'Wyze Agent',
-          metrics: analyticsData.kpis,
-          categoryBreakdown: analyticsData.categoryBreakdown,
-          recentSessions: (analyticsData.sessions || []).slice(0, 5)
-        })
-      });
-      if(!res.ok){
-        throw new Error('AI Insights synthesis error.');
-      }
-      var json = await res.json();
-      currentAiInsights = json.insights;
-      renderAiInsights(currentAiInsights);
-    } catch(err){
-      console.error(err);
-      if(summaryEl) summaryEl.textContent = 'AI insights temporarily unavailable. Continue practicing chat drills to generate metrics.';
-    } finally {
-      if(refreshBtn) refreshBtn.disabled = false;
-    }
-  }
-
-  function renderAiInsights(insights){
-    if(!insights) return;
-    var gradeEl = $('paOverallGrade');
-    if(gradeEl){
-      gradeEl.textContent = insights.overallRating || 'Solid';
-      gradeEl.className = 'pa-grade-pill ' + (insights.overallRating === 'Excellent' ? 'status-resolved' : (insights.overallRating === 'Needs work' ? 'status-abandoned' : 'status-open'));
-    }
-    var summaryEl = $('paExecutiveSummary');
-    if(summaryEl) summaryEl.textContent = insights.summary || '';
-
-    var strengthsEl = $('paStrengthsList');
-    if(strengthsEl){
-      var s = insights.strengths || [];
-      strengthsEl.innerHTML = s.map(function(item){
-        return '<li>' + escapeHtml(item) + '</li>';
-      }).join('');
-    }
-
-    var growthEl = $('paGrowthList');
-    if(growthEl){
-      var g = insights.growthAreas || [];
-      growthEl.innerHTML = g.map(function(item){
-        return '<li>' + escapeHtml(item) + '</li>';
-      }).join('');
-    }
-
-    var churnAdvEl = $('paChurnAdvice');
-    if(churnAdvEl) churnAdvEl.textContent = insights.churnRiskAnalysis || 'Acknowledge customer frustration immediately upon joining.';
-    var speedAdvEl = $('paSpeedAdvice');
-    if(speedAdvEl) speedAdvEl.textContent = insights.slaAndSpeedAdvice || 'Aim for a steady pace of 45-60 WPM.';
-    var nextGoalEl = $('paNextGoal');
-    if(nextGoalEl) nextGoalEl.textContent = insights.nextDrillGoal || 'Complete a full scenario with zero response gaps over 60 seconds.';
-  }
-
-  function switchAnalyticsTab(tabId){
-    var tabMap = [
-      { id: 'ai', btn: $('paTabAi'), panel: $('paPanelAi') },
-      { id: 'speed', btn: $('paTabSpeed'), panel: $('paPanelSpeed') },
-      { id: 'res', btn: $('paTabRes'), panel: $('paPanelRes') },
-      { id: 'churn', btn: $('paTabChurn'), panel: $('paPanelChurn') },
-      { id: 'transcripts', btn: $('paTabTranscripts'), panel: $('paPanelTranscripts') }
-    ];
-
-    tabMap.forEach(function(item){
-      var isTarget = item.id === tabId;
-      if(item.btn){
-        item.btn.classList.toggle('active', isTarget);
-        item.btn.setAttribute('aria-selected', isTarget ? 'true' : 'false');
-      }
-      if(item.panel){
-        item.panel.hidden = !isTarget;
-        item.panel.classList.toggle('active', isTarget);
-      }
-    });
-  }
-
-  /* Auth UI & Forms Listeners */
-  if(tabSignIn) tabSignIn.addEventListener('click', function(){ setAuthTab('signIn'); });
-  if(tabSignUp) tabSignUp.addEventListener('click', function(){ setAuthTab('signUp'); });
-  if($('switchToSignUp')) $('switchToSignUp').addEventListener('click', function(){ setAuthTab('signUp'); });
-  if($('switchToSignIn')) $('switchToSignIn').addEventListener('click', function(){ setAuthTab('signIn'); });
-  if($('forgotPassLink')) $('forgotPassLink').addEventListener('click', function(){ setAuthTab('forgot'); });
-  if($('cancelForgotBtn')) $('cancelForgotBtn').addEventListener('click', function(){ setAuthTab('signIn'); });
-  if($('backToSignInFromForgot')) $('backToSignInFromForgot').addEventListener('click', function(){ setAuthTab('signIn'); });
-
-  if($('continueSignUpBtn')) $('continueSignUpBtn').addEventListener('click', handleSignUpContinue);
-  if($('backToSignUpDetailsBtn')) $('backToSignUpDetailsBtn').addEventListener('click', function(){
-    $('signUpAvatarStep').hidden = true;
-    $('signUpDetailsStep').hidden = false;
-    $('signUpName').focus();
-  });
-  if($('sendResetCodeBtn')) $('sendResetCodeBtn').addEventListener('click', handleForgotRequest);
-  if($('backToForgotStep1Btn')) $('backToForgotStep1Btn').addEventListener('click', function(){
-    $('forgotStep2').hidden = true;
-    $('forgotStep1').hidden = false;
-    $('forgotEmail').focus();
-  });
-
-  if(signInForm) signInForm.addEventListener('submit', handleSignIn);
-  if(signUpForm) signUpForm.addEventListener('submit', handleSignUp);
-  if(forgotPasswordForm) forgotPasswordForm.addEventListener('submit', handleForgotReset);
-  if(signOutBtn) signOutBtn.addEventListener('click', handleSignOut);
-
-  // Performance Cockpit Listeners
-  if(myAnalyticsBtn) myAnalyticsBtn.addEventListener('click', function(){ openMyAnalytics(); });
-  if(agentIdentity) agentIdentity.addEventListener('click', function(){ openMyAnalytics(); });
-  if(closeProfileAnalytics) closeProfileAnalytics.addEventListener('click', closeMyAnalytics);
-  if(refreshAiBtn) refreshAiBtn.addEventListener('click', function(){
-    if(currentAnalyticsData) loadAiInsights(currentAnalyticsData, true);
-  });
-  var refreshAnalyticsBtn = $('refreshAnalyticsBtn');
-  if(refreshAnalyticsBtn) refreshAnalyticsBtn.addEventListener('click', function(){
-    loadMyAnalyticsData();
-  });
-
-  if($('paTabAi')) $('paTabAi').addEventListener('click', function(){ switchAnalyticsTab('ai'); });
-  if($('paTabSpeed')) $('paTabSpeed').addEventListener('click', function(){ switchAnalyticsTab('speed'); });
-  if($('paTabRes')) $('paTabRes').addEventListener('click', function(){ switchAnalyticsTab('res'); });
-  if($('paTabChurn')) $('paTabChurn').addEventListener('click', function(){ switchAnalyticsTab('churn'); });
-  if($('paTabTranscripts')) $('paTabTranscripts').addEventListener('click', function(){ switchAnalyticsTab('transcripts'); });
-
-  document.querySelectorAll('.pa-filter-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.pa-filter-btn').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      currentTranscriptFilter = btn.getAttribute('data-filter') || 'all';
-      if(currentAnalyticsData) renderPastSessionTranscripts(currentAnalyticsData);
-    });
-  });
-
-  if(profileAnalyticsModal){
-    profileAnalyticsModal.addEventListener('click', function(ev){
-      if(ev.target === profileAnalyticsModal) closeMyAnalytics();
-    });
-  }
-
-  /* ========================================================================
-     LEADERSHIP ADMIN CONSOLE & TRAINEE ROSTER MANAGEMENT
-     ======================================================================== */
-  function openAdminConsole(){
-    if(!adminConsoleModal) return;
-    adminConsoleModal.hidden = false;
-    if(trainerAccess){
-      if(adminPasscodeGate) adminPasscodeGate.hidden = true;
-      if(adminDashboardView) adminDashboardView.hidden = false;
-      loadAdminTrainees();
-    } else {
-      if(adminPasscodeGate) adminPasscodeGate.hidden = false;
-      if(adminDashboardView) adminDashboardView.hidden = true;
-      if(adminGatePasscode){
-        adminGatePasscode.value = '';
-        adminGatePasscode.focus();
-      }
-      if(adminGateStatus) adminGateStatus.textContent = '';
-    }
-  }
-
-  function closeAdminConsoleModal(){
-    if(adminConsoleModal) adminConsoleModal.hidden = true;
-  }
-
-  function unlockAdminConsole(){
-    var code = (adminGatePasscode ? adminGatePasscode.value : '').trim();
-    if(code === TRAINER_PASSCODE){
-      trainerAccess = true;
-      trainerMode = true;
-      if(trainerModeToggle) trainerModeToggle.checked = true;
-      if(adminGateStatus) adminGateStatus.textContent = '';
-      if(adminPasscodeGate) adminPasscodeGate.hidden = true;
-      if(adminDashboardView) adminDashboardView.hidden = false;
-      loadAdminTrainees();
-    } else {
-      if(adminGateStatus){
-        adminGateStatus.textContent = 'Invalid leadership passcode. Please try again.';
-        adminGateStatus.className = 'status-msg is-error';
-      }
-      if(adminGatePasscode) adminGatePasscode.focus();
-    }
-  }
-
-  async function loadAdminTrainees(){
-    try {
-      var res = await fetch('/api/admin/trainees?key=' + encodeURIComponent(TRAINER_PASSCODE));
-      if(!res.ok){
-        throw new Error('Could not retrieve trainees list.');
-      }
-      var json = await res.json();
-      adminTraineesData = json.trainees || [];
-      renderAdminSummaryChips(adminTraineesData);
-      renderAdminTrainees();
-    } catch(err){
-      console.error(err);
-      if(adminTraineesTableBody){
-        adminTraineesTableBody.innerHTML = '<tr><td colspan="9" class="text-center p-4 muted">Unable to load trainees: ' + escapeHtml(err.message) + '</td></tr>';
-      }
-    }
-  }
-
-  function renderAdminSummaryChips(trainees){
-    var total = trainees.length;
-    var active = trainees.filter(function(t){ return t.isActive; }).length;
-    var deactivated = total - active;
-    var validWpm = trainees.filter(function(t){ return t.avgWpm != null && t.avgWpm > 0; });
-    var avgWpm = validWpm.length ? Math.round(validWpm.reduce(function(a,b){ return a + b.avgWpm; }, 0) / validWpm.length) : 0;
-    var totalResolved = trainees.reduce(function(a,b){ return a + (b.resolvedDrills || 0); }, 0);
-    var totalDrills = trainees.reduce(function(a,b){ return a + (b.totalDrills || 0); }, 0);
-    var avgResRate = totalDrills > 0 ? Math.round((totalResolved / totalDrills) * 100) : 0;
-
-    var chipsEl = $('adminQuickSummary');
-    if(chipsEl){
-      chipsEl.innerHTML =
-        '<div class="admin-chip"><strong>' + total + '</strong><span>Total Trainees</span></div>' +
-        '<div class="admin-chip is-active"><strong>' + active + '</strong><span>Active</span></div>' +
-        (deactivated > 0 ? ('<div class="admin-chip is-deactivated"><strong>' + deactivated + '</strong><span>Deactivated</span></div>') : '') +
-        '<div class="admin-chip"><strong>' + (avgWpm ? (avgWpm + ' WPM') : '—') + '</strong><span>Team Avg Speed</span></div>' +
-        '<div class="admin-chip"><strong>' + avgResRate + '%</strong><span>Overall Resolution Rate</span></div>';
-    }
-  }
-
-  function renderAdminTrainees(){
-    var q = (adminSearchInput ? adminSearchInput.value : '').toLowerCase().trim();
-    var statusFilter = adminStatusFilter ? adminStatusFilter.value : 'all';
-
-    var filtered = adminTraineesData.filter(function(t){
-      if(statusFilter === 'active' && !t.isActive) return false;
-      if(statusFilter === 'deactivated' && t.isActive) return false;
-      if(q){
-        var match = (t.name || '').toLowerCase().includes(q) ||
-                    (t.email || '').toLowerCase().includes(q) ||
-                    (t.id || '').toLowerCase().includes(q) ||
-                    (t.lastTicketId || '').toLowerCase().includes(q);
-        if(!match) return false;
-      }
-      return true;
-    });
-
-    if(currentAdminView === 'table'){
-      if(adminTraineesTableBody){
-        if(!filtered.length){
-          adminTraineesTableBody.innerHTML = '<tr><td colspan="9" class="text-center p-4 muted">No trainees found matching query.</td></tr>';
-          return;
-        }
-        adminTraineesTableBody.innerHTML = filtered.map(function(t){
-          var lastActiveStr = t.lastActive ? new Date(t.lastActive).toLocaleDateString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Never';
-          var statusPill = t.isActive
-            ? '<span class="status-badge status-resolved">Active</span>'
-            : '<span class="status-badge status-abandoned">Deactivated</span>';
-          var resRateStr = t.resolutionRate != null ? (t.resolutionRate + '%') : (t.resolvedDrills != null ? (t.resolvedDrills + '/' + t.totalDrills) : '0%');
-          var frustRateStr = t.frustrationRecoveryRate != null ? (t.frustrationRecoveryRate + '%') : '100%';
-          var caseDocStr = t.caseDocumentationAvgScore != null ? (t.caseDocumentationAvgScore + '/100') : '—';
-
-          return '<tr class="admin-trainee-row' + (t.isActive ? '' : ' is-deactivated') + '">' +
-            '<td><div class="admin-trainee-cell">' + avatarMarkup(t.avatarId || 'pip', 'admin-avatar') + '<div><strong>' + escapeHtml(t.name) + '</strong><div class="text-xs muted">' + escapeHtml(t.id) + '</div></div></div></td>' +
-            '<td><span class="mono text-xs">' + escapeHtml(t.email) + '</span></td>' +
-            '<td>' + statusPill + '</td>' +
-            '<td><strong>' + (t.totalDrills || 0) + '</strong>' + (t.lastTicketId ? ('<div class="mono text-xs muted">' + escapeHtml(t.lastTicketId) + '</div>') : '') + '</td>' +
-            '<td><span class="highlight-val">' + resRateStr + '</span></td>' +
-            '<td>' + (t.avgWpm ? ('<strong>' + t.avgWpm + '</strong> WPM') : '<span class="muted">—</span>') + '</td>' +
-            '<td>' + frustRateStr + '</td>' +
-            '<td>' + caseDocStr + '</td>' +
-            '<td style="text-align:right;"><div class="admin-actions-cell" style="justify-content:flex-end;">' +
-              '<button type="button" class="btn btn-xs btn-primary btn-drilldown" data-id="' + escapeHtml(t.id) + '" title="Open 5-tab performance analytics cockpit">🔍 Analytics</button>' +
-              '<button type="button" class="btn btn-xs btn-outline btn-resetpw" data-id="' + escapeHtml(t.id) + '" data-name="' + escapeHtml(t.name) + '" data-email="' + escapeHtml(t.email) + '" title="Manually trigger password reset">🔑 Reset</button>' +
-              (t.isActive
-                ? '<button type="button" class="btn btn-xs btn-ghost btn-toggle-status" data-id="' + escapeHtml(t.id) + '" data-active="0" title="Deactivate trainee account">⏸️ Deactivate</button>'
-                : '<button type="button" class="btn btn-xs btn-primary btn-toggle-status" data-id="' + escapeHtml(t.id) + '" data-active="1" title="Reactivate trainee account">▶️ Activate</button>') +
-            '</div></td>' +
-          '</tr>';
-        }).join('');
-      }
-    } else {
-      if(adminCardsView){
-        if(!filtered.length){
-          adminCardsView.innerHTML = '<div class="text-center p-8 muted">No trainees found matching query.</div>';
-          return;
-        }
-        adminCardsView.innerHTML = filtered.map(function(t){
-          var lastActiveStr = t.lastActive ? new Date(t.lastActive).toLocaleDateString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Never';
-          return '<div class="admin-trainee-card' + (t.isActive ? '' : ' is-deactivated') + '">' +
-            '<div class="admin-card-head">' +
-              avatarMarkup(t.avatarId || 'pip', 'admin-card-avatar') +
-              '<div>' +
-                '<h4>' + escapeHtml(t.name) + '</h4>' +
-                '<span class="mono text-xs muted">' + escapeHtml(t.email) + '</span>' +
-              '</div>' +
-              (t.isActive ? '<span class="status-badge status-resolved">Active</span>' : '<span class="status-badge status-abandoned">Deactivated</span>') +
-            '</div>' +
-            '<div class="admin-card-stats">' +
-              '<div><span>Drills:</span> <strong>' + (t.totalDrills || 0) + '</strong></div>' +
-              '<div><span>Resolution:</span> <strong>' + (t.resolutionRate != null ? t.resolutionRate + '%' : '0%') + '</strong></div>' +
-              '<div><span>Avg Speed:</span> <strong>' + (t.avgWpm ? t.avgWpm + ' WPM' : '—') + '</strong></div>' +
-              '<div><span>Last Active:</span> <strong>' + lastActiveStr + '</strong></div>' +
-              (t.lastTicketId ? ('<div style="grid-column:1/-1;"><span>Last Ticket:</span> <span class="mono">' + escapeHtml(t.lastTicketId) + '</span></div>') : '') +
-            '</div>' +
-            '<div class="admin-card-actions">' +
-              '<button type="button" class="btn btn-sm btn-primary btn-drilldown" data-id="' + escapeHtml(t.id) + '">🔍 View Analytics</button>' +
-              '<button type="button" class="btn btn-sm btn-outline btn-resetpw" data-id="' + escapeHtml(t.id) + '" data-name="' + escapeHtml(t.name) + '" data-email="' + escapeHtml(t.email) + '">🔑 Reset PW</button>' +
-              (t.isActive
-                ? '<button type="button" class="btn btn-sm btn-ghost btn-toggle-status" data-id="' + escapeHtml(t.id) + '" data-active="0">⏸️ Deactivate</button>'
-                : '<button type="button" class="btn btn-sm btn-outline btn-toggle-status" data-id="' + escapeHtml(t.id) + '" data-active="1">▶️ Activate</button>') +
-            '</div>' +
-          '</div>';
-        }).join('');
-      }
-    }
-
-    // Attach click events on dynamic buttons
-    document.querySelectorAll('.btn-drilldown').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var id = btn.getAttribute('data-id');
-        var target = adminTraineesData.find(function(item){ return item.id === id; });
-        if(target){
-          openMyAnalytics(target);
-        }
-      });
-    });
-
-    document.querySelectorAll('.btn-resetpw').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var id = btn.getAttribute('data-id');
-        var name = btn.getAttribute('data-name');
-        var email = btn.getAttribute('data-email');
-        adminTriggerPasswordReset({ id: id, name: name, email: email });
-      });
-    });
-
-    document.querySelectorAll('.btn-toggle-status').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var id = btn.getAttribute('data-id');
-        var newActive = parseInt(btn.getAttribute('data-active'), 10);
-        adminToggleTraineeStatus(id, newActive);
-      });
-    });
-  }
-
-  async function adminTriggerPasswordReset(trainee){
-    if(!confirm('Manually trigger a password reset for ' + trainee.name + ' (' + trainee.email + ')? A secure reset code will be generated immediately.')) return;
-    try {
-      var res = await fetch('/api/admin/trainees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'trigger-reset',
-          key: TRAINER_PASSCODE,
-          userId: trainee.id,
-          email: trainee.email
-        })
-      });
-      var data = await res.json();
-      if(!res.ok){
-        alert(data.error || 'Failed to trigger reset code.');
-        return;
-      }
-      if(adminResetModal){
-        adminResetModal.hidden = false;
-        if(adminResetBody){
-          adminResetBody.innerHTML =
-            '<div class="admin-dispatch-card">' +
-              '<div class="dispatch-tag">🔐 SECURITY DISPATCH FOR LEADERSHIP</div>' +
-              '<p>A fresh password reset code has been generated for <strong>' + escapeHtml(trainee.name) + '</strong> (' + escapeHtml(trainee.email) + '):</p>' +
-              '<div class="dispatch-code-box mono">' + escapeHtml(data.resetCode) + '</div>' +
-              '<p class="text-xs muted">Valid for 60 minutes. Provide this code to the trainee to reset their password via the login screen\'s "Forgot Password" tab.</p>' +
-            '</div>';
-        }
-      }
-    } catch(err){
-      alert(err.message || 'Error triggering reset code.');
-    }
-  }
-
-  async function adminToggleTraineeStatus(userId, newActive){
-    var actionVerb = newActive ? 'reactivate' : 'deactivate';
-    if(!confirm('Are you sure you want to ' + actionVerb + ' this trainee account?')) return;
-    try {
-      var res = await fetch('/api/admin/trainees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'toggle-status',
-          key: TRAINER_PASSCODE,
-          userId: userId,
-          isActive: newActive === 1
-        })
-      });
-      var data = await res.json();
-      if(!res.ok){
-        alert(data.error || 'Could not update status.');
-        return;
-      }
-      await loadAdminTrainees();
-    } catch(err){
-      alert(err.message || 'Error updating trainee status.');
-    }
-  }
-
-  async function handleAdminInviteSubmit(ev){
-    ev.preventDefault();
-    var email = $('inviteEmail') ? $('inviteEmail').value.trim() : '';
-    var name = $('inviteName') ? $('inviteName').value.trim() : '';
-    var tempPassword = $('inviteTempPassword') ? $('inviteTempPassword').value.trim() : '';
-
-    if(!email || !name){
-      alert('Please provide trainee email and name.');
-      return;
-    }
-
-    try {
-      var res = await fetch('/api/admin/trainees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'invite',
-          key: TRAINER_PASSCODE,
-          email: email,
-          name: name,
-          tempPassword: tempPassword,
-          avatarId: 'pip'
-        })
-      });
-      var data = await res.json();
-      if(!res.ok){
-        alert(data.error || 'Could not create trainee account.');
-        return;
-      }
-
-      if(adminInviteForm) adminInviteForm.hidden = true;
-      if(inviteSuccessCard) inviteSuccessCard.hidden = false;
-      if(inviteSuccessBody){
-        inviteSuccessBody.innerHTML =
-          '<p>Account provisioned successfully for <strong>' + escapeHtml(data.user.name) + '</strong>.</p>' +
-          '<div class="admin-dispatch-card">' +
-            '<div><strong>ECE Email:</strong> <span class="mono">' + escapeHtml(data.user.email) + '</span></div>' +
-            '<div><strong>Initial Password:</strong> <span class="mono">' + escapeHtml(data.tempPassword || tempPassword) + '</span></div>' +
-            '<div class="text-xs muted" style="margin-top:6px;">Trainee can now sign in at the ECE login screen using these credentials.</div>' +
-          '</div>';
-      }
-      await loadAdminTrainees();
-    } catch(err){
-      alert(err.message || 'Error provisioning account.');
-    }
-  }
-
-  /* Admin Console Toolbar & Modal Listeners */
-  if(adminConsoleBtn) adminConsoleBtn.addEventListener('click', openAdminConsole);
-  if(closeAdminConsole) closeAdminConsole.addEventListener('click', closeAdminConsoleModal);
-  if(adminGateUnlockBtn) adminGateUnlockBtn.addEventListener('click', unlockAdminConsole);
-  if(adminGatePasscode){
-    adminGatePasscode.addEventListener('keydown', function(ev){
-      if(ev.key === 'Enter') unlockAdminConsole();
-    });
-  }
-
-  if(adminSearchInput) adminSearchInput.addEventListener('input', renderAdminTrainees);
-  if(adminStatusFilter) adminStatusFilter.addEventListener('change', renderAdminTrainees);
-
-  if(adminViewTableBtn){
-    adminViewTableBtn.addEventListener('click', function(){
-      currentAdminView = 'table';
-      adminViewTableBtn.classList.add('active');
-      if(adminViewCardsBtn) adminViewCardsBtn.classList.remove('active');
-      var tw = $('adminTableWrapper');
-      if(tw) tw.hidden = false;
-      if(adminCardsView) adminCardsView.hidden = true;
-      renderAdminTrainees();
-    });
-  }
-  if(adminViewCardsBtn){
-    adminViewCardsBtn.addEventListener('click', function(){
-      currentAdminView = 'cards';
-      adminViewCardsBtn.classList.add('active');
-      if(adminViewTableBtn) adminViewTableBtn.classList.remove('active');
-      var tw = $('adminTableWrapper');
-      if(tw) tw.hidden = true;
-      if(adminCardsView) adminCardsView.hidden = false;
-      renderAdminTrainees();
-    });
-  }
-
-  if(adminInviteBtn){
-    adminInviteBtn.addEventListener('click', function(){
-      if(adminInviteModal) adminInviteModal.hidden = false;
-      if(adminInviteForm) adminInviteForm.hidden = false;
-      if(inviteSuccessCard) inviteSuccessCard.hidden = true;
-      if($('inviteEmail')){ $('inviteEmail').value = ''; $('inviteEmail').focus(); }
-      if($('inviteName')) $('inviteName').value = '';
-      if($('inviteTempPassword')) $('inviteTempPassword').value = '';
-    });
-  }
-  if(closeAdminInvite) closeAdminInvite.addEventListener('click', function(){ if(adminInviteModal) adminInviteModal.hidden = true; });
-  if(cancelAdminInvite) cancelAdminInvite.addEventListener('click', function(){ if(adminInviteModal) adminInviteModal.hidden = true; });
-  if(adminInviteForm) adminInviteForm.addEventListener('submit', handleAdminInviteSubmit);
-
-  if(closeAdminResetModal) closeAdminResetModal.addEventListener('click', function(){ if(adminResetModal) adminResetModal.hidden = true; });
-  if(dismissAdminResetModal) dismissAdminResetModal.addEventListener('click', function(){ if(adminResetModal) adminResetModal.hidden = true; });
-
-  if(adminConsoleModal){
-    adminConsoleModal.addEventListener('click', function(ev){
-      if(ev.target === adminConsoleModal) closeAdminConsoleModal();
-    });
-  }
-  if(adminInviteModal){
-    adminInviteModal.addEventListener('click', function(ev){
-      if(ev.target === adminInviteModal) adminInviteModal.hidden = true;
-    });
-  }
-  if(adminResetModal){
-    adminResetModal.addEventListener('click', function(ev){
-      if(ev.target === adminResetModal) adminResetModal.hidden = true;
-    });
-  }
-
-  /* Simulation Mode & Zendesk Email Listeners */
-  if(modeChatBtn) modeChatBtn.addEventListener('click', function(){ setSimulationMode('chat'); });
-  if(modeEmailBtn) modeEmailBtn.addEventListener('click', function(){ setSimulationMode('email'); });
-  if(zdNewEmailBtn) zdNewEmailBtn.addEventListener('click', function(){ startScenario(); });
-
-  if(openZdViewsBtn) openZdViewsBtn.addEventListener('click', openZdViews);
-  if(closeZdViewsBtn) closeZdViewsBtn.addEventListener('click', closeZdViews);
-  if(dismissZdViewsBtn) dismissZdViewsBtn.addEventListener('click', closeZdViews);
-  if(zdViewsModal){
-    zdViewsModal.addEventListener('click', function(ev){
-      if(ev.target === zdViewsModal) closeZdViews();
-    });
-  }
-
-  // Views Filter Pills
-  document.querySelectorAll('.zd-filter-pill').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.zd-filter-pill').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      zdViewsFilter = btn.getAttribute('data-filter') || 'all';
-      renderZdViewsTable();
-    });
-  });
-
-  // Zendesk Status Select Dropdown Listener
-  if(zdStatusSelect){
-    zdStatusSelect.addEventListener('change', function(){
-      var newStatus = zdStatusSelect.value;
-      if(state && state.persona){
-        var oldStatus = state.status;
-        state.status = newStatus;
-        state.updatedAt = Date.now();
-        if(newStatus === 'SOLVED') state.ended = true;
-        else state.ended = false;
-        state.messages.push({
-          role: 'audit',
-          text: 'Ticket state changed from ' + oldStatus + ' to ' + newStatus + ' by ' + (loginProfile ? loginProfile.name : 'Agent') + '.',
-          ts: Date.now()
-        });
-        renderPersonaBar();
-        renderZdTabs();
-        renderMessages();
-        updateZdViewsCounter();
-        scheduleSave(state);
-        pushServerSession(state);
-      }
-    });
-  }
-
-  // Composer Navigation: Public Reply vs Internal Note
-  if(zdNavPublicReply){
-    zdNavPublicReply.addEventListener('click', function(){
-      zdComposerMode = 'public';
-      zdNavPublicReply.classList.add('active');
-      if(zdNavInternalNote) zdNavInternalNote.classList.remove('active');
-      updateComposerPlaceholders();
-    });
-  }
-  if(zdNavInternalNote){
-    zdNavInternalNote.addEventListener('click', function(){
-      zdComposerMode = 'internal';
-      zdNavInternalNote.classList.add('active');
-      if(zdNavPublicReply) zdNavPublicReply.classList.remove('active');
-      updateComposerPlaceholders();
-    });
-  }
-  if(zdSubmitActionSelect){
-    zdSubmitActionSelect.addEventListener('change', function(){
-      updateComposerPlaceholders();
-    });
-  }
-
-  if(emailFastForwardBtn){
-    emailFastForwardBtn.addEventListener('click', function(){
-      if(emailPendingBanner) emailPendingBanner.hidden = true;
-    });
-  }
-
   setInterval(function(){
     updateCustomerFollowUps();
     updateReplyTimer();
@@ -3882,7 +1799,5 @@
   }, 3000);
 
   renderAvatarChoices();
-  if(!checkExistingAuth()){
-    setAuthTab('signIn');
-  }
+  $('loginUsername').focus();
 })();
