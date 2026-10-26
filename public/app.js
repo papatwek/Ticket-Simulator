@@ -249,6 +249,9 @@
   }
   var loginScreen = $('loginScreen');
   var loginForm = $('loginForm');
+  
+  if (!loginForm) return; // <-- ADD THIS LINE
+
   var loginStatus = $('loginStatus');
   var appRoot = $('appRoot');
   var agentIdentity = $('agentIdentity');
