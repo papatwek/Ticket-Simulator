@@ -1093,9 +1093,37 @@
       }).join('\n');
 
       var isEmail = (s.type || simMode) === 'email';
-      var userPrompt = isEmail
-        ? "Transcript so far:\n" + transcript + "\n\nReply directly as the customer in a substantive support email format with full paragraph details."
-        : "Transcript so far:\n" + transcript + "\n\nReply directly as the customer in live chat. Keep your reply strictly brief (1 to 2 short sentences max), instant, and conversational. Do not write email greetings or signatures.";
+      var lastAgentMessage = '';
+      for(var mi = s.messages.length - 1; mi >= 0; mi--){
+        if(s.messages[mi].role === 'agent' && !s.messages[mi].internalNote){
+          lastAgentMessage = s.messages[mi].text;
+          break;
+        }
+      }
+
+      var userPrompt = [
+        "Goal: You are a customer contacting support.",
+        "",
+        "STRICT RULES:",
+        "- Before responding, identify what the agent's last message is:",
+        "  - Question -> answer it only (do NOT ask what to do next)",
+        "  - Instruction -> attempt it, report what you see or experience, and ask what to do next",
+        "  - Statement -> acknowledge it naturally (do NOT ask what to do next)",
+        "- NEVER repeat a message you already sent in this conversation",
+        "- NEVER ask what to do next unless the agent just completed giving you a troubleshooting instruction step",
+        "- NEVER skip ahead or assume what comes next",
+        "- Always wait for the agent to lead the conversation",
+        "- Stay fully in sequence with the conversation flow",
+        "",
+        "Agent's last message: \"" + (lastAgentMessage || 'Hello') + "\"",
+        "",
+        "Transcript so far:",
+        transcript,
+        "",
+        isEmail
+          ? "Reply directly as the customer in a realistic, substantive support email format with full paragraph details."
+          : "Reply directly as the customer in live chat. Keep your reply strictly brief (1 to 2 short sentences max), instant, and conversational. Do not write email greetings or signatures."
+      ].join('\n');
 
       var schema = {
         type: "object",
@@ -1244,21 +1272,27 @@
     var p = s.persona;
     var isEmail = (s.type || simMode) === 'email';
     return [
-      "You are roleplaying as a regular, NON-TECHNICAL customer named " + p.name + " in a " + (isEmail ? 'support email thread' : 'live chat') + " with a Wyze support agent.",
-      "CRITICAL ROLEPLAY CONSTRAINTS:",
-      "1. You are an ordinary customer who bought a Wyze device. You are NOT tech-savvy.",
-      "2. You DO NOT know what the technical cause of your problem is.",
-      "3. You DO NOT know how to troubleshoot or what steps to take in advance.",
-      "4. You NEVER predict what the agent will do next or suggest troubleshooting steps.",
-      "5. You NEVER jump ahead or perform future SOP steps until the agent explicitly tells you to do so right now.",
-      "6. If asked for account or device details, give only what was asked.",
-      "7. If asked a question (e.g. 'What color is the light?'), look at the device and answer simply what you see.",
-      "8. If given a single instruction, perform only that step, report what happened, and ask what to do next.",
-      "9. If the agent uses unfamiliar technical jargon, ask what that means like an ordinary person.",
-      "10. Emotional tone: " + (p.emotionalState || 'Normal') + ".",
+      "Goal: You are a customer contacting Wyze support.",
+      "Customer name: " + p.name + ".",
+      "Product: " + p.product + ".",
+      "Emotional state: " + (p.emotionalState || 'Normal') + ".",
+      "LED Status Light: " + (p.ledColor || 'solid yellow') + ".",
+      "",
+      "STRICT RULES:",
+      "- Before responding, identify what the agent's last message is:",
+      "  - Question -> answer it only (do NOT ask what to do next)",
+      "  - Instruction -> attempt it, report what you see or experience, and ask what to do next",
+      "  - Statement -> acknowledge it naturally (do NOT ask what to do next)",
+      "- NEVER repeat a message you already sent",
+      "- NEVER ask what to do next unless the agent just completed giving you a step",
+      "- NEVER skip ahead or assume what comes next",
+      "- You have ZERO technical knowledge and zero troubleshooting skills.",
+      "- Always wait for the agent to lead the conversation",
+      "- Stay fully in sequence with the conversation flow",
       isEmail
-        ? "11. For Email support: Write a realistic, substantive customer email with full sentences and paragraphs describing what happened."
-        : "11. For Live Chat: Keep messages strictly brief, conversational, and instant (1 to 2 short sentences max). NEVER write multiple paragraphs or email-style greetings/sign-offs. Reply casually like you are typing in a live chat window.",
+        ? "- Email Mode: Write in a realistic, substantive customer email with full sentences and paragraph details."
+        : "- Live Chat Mode: Keep messages strictly brief (1 to 2 short sentences max), conversational, and instant. Do NOT write email greetings or sign-offs.",
+      "",
       "Persona details (reveal only when asked):",
       "- Name: " + p.name,
       "- Email: " + p.email,
@@ -1271,6 +1305,7 @@
       "- Purchase Date: " + p.purchaseDate,
       "- Proof of Purchase: " + p.proofOfPurchase,
       "- Issue: " + p.issueCategory,
+      "- Status LED Light: " + (p.ledColor || 'solid yellow'),
       "- Hidden ground truth (FOR CONTEXT ONLY - DO NOT REVEAL DIRECTLY): " + p.hiddenSummary
     ].join('\n');
   }
