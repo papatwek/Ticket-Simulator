@@ -144,21 +144,39 @@
     ['Cincinnati','OH','45201','513'],['St. Louis','MO','63101','314'],['Baltimore','MD','21201','410']
   ];
 
-  var clientRotationIndex = 0;
+  function getRandomClientIndex(){
+    var used = [];
+    try {
+      used = JSON.parse(localStorage.getItem('ece_used_persona_indices') || '[]');
+    } catch(e){}
+    if(!Array.isArray(used) || used.length >= CLIENT_50_NAMES.length){
+      used = [];
+    }
+    var available = [];
+    for(var i = 0; i < CLIENT_50_NAMES.length; i++){
+      if(used.indexOf(i) === -1) available.push(i);
+    }
+    var chosen = available[Math.floor(Math.random() * available.length)];
+    used.push(chosen);
+    try {
+      localStorage.setItem('ece_used_persona_indices', JSON.stringify(used));
+    } catch(e){}
+    return chosen;
+  }
 
   function makeFictionalName(){
-    var name = CLIENT_50_NAMES[clientRotationIndex % CLIENT_50_NAMES.length];
-    return name;
+    var idx = getRandomClientIndex();
+    return CLIENT_50_NAMES[idx];
   }
 
   function makeFakeCustomerDetails(persona){
-    var idx = clientRotationIndex;
-    clientRotationIndex = (clientRotationIndex + 1) % CLIENT_50_NAMES.length;
+    var idx = getRandomClientIndex();
+    var name = CLIENT_50_NAMES[idx];
+    if(!persona.name || persona.name === 'Jordan Alvarez' || persona.name.toLowerCase().includes('customer')){
+      persona.name = name;
+    }
 
-    var name = persona.name || CLIENT_50_NAMES[idx % CLIENT_50_NAMES.length];
-    persona.name = name;
-
-    var safeSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '.');
+    var safeSlug = persona.name.toLowerCase().replace(/[^a-z0-9]/g, '.');
     var city = CLIENT_50_CITIES[idx % CLIENT_50_CITIES.length];
     var areaCode = city[3];
 
@@ -1086,82 +1104,105 @@
   async function triggerCustomerReply(s){
     if(!s || s.ended || !s.persona) return;
     setBusy(true, s);
-    try {
-      var systemPrompt = buildSystemPrompt(s);
-      var transcript = s.messages.filter(function(m){ return !m.internalNote; }).map(function(m){
-        return (m.role === 'agent' ? 'Agent: ' : 'Customer: ') + m.text;
-      }).join('\n');
+    var turnNumber = Math.ceil(s.messages.length / 2);
 
+    try {
       var isEmail = (s.type || simMode) === 'email';
-      var lastAgentMessage = '';
-      for(var mi = s.messages.length - 1; mi >= 0; mi--){
-        if(s.messages[mi].role === 'agent' && !s.messages[mi].internalNote){
-          lastAgentMessage = s.messages[mi].text;
-          break;
+
+      // 1. API CALL STRUCTURE
+      // Filter out internal notes (internal notes are agent-only in Zendesk)
+      var publicMsgs = s.messages.filter(function(m){ return !m.internalNote; });
+
+      // Format:
+      // contents: [
+      //   { role: "user", parts: [{ text: "" }] },
+      //   { role: "model", parts: [{ text: "" }] },
+      //   ... all previous turns in order ...
+      //   { role: "user", parts: [{ text: "LATEST MESSAGE" }] }
+      // ]
+      var contents = [];
+      for(var i = 0; i < publicMsgs.length; i++){
+        var m = publicMsgs[i];
+        if(i === 0 && m.role === 'customer'){
+          contents.push({ role: "user", parts: [{ text: "[Customer opened support ticket with issue: " + s.persona.issueCategory + "]" }] });
+          contents.push({ role: "model", parts: [{ text: m.text }] });
+        } else if(m.role === 'agent'){
+          contents.push({ role: "user", parts: [{ text: m.text }] });
+        } else {
+          contents.push({ role: "model", parts: [{ text: m.text }] });
         }
       }
 
-      var userPrompt = [
-        "Goal: You are a customer contacting support.",
-        "",
-        "STRICT RULES:",
-        "- Before responding, identify what the agent's last message is:",
-        "  - Question -> answer it only (do NOT ask what to do next)",
-        "  - Instruction -> attempt it, report what you see or experience, and ask what to do next",
-        "  - Statement -> acknowledge it naturally (do NOT ask what to do next)",
-        "- NEVER repeat a message you already sent in this conversation",
-        "- NEVER ask what to do next unless the agent just completed giving you a troubleshooting instruction step",
-        "- NEVER skip ahead or assume what comes next",
-        "- Always wait for the agent to lead the conversation",
-        "- Stay fully in sequence with the conversation flow",
-        "",
-        "Agent's last message: \"" + (lastAgentMessage || 'Hello') + "\"",
-        "",
-        "Transcript so far:",
-        transcript,
-        "",
-        isEmail
-          ? "Reply directly as the customer in a realistic, substantive support email format with full paragraph details."
-          : "Reply directly as the customer in live chat. Keep your reply strictly brief (1 to 2 short sentences max), instant, and conversational. Do not write email greetings or signatures."
-      ].join('\n');
-
-      var schema = {
-        type: "object",
-        properties: {
-          message: { type: "string" },
-          status: { type: "string", enum: isEmail ? ["OPEN", "PENDING", "ON_HOLD", "SOLVED"] : ["OPEN", "ESCALATED", "RESOLVED"] }
-        },
-        required: ["message", "status"],
-        additionalProperties: false
-      };
-
-      var raw = await runModel([
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ], { schema: schema, sessionId: s.sessionId, mode: isEmail ? 'email' : 'chat' });
-
-      var parsed;
-      try { parsed = JSON.parse(raw); } catch(e){
-        parsed = {
-          message: isEmail ? "Thank you for the update. I verified and the issue is progressing." : "Okay, I'm checking that right now.",
-          status: 'OPEN'
-        };
+      // Ensure contents is non-empty and has user as the last message
+      if(contents.length === 0){
+        contents.push({ role: "user", parts: [{ text: "Hello" }] });
+      } else if(contents[contents.length - 1].role !== 'user'){
+        contents.push({ role: "user", parts: [{ text: "Hello" }] });
       }
 
+      // 4. ERROR HANDLING & RETRY
+      var replyText = null;
+      var attempt = 0;
+      var maxAttempts = 2; // Initial try + 1 automatic retry
+
+      while(attempt < maxAttempts && !replyText){
+        attempt++;
+        try {
+          var res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: contents,
+              persona: s.persona,
+              turnNumber: turnNumber,
+              mode: isEmail ? 'email' : 'chat'
+            })
+          });
+
+          if(res.ok){
+            var data = await res.json();
+            var candidate = (data && (data.message || data.text)) ? String(data.message || data.text).trim() : '';
+            if(candidate){
+              replyText = candidate;
+            } else {
+              console.warn('[Turn ' + turnNumber + '] API returned empty or null response on attempt ' + attempt);
+            }
+          } else {
+            console.error('[Turn ' + turnNumber + '] API error ' + res.status + ' on attempt ' + attempt);
+          }
+        } catch(apiErr){
+          console.error('[Turn ' + turnNumber + '] API error on attempt ' + attempt + ':', apiErr);
+        }
+      }
+
+      // If retry also fails, return fallback message as specified
+      if(!replyText){
+        console.warn('[Turn ' + turnNumber + '] All attempts failed. Returning fallback message.');
+        replyText = "Sorry, I didn't catch that. Could you repeat?";
+      }
+
+      // Clean JSON wrappers if returned
+      try {
+        var parsedObj = JSON.parse(replyText);
+        if(parsedObj && typeof (parsedObj.message || parsedObj.text) === 'string'){
+          replyText = parsedObj.message || parsedObj.text;
+        }
+      } catch(e){}
+
+      // 5. CONVERSATION STATE:
+      // Store full conversation history in array after every exchange
+      // Append bot reply to history before next call
       var now = Date.now();
       s.messages.push({
         role: 'customer',
-        text: parsed.message || (typeof parsed === 'string' ? parsed : (isEmail ? "Thank you for the email. I will follow your instructions." : "Got it, trying that now.")),
+        text: replyText,
         ts: now,
         gapSec: null
       });
 
-      // Customer reply reopens a Pending or Solved ticket back to OPEN in Zendesk
       if(isEmail){
         s.status = 'OPEN';
         s.emailNextReplyTs = null;
-      } else {
-        if(parsed.status) s.status = parsed.status;
       }
 
       if(s === state){
@@ -1170,11 +1211,21 @@
         renderTabs();
         updatePendingBanner();
       }
+
       scheduleSave(s);
       saveWorkspaceState();
     } catch(err){
-      console.error('Customer reply error:', err);
-      showError("Customer response delayed. You can continue sending your reply.", function(){ triggerCustomerReply(s); });
+      console.error('[Turn ' + turnNumber + '] Customer reply error:', err);
+      // Append fallback message even on unexpected error to prevent stalling
+      s.messages.push({
+        role: 'customer',
+        text: "Sorry, I didn't catch that. Could you repeat?",
+        ts: Date.now(),
+        gapSec: null
+      });
+      if(s === state) renderMessages();
+      scheduleSave(s);
+      saveWorkspaceState();
     } finally {
       setBusy(false, s);
     }

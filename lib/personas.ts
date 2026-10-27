@@ -387,13 +387,25 @@ for (let i = 10; i < 50; i++) {
   });
 }
 
-// Global rotation tracker
-let globalRotationIndex = 0;
+// Randomly rotating selection tracker across the library of 50 personas
+let usedIndices: number[] = [];
+
+export function getRandomPersona(): CustomerPersona {
+  if (usedIndices.length >= SYNTHETIC_PERSONAS.length) {
+    usedIndices = [];
+  }
+  // Pick a random index that hasn't been used yet in this cycle
+  const availableIndices: number[] = [];
+  for (let i = 0; i < SYNTHETIC_PERSONAS.length; i++) {
+    if (!usedIndices.includes(i)) availableIndices.push(i);
+  }
+  const chosenIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+  usedIndices.push(chosenIndex);
+  return SYNTHETIC_PERSONAS[chosenIndex];
+}
 
 export function getNextPersona(): CustomerPersona {
-  const p = SYNTHETIC_PERSONAS[globalRotationIndex % SYNTHETIC_PERSONAS.length];
-  globalRotationIndex = (globalRotationIndex + 1) % SYNTHETIC_PERSONAS.length;
-  return p;
+  return getRandomPersona();
 }
 
 export function getPersonaByIndex(idx: number): CustomerPersona {
