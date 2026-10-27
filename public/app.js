@@ -162,14 +162,14 @@
     var city = CLIENT_50_CITIES[idx % CLIENT_50_CITIES.length];
     var areaCode = city[3];
 
-    persona.email = safeSlug + (10 + idx) + '@example.invalid';
-    persona.phone = '+1 (' + areaCode + ') 555-01' + String(10 + (idx % 89)).padStart(2, '0');
-    persona.shippingAddress = (100 + (idx * 37) % 880) + ' Oak Ridge Pkwy, ' + city[0] + ', ' + city[1] + ' ' + city[2];
-    persona.macAddress = '2C:' + (10 + idx).toString(16).toUpperCase().padStart(2, '0') + ':9A:' + (30 + idx).toString(16).toUpperCase().padStart(2, '0') + ':7E:' + (idx * 17 % 256).toString(16).toUpperCase().padStart(2, '0');
-    persona.orderNumber = 'TEST-WZ-' + (100000 + idx * 1827);
-    persona.serialNumber = 'TEST-SN-' + (400000 + idx * 2913);
-    persona.purchaseDate = '2025-0' + ((idx % 8) + 1) + '-' + (10 + (idx % 18));
-    persona.proofOfPurchase = 'Wyze.com Order #' + persona.orderNumber + ' on ' + persona.purchaseDate;
+    persona.email = persona.email || (safeSlug + (10 + idx) + '@example.invalid');
+    persona.phone = persona.phone || ('+1 (' + areaCode + ') 555-01' + String(10 + (idx % 89)).padStart(2, '0'));
+    persona.shippingAddress = persona.shippingAddress || ((100 + (idx * 37) % 880) + ' Oak Ridge Pkwy, ' + city[0] + ', ' + city[1] + ' ' + city[2]);
+    persona.macAddress = persona.macAddress || ('2C:' + (10 + idx).toString(16).toUpperCase().padStart(2, '0') + ':9A:' + (30 + idx).toString(16).toUpperCase().padStart(2, '0') + ':7E:' + (idx * 17 % 256).toString(16).toUpperCase().padStart(2, '0'));
+    persona.orderNumber = persona.orderNumber || ('TEST-WZ-' + (100000 + idx * 1827));
+    persona.serialNumber = persona.serialNumber || ('TEST-SN-' + (400000 + idx * 2913));
+    persona.purchaseDate = persona.purchaseDate || ('2025-0' + ((idx % 8) + 1) + '-' + (10 + (idx % 18)));
+    persona.proofOfPurchase = persona.proofOfPurchase || ('Wyze.com Order #' + persona.orderNumber + ' on ' + persona.purchaseDate);
     return persona;
   }
 
@@ -593,7 +593,8 @@
       body: JSON.stringify({
         messages: messages,
         schema: opts.schema,
-        sessionId: opts.sessionId
+        sessionId: opts.sessionId,
+        mode: opts.mode || simMode
       })
     });
     if(!response.ok){
@@ -1091,12 +1092,16 @@
         return (m.role === 'agent' ? 'Agent: ' : 'Customer: ') + m.text;
       }).join('\n');
 
-      var userPrompt = "Transcript so far:\n" + transcript + "\n\nReply directly as the customer. Keep your reply natural and conversational.";
+      var isEmail = (s.type || simMode) === 'email';
+      var userPrompt = isEmail
+        ? "Transcript so far:\n" + transcript + "\n\nReply directly as the customer in a substantive support email format with full paragraph details."
+        : "Transcript so far:\n" + transcript + "\n\nReply directly as the customer in live chat. Keep your reply strictly brief (1 to 2 short sentences max), instant, and conversational. Do not write email greetings or signatures.";
+
       var schema = {
         type: "object",
         properties: {
           message: { type: "string" },
-          status: { type: "string", enum: simMode === 'email' ? ["OPEN", "PENDING", "ON_HOLD", "SOLVED"] : ["OPEN", "ESCALATED", "RESOLVED"] }
+          status: { type: "string", enum: isEmail ? ["OPEN", "PENDING", "ON_HOLD", "SOLVED"] : ["OPEN", "ESCALATED", "RESOLVED"] }
         },
         required: ["message", "status"],
         additionalProperties: false
@@ -1105,23 +1110,26 @@
       var raw = await runModel([
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
-      ], { schema: schema, sessionId: s.sessionId });
+      ], { schema: schema, sessionId: s.sessionId, mode: isEmail ? 'email' : 'chat' });
 
       var parsed;
       try { parsed = JSON.parse(raw); } catch(e){
-        parsed = { message: "Thank you for the update. I verified and the issue is progressing.", status: simMode === 'email' ? 'OPEN' : 'OPEN' };
+        parsed = {
+          message: isEmail ? "Thank you for the update. I verified and the issue is progressing." : "Okay, I'm checking that right now.",
+          status: 'OPEN'
+        };
       }
 
       var now = Date.now();
       s.messages.push({
         role: 'customer',
-        text: parsed.message || (typeof parsed === 'string' ? parsed : "I am checking that right now."),
+        text: parsed.message || (typeof parsed === 'string' ? parsed : (isEmail ? "Thank you for the email. I will follow your instructions." : "Got it, trying that now.")),
         ts: now,
         gapSec: null
       });
 
       // Customer reply reopens a Pending or Solved ticket back to OPEN in Zendesk
-      if(simMode === 'email'){
+      if(isEmail){
         s.status = 'OPEN';
         s.emailNextReplyTs = null;
       } else {
@@ -1234,8 +1242,9 @@
   /* ---------- Prompt Builders ---------- */
   function buildSystemPrompt(s){
     var p = s.persona;
+    var isEmail = (s.type || simMode) === 'email';
     return [
-      "You are roleplaying as a regular, NON-TECHNICAL customer named " + p.name + " in a " + (simMode === 'email' ? 'support email thread' : 'live chat') + " with a Wyze support agent.",
+      "You are roleplaying as a regular, NON-TECHNICAL customer named " + p.name + " in a " + (isEmail ? 'support email thread' : 'live chat') + " with a Wyze support agent.",
       "CRITICAL ROLEPLAY CONSTRAINTS:",
       "1. You are an ordinary customer who bought a Wyze device. You are NOT tech-savvy.",
       "2. You DO NOT know what the technical cause of your problem is.",
@@ -1247,9 +1256,9 @@
       "8. If given a single instruction, perform only that step, report what happened, and ask what to do next.",
       "9. If the agent uses unfamiliar technical jargon, ask what that means like an ordinary person.",
       "10. Emotional tone: " + (p.emotionalState || 'Normal') + ".",
-      simMode === 'email'
+      isEmail
         ? "11. For Email support: Write a realistic, substantive customer email with full sentences and paragraphs describing what happened."
-        : "11. For Live Chat: Keep messages conversational, natural, and brief (1 to 3 sentences).",
+        : "11. For Live Chat: Keep messages strictly brief, conversational, and instant (1 to 2 short sentences max). NEVER write multiple paragraphs or email-style greetings/sign-offs. Reply casually like you are typing in a live chat window.",
       "Persona details (reveal only when asked):",
       "- Name: " + p.name,
       "- Email: " + p.email,
@@ -1285,38 +1294,44 @@
     var category = CATEGORY_LABELS[randomKey];
 
     var emotion = (emotionSelect && EMOTION_LABELS[emotionSelect.value]) || EMOTION_LABELS.random;
+    var isEmail = simMode === 'email';
 
     var system = [
-      "You generate one fictional customer persona and an opening " + (simMode === 'email' ? 'support email' : 'live-chat message') + " for a Wyze customer support simulator.",
+      "You generate one fictional customer persona and an opening " + (isEmail ? 'support email' : 'live-chat message') + " for a Wyze customer support simulator.",
       "Hard rules:",
       "- All personal details must be completely synthetic (e.g. @example.invalid, 202-555-01xx).",
       "- Pick ONE specific, real Wyze product from this catalog: " + WYZE_CATALOG,
       "- Scenario type: " + category,
       "- Emotional mood: " + emotion,
       "- hiddenSummary: 2-3 sentences on the real root cause and ideal SOP troubleshooting steps.",
-      "- openingMessage: Opening inquiry written naturally as a regular customer. For email, make it a substantive, detailed email (2-3 paragraphs) explaining background context.",
-      "- subject: Email subject line if email simulation."
+      isEmail
+        ? "- openingMessage: Opening inquiry written as a realistic, substantive customer email (2-3 paragraphs) explaining background context, device setup history, order details, and the specific symptom.\n- subject: Professional email subject line."
+        : "- openingMessage: Opening inquiry for LIVE CHAT. MUST be short, direct, casual, and brief (1 to 2 sentences max), exactly how a regular customer initiates a live chat. Do NOT write paragraphs, formal letters, or greetings."
     ].join('\n');
+
+    var schemaProps = {
+      name: { type: "string" },
+      email: { type: "string" },
+      phone: { type: "string" },
+      shippingAddress: { type: "string" },
+      product: { type: "string" },
+      macAddress: { type: "string" },
+      orderNumber: { type: "string" },
+      serialNumber: { type: "string" },
+      purchaseDate: { type: "string" },
+      issueCategory: { type: "string" },
+      emotionalState: { type: "string" },
+      hiddenSummary: { type: "string" },
+      openingMessage: { type: "string" },
+      resolutionSteps: { type: "array", items: { type: "string" } }
+    };
+    if (isEmail) {
+      schemaProps.subject = { type: "string" };
+    }
 
     var schema = {
       type: "object",
-      properties: {
-        name: { type: "string" },
-        email: { type: "string" },
-        phone: { type: "string" },
-        shippingAddress: { type: "string" },
-        product: { type: "string" },
-        macAddress: { type: "string" },
-        orderNumber: { type: "string" },
-        serialNumber: { type: "string" },
-        purchaseDate: { type: "string" },
-        issueCategory: { type: "string" },
-        emotionalState: { type: "string" },
-        hiddenSummary: { type: "string" },
-        openingMessage: { type: "string" },
-        subject: { type: "string" },
-        resolutionSteps: { type: "array", items: { type: "string" } }
-      },
+      properties: schemaProps,
       required: ["name","email","phone","shippingAddress","product","macAddress","orderNumber","serialNumber","purchaseDate","issueCategory","emotionalState","hiddenSummary","openingMessage"],
       additionalProperties: false
     };
@@ -1327,7 +1342,7 @@
       var raw = await runModel([
         { role: "system", content: system },
         { role: "user", content: "Generate the fictional persona and opening inquiry now." }
-      ], { schema: schema, sessionId: s.sessionId });
+      ], { schema: schema, sessionId: s.sessionId, mode: simMode });
 
       var persona = JSON.parse(raw);
       persona.name = persona.name || makeFictionalName();
@@ -1335,7 +1350,7 @@
 
       s.persona = persona;
       s.createdAt = Date.now();
-      s.status = simMode === 'email' ? 'NEW' : 'OPEN';
+      s.status = isEmail ? 'NEW' : 'OPEN';
       s.emailSubject = persona.subject || ('Help with ' + persona.product + ' - ' + persona.issueCategory);
       s.messages = [{ role: 'customer', text: persona.openingMessage, ts: Date.now(), gapSec: null }];
       s.traineeName = loginProfile ? loginProfile.name : '';

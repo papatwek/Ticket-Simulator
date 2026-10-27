@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid JSON request payload' }, { status: 400 });
   }
 
-  const { messages, schema, sessionId } = body || {};
+  const { messages, schema, sessionId, mode } = body || {};
   const rawMessages: Array<{ role: string; content?: string; text?: string }> = Array.isArray(messages) ? messages : [];
 
   // Determine if this is a scenario generation request
@@ -79,15 +79,20 @@ export async function POST(req: Request) {
     }
   }
 
-  // Detect email mode vs chat mode from system instruction or message content
-  const isEmailMode = fullTranscript.toLowerCase().includes('email thread') ||
-                      fullTranscript.toLowerCase().includes('support email') ||
-                      (schema && schema.properties && schema.properties.subject);
+  // Explicit mode from request body takes highest precedence.
+  // In Live Chat mode, isEmailMode MUST be false so messages remain brief and instant.
+  const isEmailMode = mode === 'email' || (
+    mode !== 'chat' && (
+      fullTranscript.toLowerCase().includes('email thread') ||
+      fullTranscript.toLowerCase().includes('support email') ||
+      fullTranscript.toLowerCase().includes('zendesk email')
+    )
+  );
 
   // If scenario generation is requested, ALWAYS rotate through the 50 unique personas!
   if (isScenarioGen) {
     const nextP = getNextPersona();
-    const personaResponse = {
+    const personaResponse: any = {
       name: nextP.name,
       email: nextP.email,
       phone: nextP.phone,
@@ -101,10 +106,14 @@ export async function POST(req: Request) {
       issueCategory: nextP.issueCategory,
       emotionalState: nextP.emotionalState,
       hiddenSummary: nextP.hiddenSummary,
+      // Chat mode: strictly short, 1-2 sentence instant opening.
+      // Email mode: substantive 2-3 paragraph background email with order/device details.
       openingMessage: isEmailMode ? nextP.openingMessageEmail : nextP.openingMessage,
-      subject: nextP.subject,
       resolutionSteps: nextP.resolutionSteps
     };
+    if (isEmailMode) {
+      personaResponse.subject = nextP.subject;
+    }
     return NextResponse.json({ text: JSON.stringify(personaResponse) });
   }
 
@@ -128,8 +137,8 @@ export async function POST(req: Request) {
         "9. If the agent uses unfamiliar technical jargon (like 2.4GHz vs 5GHz SSID, subnet, baud rate), ask what that means like an ordinary person.",
         "10. Maintain your assigned emotional tone (calm, annoyed, frustrated, anxious, confused) consistently.",
         isEmailMode
-          ? "11. For Email support: Write a realistic, substantive customer email with full sentences and paragraph formatting."
-          : "11. For Live Chat: Keep messages conversational, natural, and brief (1 to 3 sentences)."
+          ? "11. For Email support: Write a realistic, substantive customer email with full sentences and paragraphs describing what happened and questions."
+          : "11. For Live Chat: Keep messages strictly brief, conversational, and instant (1 to 2 short sentences max). NEVER write multiple paragraphs or email-style greetings/sign-offs. Reply casually like you are typing in a live chat window."
       ].join('\n');
 
       const chatContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
