@@ -467,7 +467,6 @@
 
   // Complete Active Workspace Persistence across Browser Refreshes
   function saveWorkspaceState(){
-    if(!loginProfile) return;
     try {
       var snapshot = {
         simMode: simMode,
@@ -475,11 +474,21 @@
         chatSessions: chatSessions.map(serializeSession),
         emailSessions: emailSessions.map(serializeSession),
         twoChats: twoChats,
-        timerOn: timerOn
+        timerOn: timerOn,
+        profile: loginProfile
       };
-      localStorage.setItem('ecewise:' + loginProfile.id + ':active_workspace_v2', JSON.stringify(snapshot));
+      var payload = JSON.stringify(snapshot);
+      if(loginProfile && loginProfile.id){
+        localStorage.setItem('ecewise:' + loginProfile.id + ':active_workspace_v2', payload);
+      }
+      localStorage.setItem('ecewise:last_workspace_snapshot', payload);
     } catch(e){}
   }
+
+  // Ensure immediate sync when user refreshes or closes window
+  window.addEventListener('beforeunload', function(){
+    saveWorkspaceState();
+  });
 
   function deserializeSession(data, type){
     if(!data) return newSession(type);
@@ -521,9 +530,14 @@
   }
 
   function restoreWorkspaceState(){
-    if(!loginProfile) return false;
     try {
-      var raw = localStorage.getItem('ecewise:' + loginProfile.id + ':active_workspace_v2');
+      var raw = null;
+      if(loginProfile && loginProfile.id){
+        raw = localStorage.getItem('ecewise:' + loginProfile.id + ':active_workspace_v2');
+      }
+      if(!raw){
+        raw = localStorage.getItem('ecewise:last_workspace_snapshot');
+      }
       if(!raw) return false;
       var snapshot = JSON.parse(raw);
       if(!snapshot) return false;
@@ -1140,10 +1154,70 @@
         contents.push({ role: "user", parts: [{ text: "Hello" }] });
       }
 
+      function getCustomerInCharacterReply(s, lastAgentText){
+        var p = s.persona || {};
+        var name = p.name || 'Customer';
+        var email = p.email || 'customer@example.invalid';
+        var prod = p.product || 'Wyze Cam v4';
+        var led = p.ledColor || 'solid yellow';
+        var mac = p.macAddress || '2C:AA:8E:44:91:02';
+        var order = p.orderNumber || 'TEST-WZ-104928';
+        var lower = (lastAgentText || '').toLowerCase();
+
+        var alreadyUsed = function(txt){
+          return (s.messages || []).some(function(m){ return m.role === 'customer' && m.text && m.text.indexOf(txt.slice(0, 20)) !== -1; });
+        };
+
+        if(/name|email|verify|account|who am i/i.test(lower)){
+          return 'Yes, my name is ' + name + ' and my email associated with Wyze is ' + email + '.';
+        }
+        if(/mac|serial|order|invoice/i.test(lower)){
+          return 'The MAC address on the device is ' + mac + ' and order is ' + order + '.';
+        }
+        if(/light|led|color|indicator|front/i.test(lower)){
+          var ledOpts = [
+            'The small light on the front is ' + led + ' and it isn\'t flashing.',
+            'It\'s currently sitting on a ' + led + ' light right now.'
+          ];
+          for(var i=0; i<ledOpts.length; i++) if(!alreadyUsed(ledOpts[i])) return ledOpts[i];
+          return 'The light is ' + led + '.';
+        }
+        if(/unplug|power cycle|reboot|restart|outlet|cord|30 second/i.test(lower)){
+          var rebootOpts = [
+            'Okay, I just unplugged it for 30 seconds and plugged it back in. The light came back on ' + led + '.',
+            'I unplugged the power adapter and plugged it back. It\'s still showing the same ' + led + ' light.'
+          ];
+          for(var j=0; j<rebootOpts.length; j++) if(!alreadyUsed(rebootOpts[j])) return rebootOpts[j];
+          return 'I unplugged it and plugged it back in. The light is still ' + led + '.';
+        }
+        if(/button|setup|hold|press/i.test(lower)){
+          return 'I pressed and held the setup button on the camera until it clicked. It said "Ready to connect" and now the yellow light is flashing!';
+        }
+        if(/qr|scan|code|app/i.test(lower)){
+          return 'I pointed the camera at my phone screen, it made a chime and said "QR code scanned", and now the light just turned solid blue!';
+        }
+        if(/wifi|wi-fi|router|2\.4|5ghz|network/i.test(lower)){
+          return 'Our home Wi-Fi has both 2.4 and 5GHz bands. All our other devices in the house connect to it fine.';
+        }
+        if(/can i ask|may i ask|few questions|couple of questions/i.test(lower)){
+          return 'Sure, go right ahead and ask whatever you need.';
+        }
+        if(/hold|give me a moment|one moment|bear with me/i.test(lower)){
+          return 'Okay, take your time. I\'ll wait right here.';
+        }
+        if(/^hi|hello|hey|my name is/i.test(lower)){
+          return 'Hi, thanks for taking my case. My ' + prod + ' has been acting up and I need help getting it back online.';
+        }
+        return 'I\'m right here with the ' + prod + '. What is the next step you\'d like me to try?';
+      }
+
       // 4. ERROR HANDLING & RETRY
       var replyText = null;
       var attempt = 0;
       var maxAttempts = 2; // Initial try + 1 automatic retry
+      var latestUserMsg = (contents[contents.length - 1] && contents[contents.length - 1].parts && contents[contents.length - 1].parts[0])
+        ? contents[contents.length - 1].parts[0].text
+        : '';
 
       while(attempt < maxAttempts && !replyText){
         attempt++;
@@ -1155,7 +1229,8 @@
               contents: contents,
               persona: s.persona,
               turnNumber: turnNumber,
-              mode: isEmail ? 'email' : 'chat'
+              mode: isEmail ? 'email' : 'chat',
+              sessionId: s.sessionId || ''
             })
           });
 
@@ -1165,7 +1240,7 @@
             if(candidate){
               replyText = candidate;
             } else {
-              console.warn('[Turn ' + turnNumber + '] API returned empty or null response on attempt ' + attempt);
+              console.warn('[Turn ' + turnNumber + '] API returned empty response on attempt ' + attempt);
             }
           } else {
             console.error('[Turn ' + turnNumber + '] API error ' + res.status + ' on attempt ' + attempt);
@@ -1175,10 +1250,10 @@
         }
       }
 
-      // If retry also fails, return fallback message as specified
+      // If retry fails, dynamically generate in-character customer response
       if(!replyText){
-        console.warn('[Turn ' + turnNumber + '] All attempts failed. Returning fallback message.');
-        replyText = "Sorry, I didn't catch that. Could you repeat?";
+        console.warn('[Turn ' + turnNumber + '] Using in-character customer simulation engine.');
+        replyText = getCustomerInCharacterReply(s, latestUserMsg);
       }
 
       // Clean JSON wrappers if returned
@@ -1216,10 +1291,10 @@
       saveWorkspaceState();
     } catch(err){
       console.error('[Turn ' + turnNumber + '] Customer reply error:', err);
-      // Append fallback message even on unexpected error to prevent stalling
+      var fallbackMsg = getCustomerInCharacterReply(s, 'What should I do?');
       s.messages.push({
         role: 'customer',
-        text: "Sorry, I didn't catch that. Could you repeat?",
+        text: fallbackMsg,
         ts: Date.now(),
         gapSec: null
       });

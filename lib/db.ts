@@ -3,21 +3,22 @@ import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import { syncSessionToSupabase } from './supabase';
 
 // In serverless environments like Vercel (AWS Lambda), process.cwd() is read-only.
-// os.tmpdir() (/tmp) is the only writable filesystem directory.
+// os.tmpdir() (/tmp) is usually writable, but if SQLite disk write fails, we fall back to memory.
 const DB_PATH = process.env.SQLITE_DB_PATH || path.join(os.tmpdir(), 'wyze_sessions.db');
 const RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const TRAINER_PASSCODE = 'wyzeleadership';
 
-// Defensive In-Memory Fallback Store in case native SQLite disk write is restricted
+// Defensive In-Memory Store guaranteed to persist across requests in node process
 interface InMemoryStore {
   sessions: Map<string, any>;
   users: Map<string, any>;
   passwordResets: Map<string, any>;
 }
 
-const g = globalThis as unknown as { __memStore?: InMemoryStore; __sqliteDb?: DatabaseSync | null };
+const g = globalThis as unknown as { __memStore?: InMemoryStore; __sqliteDb?: DatabaseSync | null; __sqliteDisabled?: boolean };
 if (!g.__memStore) {
   g.__memStore = {
     sessions: new Map(),
@@ -27,14 +28,45 @@ if (!g.__memStore) {
 }
 
 let _db: DatabaseSync | null = null;
-let _sqliteDisabled = false;
+let _sqliteDisabled = !!g.__sqliteDisabled;
 
 function initDb(): DatabaseSync | null {
-  if (_sqliteDisabled) return null;
+  if (_sqliteDisabled || g.__sqliteDisabled) return null;
   if (_db) return _db;
 
+  // 1. Try disk database if not strictly read-only
   try {
-    _db = new DatabaseSync(DB_PATH);
+    const candidate = new DatabaseSync(DB_PATH);
+    // Explicit write test to detect read-only filesystem early
+    candidate.exec(`
+      CREATE TABLE IF NOT EXISTS _write_probe (id INTEGER PRIMARY KEY, ts INTEGER);
+      INSERT OR REPLACE INTO _write_probe (id, ts) VALUES (1, 1);
+    `);
+    _db = candidate;
+  } catch (diskErr) {
+    console.warn('[DB Warning] SQLite disk storage is read-only or restricted, falling back to in-memory database.');
+    _db = null;
+  }
+
+  // 2. Fall back to :memory: SQLite if disk fails
+  if (!_db) {
+    try {
+      const memCandidate = new DatabaseSync(':memory:');
+      memCandidate.exec(`
+        CREATE TABLE IF NOT EXISTS _write_probe (id INTEGER PRIMARY KEY, ts INTEGER);
+        INSERT OR REPLACE INTO _write_probe (id, ts) VALUES (1, 1);
+      `);
+      _db = memCandidate;
+    } catch (memErr) {
+      console.warn('[DB Warning] SQLite in-memory engine unavailable, using pure in-memory JavaScript maps.');
+      _sqliteDisabled = true;
+      g.__sqliteDisabled = true;
+      return null;
+    }
+  }
+
+  // 3. Ensure tables exist
+  try {
     _db.exec(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
@@ -79,48 +111,21 @@ function initDb(): DatabaseSync | null {
     } catch {}
 
     return _db;
-  } catch (err) {
-    console.warn('SQLite disk initialization fell back to memory store:', err);
-    try {
-      _db = new DatabaseSync(':memory:');
-      _db.exec(`
-        CREATE TABLE IF NOT EXISTS sessions (
-          id TEXT PRIMARY KEY,
-          user_id TEXT,
-          username TEXT,
-          trainee_name TEXT,
-          lob TEXT,
-          ticket_id TEXT,
-          category TEXT,
-          status TEXT,
-          ended INTEGER,
-          created_at INTEGER,
-          updated_at INTEGER,
-          data TEXT
-        );
-        CREATE TABLE IF NOT EXISTS users (
-          id TEXT PRIMARY KEY,
-          email TEXT UNIQUE NOT NULL,
-          name TEXT NOT NULL,
-          password_hash TEXT NOT NULL,
-          salt TEXT NOT NULL,
-          avatar_id TEXT DEFAULT 'pip',
-          is_active INTEGER DEFAULT 1,
-          created_at INTEGER,
-          updated_at INTEGER
-        );
-        CREATE TABLE IF NOT EXISTS password_resets (
-          email TEXT PRIMARY KEY,
-          code TEXT NOT NULL,
-          expires_at INTEGER NOT NULL
-        );
-      `);
-      return _db;
-    } catch (memErr) {
-      console.warn('SQLite in-memory fallback failed, using pure JavaScript memory maps:', memErr);
-      _sqliteDisabled = true;
-      return null;
-    }
+  } catch (schemaErr: any) {
+    console.warn('[DB Warning] SQLite schema execution failed, switching to memory maps:', schemaErr?.message);
+    _sqliteDisabled = true;
+    g.__sqliteDisabled = true;
+    _db = null;
+    return null;
+  }
+}
+
+function handleSqliteError(err: any): void {
+  if (err?.message?.includes('readonly') || err?.code === 'ERR_SQLITE_ERROR') {
+    console.warn('[DB Error Handled] SQLite readonly database caught defensively:', err.message);
+    _sqliteDisabled = true;
+    g.__sqliteDisabled = true;
+    _db = null;
   }
 }
 
@@ -198,11 +203,11 @@ export function createUser(
       insertStmt.run(userId, normalizedEmail, trimmedName, hash, salt, chosenAvatar, now, now);
     } catch (err: any) {
       if (err.message && err.message.includes('already exists')) throw err;
-      console.warn('SQLite write failed in createUser, saving to memory store:', err);
+      handleSqliteError(err);
     }
   }
 
-  // Also sync to defensive memory store
+  // Always sync to memory store
   g.__memStore!.users.set(normalizedEmail, userObj);
 
   return {
@@ -229,7 +234,7 @@ export function authenticateUser(
       const stmt = db.prepare('SELECT id, email, name, password_hash, salt, avatar_id, is_active FROM users WHERE email = ?');
       row = stmt.get(normalizedEmail);
     } catch (err) {
-      console.warn('SQLite user read failed, falling back to memory store:', err);
+      handleSqliteError(err);
     }
   }
 
@@ -272,7 +277,9 @@ export function requestPasswordReset(
     try {
       const userStmt = db.prepare('SELECT id FROM users WHERE email = ?');
       userExists = !!userStmt.get(normalizedEmail);
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
   if (!userExists) {
     userExists = g.__memStore!.users.has(normalizedEmail);
@@ -293,7 +300,9 @@ export function requestPasswordReset(
         ON CONFLICT(email) DO UPDATE SET code = excluded.code, expires_at = excluded.expires_at
       `);
       stmt.run(normalizedEmail, code, expiresAt);
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   g.__memStore!.passwordResets.set(normalizedEmail, { code, expires_at: expiresAt });
@@ -315,7 +324,9 @@ export function resetPasswordWithCode(
     try {
       const resetStmt = db.prepare('SELECT code, expires_at FROM password_resets WHERE email = ?');
       row = resetStmt.get(normalizedEmail) as { code: string; expires_at: number } | undefined;
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   if (!row) {
@@ -345,7 +356,9 @@ export function resetPasswordWithCode(
       updateStmt.run(hash, salt, now, normalizedEmail);
       const deleteStmt = db.prepare('DELETE FROM password_resets WHERE email = ?');
       deleteStmt.run(normalizedEmail);
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   const memUser = g.__memStore!.users.get(normalizedEmail);
@@ -367,7 +380,7 @@ export function pruneOldSessions(): void {
     const stmt = db.prepare('DELETE FROM sessions WHERE updated_at < ?');
     stmt.run(cutoff);
   } catch (err) {
-    // Gracefully ignore readonly or ephemeral pruning errors in serverless environments
+    handleSqliteError(err);
   }
 }
 
@@ -392,10 +405,10 @@ export function saveSessionToDb(
 ): { ok: boolean; id: string } {
   pruneOldSessions();
 
-  const id = body.id || ('sess_' + Date.now().toString(36));
+  const id = body.id || body.sessionId || ('sess_' + Date.now().toString(36));
   const category = (body.persona && body.persona.issueCategory) || '';
   const ended = body.ended ? 1 : 0;
-  const data = JSON.stringify(body);
+  const data = typeof body === 'string' ? body : JSON.stringify(body);
   const created = body.createdAt || Date.now();
   const updated = Date.now();
   const traineeName = body.traineeName ?? username;
@@ -418,6 +431,7 @@ export function saveSessionToDb(
     data,
   };
 
+  // 1. Save to SQLite (if available)
   const db = initDb();
   if (db) {
     try {
@@ -451,12 +465,15 @@ export function saveSessionToDb(
         data
       );
     } catch (err) {
-      console.warn('SQLite session write failed, falling back to memory store:', err);
+      handleSqliteError(err);
     }
   }
 
-  // Guarantee persistence in memory store
+  // 2. Guarantee in-memory fallback persistence
   g.__memStore!.sessions.set(id, sessionRecord);
+
+  // 3. Sync to Supabase in background
+  syncSessionToSupabase(body, userId, traineeName).catch(() => {});
 
   return { ok: true, id };
 }
@@ -481,7 +498,9 @@ export function listSessionsFromDb(trainer: boolean) {
         `);
         results = stmt.all();
       }
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   if (results.length === 0 && g.__memStore!.sessions.size > 0) {
@@ -502,7 +521,9 @@ export function getSessionDetailFromDb(id: string, trainer: boolean) {
     try {
       const stmt = db.prepare('SELECT data, ended FROM sessions WHERE id = ?');
       row = stmt.get(id) as { data: string; ended: number } | undefined;
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   if (!row) {
@@ -548,7 +569,9 @@ export function getMemoryFromDb(trainee: string) {
         WHERE ended = 1 AND trainee_name = ? ORDER BY updated_at DESC LIMIT 20
       `);
       results = stmt.all(trimmed);
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   if (results.length === 0) {
@@ -622,7 +645,9 @@ export function getAgentAnalyticsFromDb(identifier: string) {
         ORDER BY updated_at DESC LIMIT 200
       `);
       rows = stmt.all(trimmed, trimmed, trimmed) as Array<any>;
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   if (rows.length === 0 && g.__memStore!.sessions.size > 0) {
@@ -685,7 +710,6 @@ export function getAgentAnalyticsFromDb(identifier: string) {
     if (isResolved) catStats.resolved++;
     if (isAbandoned) catStats.abandoned++;
 
-    // Track frustration recovery
     const mood = ((d.persona && d.persona.emotionalState) || '').toLowerCase();
     const isFrustratedCustomer = /frustrat|annoy|upset|angry|impatient|anxious/.test(mood);
     if (isFrustratedCustomer) {
@@ -693,7 +717,6 @@ export function getAgentAnalyticsFromDb(identifier: string) {
       if (isResolved) frustratedResolved++;
     }
 
-    // Track case documentation
     if (d.notes) {
       let filledFields = 0;
       if (d.notes.customerName || d.notes.fCustomerName) filledFields++;
@@ -704,7 +727,6 @@ export function getAgentAnalyticsFromDb(identifier: string) {
       if (filledFields >= 3) documentedCasesCount++;
     }
 
-    // Track session average WPM
     if (d.avgWpm && typeof d.avgWpm === 'number') {
       wpmHistory.push({
         ticketId: row.ticket_id || d.ticketId || row.id,
@@ -715,7 +737,6 @@ export function getAgentAnalyticsFromDb(identifier: string) {
       catStats.wpms.push(d.avgWpm);
     }
 
-    // Inspect individual messages for typing speed and response time gaps
     const messages = Array.isArray(d.messages) ? d.messages : [];
     for (const msg of messages) {
       if (msg.role === 'agent') {
@@ -735,7 +756,6 @@ export function getAgentAnalyticsFromDb(identifier: string) {
       }
     }
 
-    // If abandoned session, extract detail
     if (isAbandoned) {
       const abandonMsg = messages.find((m: any) => m.abandonment === true || (m.role === 'customer' && /minute|silence|leaving/i.test(m.text || '')));
       abandonedSessions.push({
@@ -748,7 +768,6 @@ export function getAgentAnalyticsFromDb(identifier: string) {
       });
     }
 
-    // If resolved session, record details
     if (isResolved) {
       const start = row.created_at || d.createdAt || Date.now();
       const end = row.updated_at || Date.now();
@@ -777,7 +796,6 @@ export function getAgentAnalyticsFromDb(identifier: string) {
     });
   }
 
-  // Calculate aggregates
   const denom = completedCount > 0 ? completedCount : (totalSessions > 0 ? totalSessions : 1);
   const resolvedRate = Math.round((resolvedCount / denom) * 100);
   const escalatedRate = Math.round((escalatedCount / denom) * 100);
@@ -866,7 +884,9 @@ export function adminListTrainees(): AdminTraineeSummary[] {
     try {
       const usersStmt = db.prepare('SELECT id, email, name, avatar_id, is_active, created_at, updated_at FROM users ORDER BY created_at DESC');
       userRows = usersStmt.all() as Array<any>;
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   if (userRows.length === 0 && g.__memStore!.users.size > 0) {
@@ -905,7 +925,9 @@ export function adminToggleAccountStatus(userId: string, isActive: boolean): { o
     try {
       const stmt = db.prepare('UPDATE users SET is_active = ?, updated_at = ? WHERE id = ?');
       stmt.run(isActive ? 1 : 0, now, userId);
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
   for (const u of g.__memStore!.users.values()) {
     if (u.id === userId) {
@@ -925,7 +947,9 @@ export function adminTriggerReset(userIdOrEmail: string): { ok: boolean; code?: 
     try {
       const stmt = db.prepare('SELECT id, email, name FROM users WHERE id = ? OR email = ?');
       user = stmt.get(userIdOrEmail, userIdOrEmail) as { id: string; email: string; name: string } | undefined;
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   if (!user) {
@@ -949,7 +973,9 @@ export function adminTriggerReset(userIdOrEmail: string): { ok: boolean; code?: 
         ON CONFLICT(email) DO UPDATE SET code = excluded.code, expires_at = excluded.expires_at
       `);
       resetStmt.run(user.email, code, expiresAt);
-    } catch {}
+    } catch (err) {
+      handleSqliteError(err);
+    }
   }
 
   g.__memStore!.passwordResets.set(user.email, { code, expires_at: expiresAt });

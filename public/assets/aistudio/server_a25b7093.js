@@ -47,7 +47,7 @@ async function pruneOldSessions(env) {
     .run();
 }
 
-export default {
+const serverHandler = {
   async fetch(request, env) {
     const url = new URL(request.url);
     await ensureEndedColumn(env);
@@ -156,3 +156,5 @@ export default {
     return new Response("Not found", { status: 404 });
   },
 };
+
+export default serverHandler;

@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveSessionToDb, getSessionDetailFromDb, isTrainerPasscode } from '@/lib/db';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { syncSessionToSupabase } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -52,27 +45,13 @@ export async function POST(req: Request) {
         const saveRes = saveSessionToDb({ ...body, id: sessionId }, userId, username);
         saveResId = saveRes.id;
       } catch (dbErr) {
-        console.warn('saveSessionToDb warning handled defensively:', dbErr);
+        console.warn('[Session Save] Handled defensively:', dbErr);
       }
 
-      // 2. Optionally sync to Supabase if credentials are provided
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        try {
-          await supabase.from('sessions').upsert({
-            id: sessionId,
-            trainee_id: userId,
-            trainee_name: username,
-            ticket_id: body.ticketId || '',
-            status: body.status || 'OPEN',
-            ended: body.ended ? true : false,
-            updated_at: new Date().toISOString(),
-            data: JSON.stringify(body),
-          });
-        } catch (sErr) {
-          console.warn('Optional Supabase session sync bypassed:', sErr);
-        }
-      }
+      // 2. Sync to Supabase in background
+      syncSessionToSupabase(body, userId, username).catch((sErr) => {
+        console.warn('[Supabase Sync] Handled defensively:', sErr);
+      });
 
       return NextResponse.json({ success: true, ok: true, id: saveResId });
     }
@@ -81,28 +60,14 @@ export async function POST(req: Request) {
     const { traineeId, scenarioType } = body || {};
     const generatedId = 'sess_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('sessions')
-          .insert([
-            { 
-              trainee_id: traineeId, 
-              scenario_type: scenarioType || 'general_support',
-              status: 'active'
-            }
-          ])
-          .select()
-          .single();
-
-        if (!error && data) {
-          return NextResponse.json({ success: true, session: data });
-        }
-      } catch (err) {
-        console.warn('Supabase session insert bypassed:', err);
-      }
-    }
+    // Sync to Supabase
+    syncSessionToSupabase({
+      id: generatedId,
+      traineeId,
+      scenarioType: scenarioType || 'general_support',
+      status: 'active',
+      messages: []
+    }, traineeId).catch(() => {});
 
     return NextResponse.json({
       success: true,
