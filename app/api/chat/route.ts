@@ -5,6 +5,13 @@ import { getRandomPersona, SYNTHETIC_PERSONAS, CustomerPersona } from '@/lib/per
 // Supported model fallback cascade starting with gemini-2.0-flash as specified
 const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
 
+// Render AI Backend URL for continuous AI conversation orchestrations
+const RENDER_BACKEND_URL = (
+  process.env.AI_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_AI_BACKEND_URL ||
+  'https://my-ai-backend-i1n0.onrender.com'
+).replace(/\/$/, '');
+
 // Clean JSON schema to prevent Gemini INVALID_ARGUMENT (Schema does not support additionalProperties: false)
 function sanitizeSchema(schema: any): any {
   if (!schema || typeof schema !== 'object') return schema;
@@ -32,7 +39,7 @@ export async function POST(req: Request) {
   const isScenarioGen = !!(schema && schema.properties && schema.properties.openingMessage);
   const isEmailMode = mode === 'email';
 
-  // 1. SCENARIO GENERATION: Randomly rotate through the 50 synthetic personas
+  // 1. SCENARIO GENERATION: Randomly rotate through the 50 synthetic personas in the library
   if (isScenarioGen) {
     const nextP = getRandomPersona();
     const personaResponse: any = {
@@ -104,8 +111,8 @@ export async function POST(req: Request) {
     persona = SYNTHETIC_PERSONAS[0];
   }
 
-  // 3. BUILD API CALL STRUCTURE WITH FULL CONVERSATION HISTORY
-  // Format required:
+  // 3. API CALL STRUCTURE WITH FULL CONVERSATION HISTORY
+  // Format:
   // contents: [
   //   { role: "user", parts: [{ text: "" }] },
   //   { role: "model", parts: [{ text: "" }] },
@@ -184,14 +191,57 @@ export async function POST(req: Request) {
       : "Format: Reply in live-chat format (1-2 sentences max). Do NOT use email greetings or signatures."
   ].join('\n');
 
-  // 5. CALL GEMINI API WITH ERROR HANDLING & AUTOMATIC RETRY
-  const apiKey = process.env.GEMINI_API_KEY;
+  // 5. CALL DEDICATED RENDER AI BACKEND FOR CONTINUOUS RESPONSES
   let botReply: string | null = null;
+  const renderEndpoints = [
+    `${RENDER_BACKEND_URL}/api/chat`,
+    `${RENDER_BACKEND_URL}/chat`,
+    RENDER_BACKEND_URL
+  ];
 
-  if (apiKey) {
+  for (const endpoint of renderEndpoints) {
+    try {
+      const renderRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: apiContents,
+          messages: messages || [],
+          persona,
+          turnNumber: turnNum,
+          mode: isEmailMode ? 'email' : 'chat',
+          systemInstruction
+        }),
+        signal: AbortSignal.timeout(8000)
+      });
+
+      if (renderRes.ok) {
+        const renderData = await renderRes.json().catch(() => ({}));
+        const text = renderData.message || renderData.text || renderData.reply || renderData.response;
+        if (text && typeof text === 'string' && text.trim()) {
+          botReply = text.trim();
+          console.log(`[Turn ${turnNum}] Continuous AI response received from Render backend (${endpoint})`);
+          break;
+        }
+      } else if (renderRes.status !== 404) {
+        console.warn(`[Turn ${turnNum}] Render backend ${endpoint} returned status ${renderRes.status}`);
+      }
+    } catch (renderErr: any) {
+      console.warn(`Render AI backend unavailable or timed out, executing via local Gemini: [${renderErr?.name || 'Error'}: ${renderErr?.message || renderErr}]`);
+      break; // Proceed directly to local Gemini
+    }
+  }
+
+  // 6. LOCAL GEMINI 2.0 FLASH BACKUP IF RENDER IS SLEEPING, TIMED OUT, OR FAILS
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!botReply && apiKey) {
     const ai = new GoogleGenAI({ apiKey });
 
-    // Settings as specified:
+    // Settings:
     // model: gemini-2.0-flash
     // temperature: 0.3
     // maxOutputTokens: 800
@@ -222,27 +272,26 @@ export async function POST(req: Request) {
     try {
       botReply = await callModel('gemini-2.0-flash');
     } catch (e1: any) {
-      console.error(`[Turn ${turnNum}] Primary call exception:`, e1?.message || e1);
+      console.error(`[Turn ${turnNum}] Primary Gemini call exception:`, e1?.message || e1);
     }
 
     // Automatic retry once if empty or null response
     if (!botReply) {
       console.warn(`[Turn ${turnNum}] Bot response was empty or null. Retrying once automatically...`);
       try {
-        // Try retry with gemini-2.0-flash or gemini-2.5-flash fallback
         botReply = await callModel('gemini-2.0-flash');
         if (!botReply) {
           botReply = await callModel('gemini-2.5-flash');
         }
       } catch (e2: any) {
-        console.error(`[Turn ${turnNum}] Retry call exception:`, e2?.message || e2);
+        console.error(`[Turn ${turnNum}] Retry Gemini call exception:`, e2?.message || e2);
       }
     }
   }
 
-  // If retry also fails, return fallback message as specified
+  // If both Render and Gemini retries fail, return fallback message as specified
   if (!botReply) {
-    console.warn(`[Turn ${turnNum}] All Gemini attempts failed. Returning fallback message.`);
+    console.warn(`[Turn ${turnNum}] All AI attempts failed. Returning fallback message.`);
     botReply = "Sorry, I didn't catch that. Could you repeat?";
   }
 
