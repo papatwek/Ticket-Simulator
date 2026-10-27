@@ -1,11 +1,21 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { CUSTOMER_POOL, getCustomerByIdx } from '@/lib/customerPool';
+import { getNextPersona, SYNTHETIC_PERSONAS } from '@/lib/personas';
 
-// Supported model fallback cascade using valid, active Gemini models
-const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+// Supported model fallback cascade for high availability
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
-let globalPersonaSeq = 0;
+// Clean JSON schema to prevent Gemini INVALID_ARGUMENT (Schema does not support additionalProperties: false)
+function sanitizeSchema(schema: any): any {
+  if (!schema || typeof schema !== 'object') return schema;
+  if (Array.isArray(schema)) return schema.map(sanitizeSchema);
+  const copy: any = {};
+  for (const [key, val] of Object.entries(schema)) {
+    if (key === 'additionalProperties') continue; // Strip additionalProperties
+    copy[key] = sanitizeSchema(val);
+  }
+  return copy;
+}
 
 export async function POST(req: Request) {
   let body: any;
@@ -15,21 +25,46 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid JSON request payload' }, { status: 400 });
   }
 
-  const { messages, schema, sessionId, identityIndex, isEmail } = body || {};
+  const { messages, schema, sessionId } = body || {};
   const rawMessages: Array<{ role: string; content?: string; text?: string }> = Array.isArray(messages) ? messages : [];
 
-  // Determine rotated identity for consistent, non-repeating personas
-  let chosenIdx = typeof identityIndex === 'number' ? identityIndex : globalPersonaSeq++;
-  const activeIdentity = getCustomerByIdx(chosenIdx);
+  // Determine if this is a scenario generation request
+  const isScenarioGen = !!(schema && schema.properties && schema.properties.openingMessage);
 
-  // Extract last agent message for conversational intelligence fallback
+  // Extract transcript and last agent message
   let lastAgentMsg = '';
-  for (let i = rawMessages.length - 1; i >= 0; i--) {
-    const m = rawMessages[i];
-    if (m.role === 'user' || m.role === 'agent') {
-      const content = String(m.content || m.text || '');
-      if (content.includes('Transcript so far:')) {
-        const lines = content.split('\n');
+  let fullTranscript = '';
+  let customerPersonaInfo: any = null;
+
+  for (const m of rawMessages) {
+    const text = String(m.content || m.text || '');
+    if (m.role === 'system') {
+      fullTranscript += `\nSystem: ${text}`;
+      // Extract persona details from system prompt if provided
+      const nameMatch = text.match(/Name:\s*([^\n]+)/i);
+      const emailMatch = text.match(/Email:\s*([^\n]+)/i);
+      const prodMatch = text.match(/Product:\s*([^\n]+)/i);
+      const macMatch = text.match(/MAC Address:\s*([^\n]+)/i);
+      const orderMatch = text.match(/Order Number:\s*([^\n]+)/i);
+      const snMatch = text.match(/Serial Number:\s*([^\n]+)/i);
+      const issueMatch = text.match(/Issue:\s*([^\n]+)/i);
+      const moodMatch = text.match(/Emotional state:\s*([^\n]+)/i);
+      if (nameMatch) {
+        customerPersonaInfo = {
+          name: nameMatch[1].trim(),
+          email: emailMatch ? emailMatch[1].trim() : '',
+          product: prodMatch ? prodMatch[1].trim() : 'Wyze Cam v4',
+          macAddress: macMatch ? macMatch[1].trim() : '',
+          orderNumber: orderMatch ? orderMatch[1].trim() : '',
+          serialNumber: snMatch ? snMatch[1].trim() : '',
+          issueCategory: issueMatch ? issueMatch[1].trim() : '',
+          emotionalState: moodMatch ? moodMatch[1].trim() : 'Frustrated'
+        };
+      }
+    } else if (m.role === 'user' || m.role === 'agent') {
+      fullTranscript += `\nUser/Agent: ${text}`;
+      if (text.includes('Transcript so far:')) {
+        const lines = text.split('\n');
         for (let j = lines.length - 1; j >= 0; j--) {
           if (lines[j].startsWith('Agent:')) {
             lastAgentMsg = lines[j].replace('Agent:', '').trim();
@@ -37,64 +72,64 @@ export async function POST(req: Request) {
           }
         }
       } else {
-        lastAgentMsg = content.trim();
+        lastAgentMsg = text.trim();
       }
-      if (lastAgentMsg) break;
+    } else {
+      fullTranscript += `\nCustomer: ${text}`;
     }
   }
 
-  // 1. Try Render Dedicated AI Backend if configured and reachable
-  const backendBase = process.env.NEXT_PUBLIC_AI_BACKEND_URL;
-  if (backendBase && backendBase.startsWith('http')) {
-    try {
-      const backendUrl = `${backendBase.replace(/\/$/, '')}/generate-reply`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2800);
+  // Detect email mode vs chat mode from system instruction or message content
+  const isEmailMode = fullTranscript.toLowerCase().includes('email thread') ||
+                      fullTranscript.toLowerCase().includes('support email') ||
+                      (schema && schema.properties && schema.properties.subject);
 
-      const renderResponse = await fetch(backendUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (renderResponse.ok) {
-        const renderData = await renderResponse.json();
-        if (renderData && (renderData.text || renderData.message || typeof renderData === 'string')) {
-          return NextResponse.json(renderData);
-        }
-      }
-    } catch {
-      // Gracefully continue to native server-side Gemini
-    }
+  // If scenario generation is requested, ALWAYS rotate through the 50 unique personas!
+  if (isScenarioGen) {
+    const nextP = getNextPersona();
+    const personaResponse = {
+      name: nextP.name,
+      email: nextP.email,
+      phone: nextP.phone,
+      shippingAddress: nextP.shippingAddress,
+      product: nextP.product,
+      macAddress: nextP.macAddress,
+      orderNumber: nextP.orderNumber,
+      serialNumber: nextP.serialNumber,
+      purchaseDate: nextP.purchaseDate,
+      proofOfPurchase: nextP.proofOfPurchase,
+      issueCategory: nextP.issueCategory,
+      emotionalState: nextP.emotionalState,
+      hiddenSummary: nextP.hiddenSummary,
+      openingMessage: isEmailMode ? nextP.openingMessageEmail : nextP.openingMessage,
+      subject: nextP.subject,
+      resolutionSteps: nextP.resolutionSteps
+    };
+    return NextResponse.json({ text: JSON.stringify(personaResponse) });
   }
 
-  // 2. Primary / Resilient Server-Side Google GenAI Execution
+  // 1. Try Gemini API with strict Non-Technical Consumer Persona Instructions
   const apiKey = process.env.GEMINI_API_KEY;
   if (apiKey) {
     try {
       const ai = new GoogleGenAI({ apiKey });
 
-      let systemInstruction = [
-        `You are roleplaying strictly as an everyday retail customer named ${activeIdentity.name}.`,
-        `Product: ${activeIdentity.product}. Emotional Tone: ${activeIdentity.emotionalState}.`,
-        `STRICT PERSONA RULES:`,
-        `1. YOU ARE A REGULAR CONSUMER WITH ZERO TECHNICAL KNOWLEDGE.`,
-        `2. NEVER suggest what to do next, do NOT predict troubleshooting solutions, and do NOT offer technical theories.`,
-        `3. You rely completely on the trainee agent to guide you.`,
-        `4. Answer the agent's questions directly and truthfully based on your details:`,
-        `   - Name: ${activeIdentity.name}, Email: ${activeIdentity.email}, Phone: ${activeIdentity.phone}`,
-        `   - Order/POP: ${activeIdentity.orderNumber} (purchased from ${activeIdentity.retailer} on ${activeIdentity.purchaseDate})`,
-        `   - MAC Address: ${activeIdentity.macAddress}, Serial Number: ${activeIdentity.serialNumber}`,
-        `5. If the agent gives you a single troubleshooting instruction (e.g. unplug device, look at the LED, press setup button, switch Wi-Fi network):`,
-        `   - Carry out only that single step.`,
-        `   - Report what you physically observe in everyday layman words.`,
-        `   - Ask: "What should I do next?" or "Does that look right?"`,
-        isEmail
-          ? `6. For EMAIL simulation: write a realistic, detailed email response (1 to 3 paragraphs) including purchase context and symptom details.`
-          : `6. For LIVE CHAT: keep responses conversational, concise, and focused on the agent's exact message.`,
-        `7. Never break character. Never state that you are an AI or simulation.`
+      let baseSystemPrompt = [
+        "You are roleplaying as a REGULAR, NON-TECHNICAL customer contacting Wyze support.",
+        "CRITICAL ROLEPLAY CONSTRAINTS:",
+        "1. You are an ordinary customer who bought a Wyze smart device. You are NOT tech-savvy.",
+        "2. You DO NOT know what the technical cause of your problem is.",
+        "3. You DO NOT know how to troubleshoot or what steps to take in advance.",
+        "4. You NEVER predict what the agent will do next or suggest troubleshooting steps.",
+        "5. You NEVER jump ahead or perform future SOP steps (such as power cycling, holding setup buttons, splitting Wi-Fi, or scanning QR codes) until the agent explicitly tells you to do so right now.",
+        "6. If asked for account or device details (name, email, serial number, MAC address, order number), check your records and give only what was asked.",
+        "7. If asked a question (e.g. 'What color is the light?'), look at the device and answer simply what you see.",
+        "8. If given a single instruction (e.g. 'Please unplug the power cord for 30 seconds'), take that step, state what happened, and ask what to do next.",
+        "9. If the agent uses unfamiliar technical jargon (like 2.4GHz vs 5GHz SSID, subnet, baud rate), ask what that means like an ordinary person.",
+        "10. Maintain your assigned emotional tone (calm, annoyed, frustrated, anxious, confused) consistently.",
+        isEmailMode
+          ? "11. For Email support: Write a realistic, substantive customer email with full sentences and paragraph formatting."
+          : "11. For Live Chat: Keep messages conversational, natural, and brief (1 to 3 sentences)."
       ].join('\n');
 
       const chatContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
@@ -104,7 +139,7 @@ export async function POST(req: Request) {
         if (!text) continue;
 
         if (msg.role === 'system') {
-          systemInstruction += '\n\n' + text;
+          baseSystemPrompt += '\n\n' + text;
         } else if (msg.role === 'assistant' || msg.role === 'model' || msg.role === 'agent') {
           chatContents.push({ role: 'model', parts: [{ text }] });
         } else {
@@ -117,31 +152,27 @@ export async function POST(req: Request) {
       }
 
       const config: any = {
-        systemInstruction: systemInstruction,
+        systemInstruction: baseSystemPrompt
       };
 
       if (schema && typeof schema === 'object') {
         config.responseMimeType = 'application/json';
-        config.responseSchema = schema;
+        config.responseSchema = sanitizeSchema(schema);
       }
 
-      // Try model fallback cascade
       for (const modelName of GEMINI_MODELS) {
         try {
           const response = await ai.models.generateContent({
             model: modelName,
             contents: chatContents,
-            config: Object.keys(config).length > 0 ? config : undefined,
+            config,
           });
 
           if (response && response.text) {
             return NextResponse.json({ text: response.text });
           }
         } catch (modelErr: any) {
-          const isNotFound = modelErr?.message?.includes('404') || modelErr?.status === 404;
-          if (!isNotFound) {
-            console.warn(`Model ${modelName} error:`, modelErr?.message || modelErr);
-          }
+          console.warn(`Gemini model ${modelName} error handled:`, modelErr?.message || modelErr);
         }
       }
     } catch (geminiError: any) {
@@ -149,76 +180,50 @@ export async function POST(req: Request) {
     }
   }
 
-  // 3. Intelligent Deterministic Simulation Engine
-  // Rotates through the 60+ unique customer identities and behaves as a non-technical customer
-  if (schema && schema.properties && schema.properties.openingMessage) {
-    const isEmailScenario = isEmail || (schema.properties.subject !== undefined);
-    const persona = {
-      name: activeIdentity.name,
-      email: activeIdentity.email,
-      phone: activeIdentity.phone,
-      shippingAddress: activeIdentity.shippingAddress,
-      product: activeIdentity.product,
-      macAddress: activeIdentity.macAddress,
-      orderNumber: activeIdentity.orderNumber,
-      serialNumber: activeIdentity.serialNumber,
-      purchaseDate: activeIdentity.purchaseDate,
-      retailer: activeIdentity.retailer,
-      issueCategory: activeIdentity.issueCategory,
-      emotionalState: activeIdentity.emotionalState,
-      hiddenSummary: `Customer is experiencing ${activeIdentity.symptomDetails}. They have zero technical background and will follow instructions one at a time. Ideal SOP: verify account/POP, check status LED, power-cycle/reset, confirm 2.4 GHz network, and re-pair.`,
-      openingMessage: isEmailScenario ? activeIdentity.emailBody : activeIdentity.chatOpening,
-      subject: activeIdentity.emailSubject,
-      resolutionSteps: [
-        "Acknowledge customer concerns with empathy and confirm customer name & email.",
-        "Verify Proof of Purchase (Order # or retailer receipt) and product model.",
-        "Check device status indicator or current LED color.",
-        "Guide customer through simple power-cycle or reset step without technical jargon.",
-        "Ensure smartphone is on a 2.4 GHz Wi-Fi network and guide setup.",
-        "Confirm live stream or device function is restored and summarize case resolution."
-      ]
-    };
-    return NextResponse.json({ text: JSON.stringify(persona) });
-  }
-
-  // Conversational response logic: innocent non-tech customer reacting to agent
+  // 2. Intelligent, Non-Technical Customer Conversational Fallback Engine
+  // Comprehends the agent's message logically and relies 100% on the trainee's step-by-step guidance
+  const persona = customerPersonaInfo || SYNTHETIC_PERSONAS[0];
   const lowerMsg = (lastAgentMsg || '').toLowerCase();
+
   let replyText = "";
   let ticketStatus = "OPEN";
 
-  if (/name|who are you|who am i/i.test(lowerMsg) && /email/i.test(lowerMsg)) {
-    replyText = `My name is ${activeIdentity.name}, and my email address linked to the order is ${activeIdentity.email}.`;
-  } else if (/name/i.test(lowerMsg) && !/product|device/i.test(lowerMsg)) {
-    replyText = `My name is ${activeIdentity.name}.`;
-  } else if (/email/i.test(lowerMsg)) {
-    replyText = `The email address on my Wyze account is ${activeIdentity.email}.`;
-  } else if (/order|pop|proof of purchase|receipt|bought|where did you purchase/i.test(lowerMsg)) {
-    replyText = `I bought it from ${activeIdentity.retailer} on ${activeIdentity.purchaseDate}. My order number is ${activeIdentity.orderNumber}.`;
-  } else if (/mac|serial|sticker|barcode/i.test(lowerMsg)) {
-    replyText = `I looked at the small sticker on the bottom of the device. The MAC address is ${activeIdentity.macAddress} and the Serial Number says ${activeIdentity.serialNumber}.`;
-  } else if (/light|led|color|indicator|front/i.test(lowerMsg)) {
-    replyText = `Looking at the front of the ${activeIdentity.product} right now, the little light is sitting solid yellow. It's not blinking or changing color.`;
-  } else if (/unplug|power cycle|reboot|restart|power cord|wall outlet/i.test(lowerMsg)) {
-    replyText = `Okay, I unplugged the power adapter from the wall, waited about 30 seconds, and plugged it back in. Now the yellow light is blinking slowly. What should I do next?`;
-  } else if (/setup button|bottom button|pin|hold down|press and hold/i.test(lowerMsg)) {
-    replyText = `I found the button and held it down for a few seconds. The device just made a chime sound and announced 'Ready to connect'. What's the next step?`;
-  } else if (/qr|code|scan|camera lens|screen/i.test(lowerMsg)) {
-    replyText = `I held up the QR code on my phone in front of the lens like you said... and it just beeped and said 'QR code scanned, please wait'! Now the light changed to solid blue!`;
-  } else if (/2\.4|5ghz|router|wifi|wi-fi|network name|ssid/i.test(lowerMsg)) {
-    replyText = `I checked my phone's Wi-Fi list. I see two names for my home internet: one ends in '5G' and the other one doesn't. I just connected my phone to the regular one without 5G. Is that right?`;
-  } else if (/app|open|live|stream|feed|picture|see/i.test(lowerMsg)) {
-    replyText = `Yes! I just opened the live view in the Wyze app and the video feed came right up in clear 2.5K! The camera is working completely now. Thank you so much for walking me through that!`;
-    ticketStatus = "RESOLVED";
-  } else if (/anything else|further questions|all set|wrap up|case recap/i.test(lowerMsg)) {
-    replyText = `That's everything I needed help with! You were so patient and helpful. Thank you again, have a wonderful day!`;
-    ticketStatus = "RESOLVED";
+  // Check what the agent is actually asking or instructing:
+  if (/name|email|verify|account|who am i|who is this|confirm.*identity/i.test(lowerMsg)) {
+    replyText = `Sure thing. My name is ${persona.name}, and the email on my Wyze account is ${persona.email}.`;
+  } else if (/order|receipt|proof of purchase|pop|where.*buy|when.*purchase|bought/i.test(lowerMsg)) {
+    replyText = `I have my order details right here. My order number was ${persona.orderNumber || 'TEST-WZ-104928'}, purchased under ${persona.proofOfPurchase || 'Wyze.com'}.`;
+  } else if (/mac|serial|sn|sticker|hardware|model|barcode/i.test(lowerMsg)) {
+    replyText = `Let me turn the device over to look at the small sticker on the bottom... The MAC address is ${persona.macAddress || '2C:AA:8E:44:91:02'} and the serial number is ${persona.serialNumber || 'TEST-SN-772910'}.`;
+  } else if (/phone|shipping|address|send.*replacement|ship/i.test(lowerMsg)) {
+    replyText = `My shipping address is ${persona.shippingAddress || '742 Evergreen Terrace, Seattle, WA 98101'} and my phone number is ${persona.phone || '+1 (206) 555-0148'}.`;
+  } else if (/light|led|color|indicator|status light|front|blinking|solid/i.test(lowerMsg)) {
+    replyText = `I'm looking directly at the small light on the front right now. It is currently ${persona.ledColor || 'solid yellow'} and not flashing.`;
+  } else if (/unplug|power cycle|reboot|restart|power cord|wall outlet|disconnect.*power/i.test(lowerMsg)) {
+    replyText = `Okay, I just reached behind and unplugged the power cable from the wall. Let me count to 30 seconds... Okay, plugging it back in now. The light went off, and now it just started flashing yellow. What should I do next?`;
+  } else if (/2\.4|5ghz|router|dual|band|wifi|wi-fi|network|ssid|frequency/i.test(lowerMsg)) {
+    replyText = `I have home Wi-Fi from my cable company, but I'm not really sure about 2.4GHz or 5GHz. I just see one network name in my phone. How do I check if my phone is on 2.4GHz?`;
+  } else if (/connect.*phone|choose.*2g|select.*2\.4|wifi settings/i.test(lowerMsg)) {
+    replyText = `Okay, I opened my phone settings like you said and I see one called Home_2G! I just tapped it and connected my phone to it.`;
+  } else if (/setup button|hold.*button|press.*button|rubber flap|button on/i.test(lowerMsg)) {
+    replyText = `Where is the setup button? Oh, under the little rubber flap on the bottom! Okay, I held it down for a few seconds... and the camera speaker just chimed and said 'Ready to connect'!`;
+  } else if (/qr|code|scan|screen|hold.*camera|camera.*lens/i.test(lowerMsg)) {
+    replyText = `I'm holding my phone screen with the QR code about 6 inches from the camera lens... It just made a ding sound and announced 'QR code scanned, please wait'! The status light just turned solid blue!`;
+  } else if (/work|live|stream|feed|picture|see.*video|app.*showing/i.test(lowerMsg)) {
+    replyText = `Let me check the Wyze app... Oh, wow! The live video stream just opened right up in full color! It shows my room clearly and says 'Live'. It looks like that fixed it!`;
+    ticketStatus = isEmailMode ? "SOLVED" : "RESOLVED";
+  } else if (/anything else|further|wrap|all set|recap|summary/i.test(lowerMsg)) {
+    replyText = `That was everything I needed help with today! Thank you so much for being patient and guiding me step by step. Have a wonderful rest of your day!`;
+    ticketStatus = isEmailMode ? "SOLVED" : "RESOLVED";
+  } else if (/hello|hi|good morning|good afternoon|how can i help|thank you for contacting/i.test(lowerMsg)) {
+    replyText = `Hi! Thanks for taking my case. My ${persona.product || 'Wyze device'} has an issue: ${persona.issueCategory || 'it stopped connecting'}. Please let me know what I should do.`;
   } else {
-    replyText = `I'm here and ready. What is the next step you would like me to try with the ${activeIdentity.product}?`;
+    replyText = `I'm standing right here with the ${persona.product || 'device'} following your instructions. What is the next step you'd like me to try?`;
   }
 
-  // Format email response if requested
-  if (isEmail) {
-    replyText = `Hello,\n\n${replyText}\n\nThank you,\n${activeIdentity.name}`;
+  // In Email mode, format the customer response as a detailed, substantive email
+  if (isEmailMode) {
+    replyText = `Hello,\n\nThank you for getting back to me regarding my ${persona.product}.\n\n${replyText}\n\nCould you please let me know what our next step is?\n\nSincerely,\n${persona.name}`;
   }
 
   const fallbackReply = {

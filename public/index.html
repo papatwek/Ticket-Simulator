@@ -152,45 +152,127 @@
 </section>
 
 <div class="app" id="appRoot" hidden aria-hidden="true">
-
-  <header class="toolbar">
-    <div class="brand">
-      <span class="brand-mark">WZ</span>
-      <div class="brand-text">
-        <strong>Wyze <span class="brand-tag">- ECE Ticket Simulator</span></strong>
-        <span>Live-Chat &amp; Email Support Practice</span>
+  <div class="cockpit-container">
+    <!-- Collapsible Left Navigation Panel -->
+    <aside class="left-panel" id="leftPanel" aria-label="Cockpit Navigation">
+      <div class="left-panel-header">
+        <div class="panel-brand">
+          <span class="panel-brand-mark">WZ</span>
+          <span class="panel-brand-title">ECE Navigator</span>
+        </div>
+        <button type="button" class="panel-collapse-trigger" id="panelCollapseTrigger" title="Collapse / Expand Left Panel" aria-label="Collapse or expand panel">
+          <svg class="collapse-arrow-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
       </div>
-      <button type="button" class="btn btn-ghost how-to-use-btn" id="howToUseBtn" title="Interactive Simulator Walkthrough &amp; Guide">📖 How to use</button>
-    </div>
-    <div class="sim-mode-toggle" role="radiogroup" aria-label="Simulation Mode">
-      <button type="button" class="mode-tab active" id="modeChatBtn" title="Switch to Real-time Live-Chat Simulation">💬 Live Chat</button>
-      <button type="button" class="mode-tab" id="modeEmailBtn" title="Switch to Asynchronous Email Ticketing Simulation">✉️ Email Ticket</button>
-    </div>
-    <div class="toolbar-controls">
-      <select id="emotionSelect" class="tb-select" aria-label="Customer mood" title="Set simulated customer emotional state">
-        <option value="random">Mood: Random</option>
-        <option value="calm">Calm</option>
-        <option value="annoyed">Mildly annoyed</option>
-        <option value="frustrated">Frustrated</option>
-        <option value="upset">Very upset</option>
-        <option value="anxious">Anxious / worried</option>
-        <option value="confused">Confused</option>
-      </select>
-      <label class="toggle" id="twoChatsToggleWrap" title="Run two customers at once, like a real live-chat queue"><input type="checkbox" id="twoChatsToggle"/><span>2 chats</span></label>
-      <button id="newScenarioBtn" class="btn btn-primary" title="Launch a new simulated customer inquiry">Start new customer</button>
-      <button id="feedbackBtn" class="btn btn-ghost" disabled title="View QA feedback on current conversation">Coaching notes</button>
-      <button id="caseBtn" class="btn btn-ghost" title="Document ticket case file">Case file</button>
-      <button type="button" class="btn btn-ghost hub-toggle-btn" id="rightDrawerToggleBtn" title="Open Profile, Performance, Themes, and Leadership Admin">
-        <span id="hubBtnAvatar">👤</span>
-        <span>Agent Hub</span>
-      </button>
-    </div>
-  </header>
 
-  <div class="disclaimer">
-    <span><strong>Training simulator only</strong> — not affiliated with or endorsed by Wyze Labs, Inc. Every customer detail is synthetic practice data.</span>
-    <span id="accountStatus" class="sync-status">Shared history is active.</span>
-  </div>
+      <!-- Trainee Profile Card -->
+      <div class="left-profile-card" id="leftProfileCard" title="Click to view performance or change your avatar">
+        <div class="left-avatar-container" id="leftAvatarBtn" title="Click to change avatar">
+          <span id="leftAvatarArt" class="left-avatar-art"></span>
+          <span class="avatar-edit-icon" title="Change avatar">✎</span>
+        </div>
+        <div class="left-profile-info">
+          <div class="left-user-name" id="leftUserName">Trainee Agent</div>
+          <div class="left-user-email" id="leftUserEmail">agent@ececontactcenters.com</div>
+          <span class="left-user-badge">ECE Tier 1 Support</span>
+        </div>
+      </div>
+
+      <!-- Navigation & Cockpit Controls -->
+      <nav class="left-nav">
+        <div class="left-nav-heading">Telemetry &amp; QA</div>
+        <button type="button" class="left-nav-item" id="myAnalyticsBtn" title="View your personal speed, latency, and AI coaching insights">
+          <span class="left-nav-icon">📊</span>
+          <span class="left-nav-label">My Performance</span>
+        </button>
+        <button type="button" class="left-nav-item" id="adminConsoleBtn" title="Leadership Admin: Trainee management &amp; telemetry">
+          <span class="left-nav-icon">🛡️</span>
+          <span class="left-nav-label">Leadership Admin</span>
+        </button>
+        <button type="button" class="left-nav-item" id="historyBtn" title="Review past practice sessions and transcripts">
+          <span class="left-nav-icon">📜</span>
+          <span class="left-nav-label">Session History</span>
+        </button>
+        <button type="button" class="left-nav-item" id="infoBtn" title="Open the full simulator instructions walkthrough">
+          <span class="left-nav-icon">❓</span>
+          <span class="left-nav-label">How to use</span>
+        </button>
+
+        <div class="left-nav-heading" style="margin-top:16px;">Simulator Preferences</div>
+        <div class="left-setting-row">
+          <label for="themeSelect" class="left-setting-label">🎨 Theme</label>
+          <select id="themeSelect" class="left-theme-select" aria-label="Visual Theme">
+            <option value="wyze">Wyze Teal</option>
+            <option value="dark">Dark Cockpit</option>
+            <option value="warm">Warm Classic</option>
+          </select>
+        </div>
+
+        <div class="left-setting-row">
+          <label class="left-toggle-row" title="Reveal ground truth answer key for coaching review">
+            <span class="left-setting-label">👁️ Trainer view</span>
+            <input type="checkbox" id="trainerModeToggle" class="left-checkbox"/>
+          </label>
+        </div>
+      </nav>
+
+      <!-- Sidebar Sign Out in Footer -->
+      <div class="left-panel-footer">
+        <button type="button" class="left-signout-btn" id="signOutBtn" title="Sign out of your account">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span class="left-nav-label">Sign out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <div class="cockpit-main">
+      <header class="toolbar">
+        <div class="toolbar-brand-row">
+          <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar (Expand/Collapse)" aria-label="Toggle navigation panel">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
+          <div class="brand">
+            <span class="brand-mark">WZ</span>
+            <div class="brand-text">
+              <strong>Wyze <span class="brand-tag">- ECE Simulator</span></strong>
+              <span>Support Practice Cockpit</span>
+            </div>
+          </div>
+          <div class="sim-mode-toggle" role="radiogroup" aria-label="Simulation Mode">
+            <button type="button" class="mode-tab active" id="modeChatBtn" title="Switch to Real-time Live-Chat Simulation">💬 Live Chat</button>
+            <button type="button" class="mode-tab" id="modeEmailBtn" title="Switch to Asynchronous Email Ticketing Simulation">✉️ Email Ticket</button>
+          </div>
+        </div>
+
+        <div class="toolbar-controls">
+          <select id="emotionSelect" class="tb-select" aria-label="Customer mood">
+            <option value="random">Mood: Random</option>
+            <option value="calm">Calm</option>
+            <option value="annoyed">Mildly annoyed</option>
+            <option value="frustrated">Frustrated</option>
+            <option value="upset">Very upset</option>
+            <option value="anxious">Anxious / worried</option>
+            <option value="confused">Confused</option>
+          </select>
+          <label class="toggle" id="twoChatsToggleWrap" title="Run two customers at once, like a real live-chat queue"><input type="checkbox" id="twoChatsToggle"/><span>2 chats</span></label>
+          
+          <div class="reply-timer-widget" id="replyTimer" title="Automatic live response timer">
+            <span class="timer-dot"></span>
+            <span class="timer-label">Timer:</span>
+            <span class="timer-clock" id="replyTimerClock">00:00</span>
+          </div>
+
+          <button id="newScenarioBtn" class="btn btn-primary">Start new customer</button>
+          <button id="feedbackBtn" class="btn btn-ghost" disabled>Coaching notes</button>
+          <button id="caseBtn" class="btn btn-ghost">Case file</button>
+        </div>
+      </header>
+
+      <div class="disclaimer">
+        <span><strong>Training simulator only</strong> — synthetic practice data for Wyze BPO agents.</span>
+        <span id="accountStatus" class="sync-status">Shared history is active.</span>
+      </div>
 
   <main class="workspace">
 
@@ -251,11 +333,11 @@
             <span>Customer Reply Interval:</span>
           </div>
           <div class="interval-controls">
-            <label>Min <input type="number" id="emailMinMins" min="15" max="1440" value="30"/>m</label>
+            <label>Min <input type="number" id="emailMinMins" min="1" max="24" value="1"/>h</label>
             <span class="interval-sep">to</span>
-            <label>Max <input type="number" id="emailMaxMins" min="60" max="2880" value="2880"/>m</label>
+            <label>Max <input type="number" id="emailMaxMins" min="2" max="48" value="48"/>h</label>
           </div>
-          <span class="interval-note muted">(Simulated wait up to 48 hours; trainee SLA 24h)</span>
+          <span class="interval-note muted">(Simulated wait max 48 hours · Trainee SLA: 24h)</span>
         </div>
 
         <div class="email-pending-banner" id="emailPendingBanner" hidden>
@@ -379,8 +461,9 @@
         <div id="feedbackContent"></div>
       </div>
     </aside>
-
   </main>
+</div>
+</div>
 </div>
 
 <!-- Trainee Performance & Analytics Cockpit Modal -->
@@ -866,195 +949,18 @@
       <button type="button" class="btn btn-ghost" id="dismissZdViewsBtn">Close Views</button>
     </div>
   </div>
-</div>
-
-<!-- RIGHT-SIDE COLLAPSIBLE DRAWER (AGENT HUB) -->
-<div class="drawer-overlay" id="drawerOverlay" hidden></div>
-<aside class="right-drawer" id="rightDrawer" aria-label="Agent Hub Drawer" hidden>
-  <div class="drawer-header">
-    <div class="drawer-header-title">
-      <span class="drawer-icon">⚡</span>
-      <h3>Agent Hub</h3>
+<!-- Modal: Choose / Change Human Avatar -->
+<div class="modal" id="avatarChangeModal" hidden>
+  <div class="modal-content avatar-modal-content" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle">
+    <div class="modal-header">
+      <h3 id="avatarModalTitle">Choose Your Professional Avatar</h3>
+      <button type="button" class="modal-close" id="closeAvatarModal" aria-label="Close">&times;</button>
     </div>
-    <button type="button" class="modal-close" id="closeRightDrawerBtn" aria-label="Close Agent Hub">×</button>
-  </div>
-
-  <div class="drawer-content">
-    <!-- Agent Profile Card -->
-    <div class="drawer-profile-card">
-      <div class="drawer-avatar-wrap" id="drawerAvatarWrap">
-        <span class="drawer-avatar" id="drawerAvatar">👤</span>
-      </div>
-      <div class="drawer-profile-meta">
-        <h4 id="drawerAgentName">Trainee Agent</h4>
-        <div class="drawer-email" id="drawerAgentEmail">agent@ececontactcenters.com</div>
-        <span class="drawer-badge">ECE Certified Trainee</span>
-      </div>
-    </div>
-
-    <!-- Section: Performance & Intelligence -->
-    <div class="drawer-section">
-      <div class="drawer-section-title">PERFORMANCE &amp; ANALYTICS</div>
-      <button type="button" class="drawer-menu-item" id="drawerPerformanceBtn">
-        <span class="menu-icon">📊</span>
-        <div class="menu-text">
-          <strong>My Performance Cockpit</strong>
-          <span>Speed, frustration recovery &amp; AI insights</span>
-        </div>
-        <span class="menu-arrow">→</span>
-      </button>
-      <button type="button" class="drawer-menu-item" id="drawerHistoryBtn">
-        <span class="menu-icon">🗂️</span>
-        <div class="menu-text">
-          <strong>Past Session History</strong>
-          <span>View 7-day chat &amp; email session audit</span>
-        </div>
-        <span class="menu-arrow">→</span>
-      </button>
-      <button type="button" class="drawer-menu-item" id="drawerCoachingBtn">
-        <span class="menu-icon">📝</span>
-        <div class="menu-text">
-          <strong>QA Coaching Notes</strong>
-          <span>Review feedback and SOP scoring</span>
-        </div>
-        <span class="menu-arrow">→</span>
-      </button>
-    </div>
-
-    <!-- Section: Leadership & Supervisory -->
-    <div class="drawer-section">
-      <div class="drawer-section-title">SUPERVISORY &amp; ADMIN</div>
-      <button type="button" class="drawer-menu-item" id="drawerAdminBtn">
-        <span class="menu-icon">🛡️</span>
-        <div class="menu-text">
-          <strong>Leadership Admin Console</strong>
-          <span>Trainee scorecards, access &amp; reset tools</span>
-        </div>
-        <span class="menu-arrow">→</span>
-      </button>
-      <div class="drawer-toggle-row">
-        <div class="toggle-info">
-          <strong>Trainer View Mode</strong>
-          <span>Reveal hidden customer state &amp; hints</span>
-        </div>
-        <label class="toggle"><input type="checkbox" id="drawerTrainerViewToggle"/><span></span></label>
-      </div>
-    </div>
-
-    <!-- Section: Preferences & Simulation Setup -->
-    <div class="drawer-section">
-      <div class="drawer-section-title">PREFERENCES &amp; SETUP</div>
-      <div class="drawer-pref-row">
-        <label for="drawerThemeSelect">Visual Theme:</label>
-        <select id="drawerThemeSelect" class="drawer-select">
-          <option value="teal">Wyze Teal (Default)</option>
-          <option value="midnight">Wyze Midnight</option>
-          <option value="slate">Slate Modern</option>
-          <option value="light">Crisp Light</option>
-        </select>
-      </div>
-      <div class="drawer-toggle-row">
-        <div class="toggle-info">
-          <strong>Auto-Response Timer</strong>
-          <span>Measure seconds between message turns</span>
-        </div>
-        <label class="toggle"><input type="checkbox" id="drawerTimerToggle" checked/><span></span></label>
-      </div>
-      <button type="button" class="drawer-menu-item" id="drawerWalkthroughBtn">
-        <span class="menu-icon">📖</span>
-        <div class="menu-text">
-          <strong>Interactive Walkthrough</strong>
-          <span>Relaunch simulator feature guide</span>
-        </div>
-        <span class="menu-arrow">→</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="drawer-footer">
-    <button type="button" class="btn btn-outline btn-block" id="drawerSignOutBtn">
-      <span>🚪 Sign out</span>
-    </button>
-  </div>
-</aside>
-
-<!-- INTERACTIVE ONBOARDING WALKTHROUGH MODAL -->
-<div class="modal" id="walkthroughModal" role="dialog" aria-modal="true" aria-labelledby="wtTitle" hidden>
-  <div class="modal-content walkthrough-modal-content">
-    <div class="wt-header">
-      <div class="wt-header-title">
-        <span class="wt-badge">Simulator Guide</span>
-        <h2 id="wtTitle">Welcome to Wyze - ECE Ticket Simulator</h2>
-      </div>
-      <button type="button" class="modal-close" id="closeWalkthroughBtn" aria-label="Close walkthrough">×</button>
-    </div>
-
-    <!-- Walkthrough Step 1 -->
-    <div class="wt-step active" id="wtStep1">
-      <div class="wt-card">
-        <div class="wt-icon-large">🎧</div>
-        <h3>Dual Channel Simulation: Live Chat &amp; Email</h3>
-        <p>Switch seamlessly between fast-paced <strong>Live Chat</strong> and realistic <strong>Zendesk Email Ticketing</strong>.</p>
-        <ul class="wt-bullets">
-          <li><strong>Live Chat:</strong> Real-time customer conversation with instant response tracking, live typing speed (WPM), and an automatic <strong>7-minute inactivity auto-abandonment</strong> timer.</li>
-          <li><strong>Email Ticketing:</strong> Asynchronous customer inquiry handling structured with standard Zendesk status flows.</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Walkthrough Step 2 -->
-    <div class="wt-step" id="wtStep2" hidden>
-      <div class="wt-card">
-        <div class="wt-icon-large">👥</div>
-        <h3>Realistic Customer Personas (60+ Rotations)</h3>
-        <p>Every scenario draws from a rotating pool of 60+ unique customers with synthetic names, emails, MAC addresses, serial numbers, and proof of purchase.</p>
-        <ul class="wt-bullets">
-          <li><strong>Zero Technical Knowledge:</strong> Simulated customers do not predict fixes or guess solutions. They rely solely on your guidance.</li>
-          <li><strong>Logical Comprehension:</strong> When you ask for their name, order number, or to check an LED light, they answer naturally with their exact details.</li>
-          <li><strong>One Step at a Time:</strong> Guide them clearly step by step without overwhelming technical jargon.</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Walkthrough Step 3 -->
-    <div class="wt-step" id="wtStep3" hidden>
-      <div class="wt-card">
-        <div class="wt-icon-large">✉️</div>
-        <h3>Zendesk Ticketing &amp; 3 Concurrent Tabs</h3>
-        <p>Handle up to 3 email tickets simultaneously just like a production support desk.</p>
-        <ul class="wt-bullets">
-          <li><strong>Linear Ticket Journey:</strong> Update statuses across <span class="zd-badge zd-badge-new">New</span>, <span class="zd-badge zd-badge-open">Open</span>, <span class="zd-badge zd-badge-pending">Pending</span>, <span class="zd-badge zd-badge-onhold">On-hold</span>, and <span class="zd-badge zd-badge-solved">Solved</span>.</li>
-          <li><strong>Yellow Internal Notes:</strong> Post private agent-only notes formatted with distinctive yellow styling to document vendor or Tier-2 updates.</li>
-          <li><strong>Realistic 48-Hour Response SLA:</strong> Set simulated customer response intervals up to 48 hours with instant fast-forward testing.</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Walkthrough Step 4 -->
-    <div class="wt-step" id="wtStep4" hidden>
-      <div class="wt-card">
-        <div class="wt-icon-large">📊</div>
-        <h3>Agent Hub, Performance Analytics &amp; Admin</h3>
-        <p>Click the <strong>Agent Hub</strong> button on the top right at any time to inspect your coaching progress.</p>
-        <ul class="wt-bullets">
-          <li><strong>Analytics Cockpit:</strong> Review average WPM, first response time distributions, frustration recovery rates, and case documentation completion.</li>
-          <li><strong>7-Day Audit Trail:</strong> Your session history is automatically saved for supervisor review.</li>
-          <li><strong>Leadership Admin:</strong> Team leads can access drill-downs, deactivate accounts, and trigger secure password resets.</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="wt-footer">
-      <div class="wt-dots" id="wtDots">
-        <span class="wt-dot active" data-step="1"></span>
-        <span class="wt-dot" data-step="2"></span>
-        <span class="wt-dot" data-step="3"></span>
-        <span class="wt-dot" data-step="4"></span>
-      </div>
-      <div class="wt-nav-actions">
-        <button type="button" class="btn btn-ghost" id="wtPrevBtn" disabled>← Previous</button>
-        <button type="button" class="btn btn-primary" id="wtNextBtn">Next →</button>
-      </div>
+    <p class="muted" style="margin:4px 0 16px;">Choose a modern human avatar representation for your customer interactions, coaching notes, and team telemetry.</p>
+    <div class="avatar-choices avatar-choices-modal" id="avatarModalChoices"></div>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button type="button" class="btn btn-ghost" id="cancelAvatarModal">Cancel</button>
+      <button type="button" class="btn btn-primary" id="saveAvatarModalBtn">Save &amp; Apply Avatar</button>
     </div>
   </div>
 </div>

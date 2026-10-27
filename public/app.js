@@ -43,63 +43,63 @@
   var AVATARS = [
     {
       id: 'alex',
-      name: 'Alex Morgan (Wyze Teal)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_alex_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00A389"/><stop offset="100%" stop-color="#0369A1"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_alex_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1E293B"/><circle cx="36" cy="32" r="14" fill="#F8D3B4"/><path d="M22 28c1-10 7-15 14-15s13 5 14 15c-3-2-8-3-14-3s-11 1-14 3z" fill="#33241C"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#A75A38" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#22D3EE" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#0F172A"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#0F172A"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#F43F5E"/></svg>'
-    },
-    {
-      id: 'sam',
-      name: 'Sam Taylor (Amber Specialist)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_sam_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#D97706"/><stop offset="100%" stop-color="#B45309"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_sam_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#312E81"/><circle cx="36" cy="32" r="14" fill="#E4A87C"/><path d="M21 28c0-8 6-15 15-15s15 7 15 15c-4-4-9-5-15-5s-11 1-15 5z" fill="#18181B"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#18181B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#18181B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#8C4638" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#FACC15" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#E11D48"/></svg>'
+      name: 'Alex (Support Specialist)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#0D9488"/><circle cx="36" cy="36" r="32" fill="#14B8A6" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#1E293B"/><circle cx="36" cy="33" r="14" fill="#FBD5B5"/><path d="M22 28c0-8 6-14 14-14s14 6 14 14c0 2-1 4-2 4h-26c-1 0-2-2-2-4z" fill="#1F2937"/><ellipse cx="31" cy="33" rx="2" ry="2.5" fill="#1E293B"/><ellipse cx="41" cy="33" rx="2" ry="2.5" fill="#1E293B"/><path d="M33 39q3 2 6 0" stroke="#B45309" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M21 30q15-18 30 0" stroke="#CBD5E1" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="18" y="27" width="5" height="12" rx="2.5" fill="#0F766E"/><rect x="49" y="27" width="5" height="12" rx="2.5" fill="#0F766E"/><path d="M22 36l9 6" stroke="#0F766E" stroke-width="2.2" stroke-linecap="round"/><circle cx="33" cy="43" r="2.2" fill="#14B8A6"/></svg>'
     },
     {
       id: 'jordan',
-      name: 'Jordan Reed (Cyan Tech)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_jordan_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0284C7"/><stop offset="100%" stop-color="#0F766E"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_jordan_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#0F172A"/><circle cx="36" cy="32" r="14" fill="#F4C7A3"/><path d="M22 26c2-7 7-11 14-11s12 4 14 11c-3-2-7-3-14-3s-11 1-14 3z" fill="#4B3621"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#9A3412" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#10B981"/></svg>'
+      name: 'Jordan (Senior Lead)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#2563EB"/><circle cx="36" cy="36" r="32" fill="#3B82F6" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#0F766E"/><circle cx="36" cy="33" r="14" fill="#D4A373"/><path d="M21 27c1-9 7-14 15-14s14 5 15 14c-4-3-8-4-15-4s-11 1-15 4z" fill="#3E2723"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#1E293B"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#1E293B"/><path d="M33 40q3 2 6 0" stroke="#854D0E" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M20 29q16-16 32 0" stroke="#475569" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="18" y="26" width="5" height="12" rx="2.5" fill="#1E293B"/><rect x="49" y="26" width="5" height="12" rx="2.5" fill="#1E293B"/><path d="M50 36l-8 6" stroke="#1E293B" stroke-width="2.2" stroke-linecap="round"/><circle cx="40" cy="43" r="2.2" fill="#3B82F6"/></svg>'
     },
     {
-      id: 'taylor',
-      name: 'Taylor Kim (Violet Senior)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_taylor_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="100%" stop-color="#4C1D95"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_taylor_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#374151"/><circle cx="36" cy="32" r="14" fill="#FBD8BF"/><path d="M21 27c0-9 6-13 15-13s15 4 15 13v9h-5v-7H26v7h-5z" fill="#4A044E"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#111827"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#111827"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#831843" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#A78BFA" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E1B4B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E1B4B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#C084FC" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#FB7185"/></svg>'
-    },
-    {
-      id: 'morgan',
-      name: 'Morgan Lee (Emerald Lead)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_morgan_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#059669"/><stop offset="100%" stop-color="#047857"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_morgan_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1E293B"/><circle cx="36" cy="15" r="5" fill="#1C1917"/><circle cx="36" cy="32" r="14" fill="#D2996E"/><path d="M22 28c1-10 6-14 14-14s13 4 14 14c-3-3-8-4-14-4s-11 1-14 4z" fill="#1C1917"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#0C0A09"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#0C0A09"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#78350F" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#34D399" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#064E3B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#064E3B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#6EE7B7" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#F59E0B"/></svg>'
-    },
-    {
-      id: 'casey',
-      name: 'Casey Rivera (Rose Advisor)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_casey_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E11D48"/><stop offset="100%" stop-color="#BE123C"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_casey_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#475569"/><circle cx="36" cy="32" r="14" fill="#FCE7D8"/><path d="M21 27c1-9 6-14 15-14s14 5 15 14c-4-3-8-4-15-4s-11 1-15 4z" fill="#581C87"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#9F1239" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#FDA4AF" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#881337"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#881337"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#F43F5E" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#10B981"/></svg>'
-    },
-    {
-      id: 'jamie',
-      name: 'Jamie Chen (Indigo Specialist)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_jamie_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4F46E5"/><stop offset="100%" stop-color="#3730A3"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_jamie_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1F2937"/><circle cx="36" cy="32" r="14" fill="#F8C798"/><path d="M22 28c1-10 6-14 14-14s13 4 14 14c-3-2-8-3-14-3s-11 1-14 3z" fill="#172554"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#111827"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#111827"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#9A3412" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#818CF8" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E1B4B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E1B4B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#A5B4FC" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#22C55E"/></svg>'
-    },
-    {
-      id: 'robin',
-      name: 'Robin Patel (Coral Expert)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_robin_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#EA580C"/><stop offset="100%" stop-color="#C2410C"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_robin_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#047857"/><circle cx="36" cy="32" r="14" fill="#C58557"/><path d="M21 26c0-9 6-13 15-13s15 4 15 13c-4-3-8-4-15-4s-11 1-15 4z" fill="#0F172A"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#713F12" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#FB923C" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#7C2D12"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#7C2D12"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#FDBA74" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#06B6D4"/></svg>'
-    },
-    {
-      id: 'chris',
-      name: 'Chris Evans (Sky Support)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_chris_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0284C7"/><stop offset="100%" stop-color="#0369A1"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_chris_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1E293B"/><circle cx="36" cy="32" r="14" fill="#F8D3B4"/><path d="M22 27c1-9 7-14 14-14s13 5 14 14c-3-2-7-3-14-3s-11 1-14 3z" fill="#713F12"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#A75A38" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#0C4A6E"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#0C4A6E"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#7DD3FC" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#F43F5E"/></svg>'
-    },
-    {
-      id: 'avery',
-      name: 'Avery Brooks (Bronze Specialist)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_avery_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#78350F"/><stop offset="100%" stop-color="#451A03"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_avery_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#3B82F6"/><circle cx="36" cy="32" r="14" fill="#8D5B3C"/><path d="M21 27c0-9 6-13 15-13s15 4 15 13c-4-3-8-4-15-4s-11 1-15 4z" fill="#18181B"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#18181B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#18181B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#5A2E17" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#D97706" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1F2937"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1F2937"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#EC4899"/></svg>'
-    },
-    {
-      id: 'riley',
-      name: 'Riley Gomez (Plum Advocate)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_riley_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#831843"/><stop offset="100%" stop-color="#500724"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_riley_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1E293B"/><circle cx="36" cy="32" r="14" fill="#FCE7D8"/><path d="M22 28c1-10 6-14 14-14s13 4 14 14c-3-2-8-3-14-3s-11 1-14 3z" fill="#9D174D"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#9F1239" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#F472B6" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#831843"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#831843"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#FBCFE8" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#10B981"/></svg>'
+      id: 'maria',
+      name: 'Maria (Customer Advocate)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#E11D48"/><circle cx="36" cy="36" r="32" fill="#FB7185" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#881337"/><circle cx="36" cy="33" r="14" fill="#F0C097"/><path d="M19 36c-2-8 3-18 17-18s19 10 17 18c-3-2-7-3-17-3s-14 1-17 3z" fill="#18181B"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#1E293B"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#1E293B"/><path d="M33 40q3 2.5 6 0" stroke="#BE123C" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M21 30q15-18 30 0" stroke="#F1F5F9" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="18" y="27" width="5" height="12" rx="2.5" fill="#E11D48"/><rect x="49" y="27" width="5" height="12" rx="2.5" fill="#E11D48"/><path d="M22 36l9 6" stroke="#E11D48" stroke-width="2.2" stroke-linecap="round"/><circle cx="33" cy="43" r="2.2" fill="#FB7185"/></svg>'
     },
     {
       id: 'devon',
-      name: 'Devon Scott (Navy Lead)',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_devon_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1E3A8A"/><stop offset="100%" stop-color="#172554"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_devon_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#334155"/><circle cx="36" cy="32" r="14" fill="#E6B48B"/><path d="M21 27c0-9 6-13 15-13s15 4 15 13c-4-3-8-4-15-4s-11 1-15 4z" fill="#1E293B"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#8C4638" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#93C5FD" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#FBBF24"/></svg>'
+      name: 'Devon (Senior IoT Advisor)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#4F46E5"/><circle cx="36" cy="36" r="32" fill="#818CF8" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#312E81"/><circle cx="36" cy="33" r="14" fill="#8D5B4C"/><path d="M22 25c1-7 6-12 14-12s13 5 14 12c-3-1-7-2-14-2s-11 1-14 2z" fill="#1C1917"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#1C1917"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#1C1917"/><path d="M33 40q3 2 6 0" stroke="#451A03" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M20 29q16-16 32 0" stroke="#E2E8F0" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="18" y="26" width="5" height="12" rx="2.5" fill="#1E1B4B"/><rect x="49" y="26" width="5" height="12" rx="2.5" fill="#1E1B4B"/><path d="M50 36l-8 6" stroke="#4F46E5" stroke-width="2.2" stroke-linecap="round"/><circle cx="40" cy="43" r="2.2" fill="#A5B4FC"/></svg>'
+    },
+    {
+      id: 'priya',
+      name: 'Priya (Connectivity Expert)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#D97706"/><circle cx="36" cy="36" r="32" fill="#FBBF24" opacity=".35"/><circle cx="36" cy="17" r="7" fill="#111827"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#065F46"/><circle cx="36" cy="34" r="13.5" fill="#C68642"/><path d="M22 29c1-7 6-11 14-11s13 4 14 11c-3-2-7-3-14-3s-11 1-14 3z" fill="#111827"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#1E293B"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#1E293B"/><path d="M33 40q3 2.5 6 0" stroke="#92400E" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M21 30q15-17 30 0" stroke="#CBD5E1" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="18" y="27" width="5" height="12" rx="2.5" fill="#0F766E"/><rect x="49" y="27" width="5" height="12" rx="2.5" fill="#0F766E"/><path d="M22 36l9 6" stroke="#0F766E" stroke-width="2.2" stroke-linecap="round"/><circle cx="33" cy="43" r="2.2" fill="#34D399"/></svg>'
+    },
+    {
+      id: 'sam',
+      name: 'Sam (Smart Home Guide)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#059669"/><circle cx="36" cy="36" r="32" fill="#34D399" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#1E3A8A"/><circle cx="36" cy="33" r="14" fill="#FDDCB5"/><path d="M21 26c2-8 7-13 15-13s13 5 15 13c-4-2-8-3-15-3s-11 1-15 3z" fill="#B45309"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#1E293B"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#1E293B"/><path d="M33 40q3 2 6 0" stroke="#B45309" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M20 29q16-16 32 0" stroke="#64748B" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="18" y="26" width="5" height="12" rx="2.5" fill="#0F172A"/><rect x="49" y="26" width="5" height="12" rx="2.5" fill="#0F172A"/><path d="M50 36l-8 6" stroke="#059669" stroke-width="2.2" stroke-linecap="round"/><circle cx="40" cy="43" r="2.2" fill="#10B981"/></svg>'
+    },
+    {
+      id: 'marcus',
+      name: 'Marcus (Hardware Specialist)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#3B82F6"/><circle cx="36" cy="36" r="32" fill="#60A5FA" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#0D9488"/><circle cx="36" cy="33" r="14" fill="#714B36"/><path d="M22 24c1-6 6-10 14-10s13 4 14 10c-3-1-7-2-14-2s-11 1-14 2z" fill="#18181B"/><ellipse cx="31" cy="33" rx="2" ry="2.5" fill="#18181B"/><ellipse cx="41" cy="33" rx="2" ry="2.5" fill="#18181B"/><path d="M31 38c1 3 3 4 5 4s4-1 5-4" stroke="#18181B" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M20 29q16-16 32 0" stroke="#CBD5E1" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="18" y="26" width="5" height="12" rx="2.5" fill="#1E293B"/><rect x="49" y="26" width="5" height="12" rx="2.5" fill="#1E293B"/><path d="M22 36l9 6" stroke="#0D9488" stroke-width="2.2" stroke-linecap="round"/><circle cx="33" cy="43" r="2.2" fill="#14B8A6"/></svg>'
+    },
+    {
+      id: 'elena',
+      name: 'Elena (Device Care Lead)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#7C3AED"/><circle cx="36" cy="36" r="32" fill="#A78BFA" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#1E293B"/><circle cx="36" cy="33" r="14" fill="#FEE3D2"/><path d="M20 32c-1-10 5-18 16-18s17 8 16 18c-3-2-7-3-16-3s-13 1-16 3z" fill="#D97706"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#1E293B"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#1E293B"/><path d="M33 40q3 2 6 0" stroke="#B45309" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M21 30q15-18 30 0" stroke="#F8FAFC" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="18" y="27" width="5" height="12" rx="2.5" fill="#7C3AED"/><rect x="49" y="27" width="5" height="12" rx="2.5" fill="#7C3AED"/><path d="M50 36l-8 6" stroke="#7C3AED" stroke-width="2.2" stroke-linecap="round"/><circle cx="40" cy="43" r="2.2" fill="#C4B5FD"/></svg>'
+    },
+    {
+      id: 'taylor',
+      name: 'Taylor (Customer Care)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#0891B2"/><circle cx="36" cy="36" r="32" fill="#22D3EE" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#334155"/><circle cx="36" cy="33" r="14" fill="#E8BE9B"/><path d="M21 26c1-8 7-13 15-13s14 5 15 13c-4-2-8-3-15-3s-11 1-15 3z" fill="#4A3525"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#1E293B"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#1E293B"/><path d="M33 40q3 2 6 0" stroke="#78350F" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M20 29q16-16 32 0" stroke="#94A3B8" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="18" y="26" width="5" height="12" rx="2.5" fill="#0E7490"/><rect x="49" y="26" width="5" height="12" rx="2.5" fill="#0E7490"/><path d="M22 36l9 6" stroke="#0891B2" stroke-width="2.2" stroke-linecap="round"/><circle cx="33" cy="43" r="2.2" fill="#06B6D4"/></svg>'
+    },
+    {
+      id: 'kai',
+      name: 'Kai (Firmware & Camera Tech)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#0284C7"/><circle cx="36" cy="36" r="32" fill="#38BDF8" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#1E293B"/><circle cx="36" cy="33" r="14" fill="#FCDCC4"/><path d="M21 27c2-8 7-14 15-14s13 6 15 14c-4-3-8-4-15-4s-11 1-15 4z" fill="#0F172A"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#1E293B"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#1E293B"/><path d="M33 40q3 2 6 0" stroke="#9A3412" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M20 29q16-16 32 0" stroke="#CBD5E1" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="18" y="26" width="5" height="12" rx="2.5" fill="#0369A1"/><rect x="49" y="26" width="5" height="12" rx="2.5" fill="#0369A1"/><path d="M50 36l-8 6" stroke="#0284C7" stroke-width="2.2" stroke-linecap="round"/><circle cx="40" cy="43" r="2.2" fill="#38BDF8"/></svg>'
+    },
+    {
+      id: 'zoe',
+      name: 'Zoe (Resolution Specialist)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#C026D3"/><circle cx="36" cy="36" r="32" fill="#E879F9" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#92400E"/><circle cx="36" cy="33" r="14" fill="#93583C"/><path d="M19 32c-2-9 4-17 17-17s19 8 17 17c-3-2-7-3-17-3s-14 1-17 3z" fill="#171717"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#171717"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#171717"/><path d="M33 40q3 2.5 6 0" stroke="#78350F" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M21 30q15-18 30 0" stroke="#FDF4FF" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="18" y="27" width="5" height="12" rx="2.5" fill="#C026D3"/><rect x="49" y="27" width="5" height="12" rx="2.5" fill="#C026D3"/><path d="M22 36l9 6" stroke="#C026D3" stroke-width="2.2" stroke-linecap="round"/><circle cx="33" cy="43" r="2.2" fill="#F0ABFC"/></svg>'
+    },
+    {
+      id: 'chris',
+      name: 'Chris (Tier 1 Support)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#16A34A"/><circle cx="36" cy="36" r="32" fill="#4ADE80" opacity=".35"/><path d="M18 64c0-10 8-18 18-18s18 8 18 18" fill="#1D4ED8"/><circle cx="36" cy="33" r="14" fill="#F5D0B0"/><path d="M22 25c1-7 6-12 14-12s13 5 14 12c-3-1-7-2-14-2s-11 1-14 2z" fill="#52525B"/><ellipse cx="31" cy="34" rx="2" ry="2.5" fill="#1E293B"/><ellipse cx="41" cy="34" rx="2" ry="2.5" fill="#1E293B"/><path d="M33 40q3 2 6 0" stroke="#B45309" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M20 29q16-16 32 0" stroke="#E2E8F0" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="18" y="26" width="5" height="12" rx="2.5" fill="#15803D"/><rect x="49" y="26" width="5" height="12" rx="2.5" fill="#15803D"/><path d="M50 36l-8 6" stroke="#16A34A" stroke-width="2.2" stroke-linecap="round"/><circle cx="40" cy="43" r="2.2" fill="#86EFAC"/></svg>'
     }
   ];
 
@@ -117,29 +117,59 @@
     "Promotions & Orders: Official Wyze seasonal bundles, holiday discount codes, order tracking delays (FedEx/USPS/UPS), and 1-year limited warranty RMA replacements."
   ].join('\n');
 
-  var CUSTOMER_FIRST_NAMES = ['Avery','Bailey','Casey','Drew','Ellis','Emery','Finley','Harper','Jamie','Jordan','Kai','Logan','Micah','Morgan','Parker','Quinn','Reese','Riley','Rowan','Sage','Taylor','Alex','Amari','Blake','Cameron','Dakota','Eden','Frankie','Kendall','Marley','Remy','Shiloh'];
-  var CUSTOMER_LAST_NAMES = ['Alden','Arbor','Ashby','Bennett','Briar','Calloway','Cedar','Chen','Cortez','Dawson','Ellison','Foster','Garcia','Hayes','Imani','Jensen','Kim','Lennox','Marin','Mori','Navarro','Oakley','Park','Reed','Rivera','Sawyer','Sato','Shah','Solano','Tanaka','Valdez','Vega','Wells','Whitaker'];
+  // 50-Persona Sequential Rotation Pool for Rich, Diverse Synthetic Customers
+  var CLIENT_50_NAMES = [
+    'Marcus Vance','Priya Patel','Elena Rostova','Devon Washington','Chloe Bennett',
+    'Liam O\'Connor','Sofia Reyes','Tariq Mansoor','Hannah Goldberg','Derek Miller',
+    'Aaliyah Johnson','Oliver Schmidt','Samantha Wright','Carlos Mendez','Zoe Nakamura',
+    'Ethan Davis','Maya Lin','Gabriel Torres','Harper Scott','Noah Campbell',
+    'Lucas Silva','Layla Al-Mansoor','Benjamin Hayes','Victoria Sterling','Jackson Reed',
+    'Emily Zhao','Aiden Murphy','Natalie Cox','Elijah Foster','Savannah King',
+    'Caleb Ross','Aubrey Diaz','Henry Powell','Grace Morgan','Ryan Jenkins',
+    'Hazel Ramirez','Leo Kim','Brooke Sullivan','Nathan Ortiz','Stella Brooks',
+    'Christian Hall','Scarlett Adams','Dominic Flores','Violet Watson','Isaiah Price',
+    'Claire Henderson','Julian Cruz','Autumn Ward','Jordan Alvarez','Alex Mitchell'
+  ];
+
+  var CLIENT_50_CITIES = [
+    ['Seattle','WA','98101','206'],['San Jose','CA','95123','408'],['Chicago','IL','60611','312'],
+    ['Washington','DC','20006','202'],['Austin','TX','78704','512'],['Boston','MA','02116','617'],
+    ['Miami','FL','33131','305'],['Houston','TX','77098','713'],['Philadelphia','PA','19103','215'],
+    ['Denver','CO','80202','303'],['Atlanta','GA','30303','404'],['Phoenix','AZ','85001','602'],
+    ['Portland','OR','97201','503'],['Raleigh','NC','27601','919'],['San Diego','CA','92101','619'],
+    ['Minneapolis','MN','55401','612'],['Nashville','TN','37201','615'],['Detroit','MI','48201','313'],
+    ['Indianapolis','IN','46201','317'],['Columbus','OH','43201','614'],['Charlotte','NC','28201','704'],
+    ['Kansas City','MO','64101','816'],['Las Vegas','NV','89101','702'],['Salt Lake City','UT','84101','801'],
+    ['Tampa','FL','33601','813'],['Orlando','FL','32801','407'],['Pittsburgh','PA','15201','412'],
+    ['Cincinnati','OH','45201','513'],['St. Louis','MO','63101','314'],['Baltimore','MD','21201','410']
+  ];
+
+  var clientRotationIndex = 0;
 
   function makeFictionalName(){
-    var first = CUSTOMER_FIRST_NAMES[Math.floor(Math.random() * CUSTOMER_FIRST_NAMES.length)];
-    var last = CUSTOMER_LAST_NAMES[Math.floor(Math.random() * CUSTOMER_LAST_NAMES.length)];
-    return first + ' ' + last;
+    var name = CLIENT_50_NAMES[clientRotationIndex % CLIENT_50_NAMES.length];
+    return name;
   }
 
   function makeFakeCustomerDetails(persona){
-    function token(len){
-      return Math.random().toString(16).slice(2).toUpperCase().padEnd(len, '0').slice(0, len);
-    }
-    var twoDigit = String(Math.floor(Math.random() * 100)).padStart(2, '0');
-    var month = String(1 + Math.floor(Math.random() * 12)).padStart(2, '0');
-    var day = String(1 + Math.floor(Math.random() * 28)).padStart(2, '0');
-    persona.email = 'customer-' + token(8).toLowerCase() + '@example.invalid';
-    persona.phone = '+1 (202) 555-01' + twoDigit;
-    persona.shippingAddress = (100 + Math.floor(Math.random() * 900)) + ' Example Lane, Sampleville, ZZ 00000';
-    persona.macAddress = '02:' + token(2) + ':' + token(2) + ':' + token(2) + ':' + token(2) + ':' + token(2);
-    persona.orderNumber = 'TEST-WZ-' + token(8);
-    persona.serialNumber = 'TEST-SN-' + token(8);
-    persona.purchaseDate = '2025-' + month + '-' + day;
+    var idx = clientRotationIndex;
+    clientRotationIndex = (clientRotationIndex + 1) % CLIENT_50_NAMES.length;
+
+    var name = persona.name || CLIENT_50_NAMES[idx % CLIENT_50_NAMES.length];
+    persona.name = name;
+
+    var safeSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '.');
+    var city = CLIENT_50_CITIES[idx % CLIENT_50_CITIES.length];
+    var areaCode = city[3];
+
+    persona.email = safeSlug + (10 + idx) + '@example.invalid';
+    persona.phone = '+1 (' + areaCode + ') 555-01' + String(10 + (idx % 89)).padStart(2, '0');
+    persona.shippingAddress = (100 + (idx * 37) % 880) + ' Oak Ridge Pkwy, ' + city[0] + ', ' + city[1] + ' ' + city[2];
+    persona.macAddress = '2C:' + (10 + idx).toString(16).toUpperCase().padStart(2, '0') + ':9A:' + (30 + idx).toString(16).toUpperCase().padStart(2, '0') + ':7E:' + (idx * 17 % 256).toString(16).toUpperCase().padStart(2, '0');
+    persona.orderNumber = 'TEST-WZ-' + (100000 + idx * 1827);
+    persona.serialNumber = 'TEST-SN-' + (400000 + idx * 2913);
+    persona.purchaseDate = '2025-0' + ((idx % 8) + 1) + '-' + (10 + (idx % 18));
+    persona.proofOfPurchase = 'Wyze.com Order #' + persona.orderNumber + ' on ' + persona.purchaseDate;
     return persona;
   }
 
@@ -233,6 +263,19 @@
     choices.innerHTML = AVATARS.map(function(avatar, index){
       return '<label class="avatar-choice">' +
         '<input type="radio" name="signUpAvatar" value="' + avatar.id + '"' + (index === 0 ? ' checked' : '') + ' required>' +
+        '<span class="avatar-choice-card">' + avatarMarkup(avatar.id, 'avatar-choice-art') +
+        '<span class="avatar-choice-name">' + escapeHtml(avatar.name) + '</span></span></label>';
+    }).join('');
+  }
+
+  function renderAvatarModalChoices(currentSelectedId){
+    var choices = $('avatarModalChoices');
+    if(!choices) return;
+    var activeId = currentSelectedId || (loginProfile ? loginProfile.avatarId : 'alex');
+    choices.innerHTML = AVATARS.map(function(avatar){
+      var isChecked = avatar.id === activeId;
+      return '<label class="avatar-choice">' +
+        '<input type="radio" name="modalAvatarChoice" value="' + avatar.id + '"' + (isChecked ? ' checked' : '') + '>' +
         '<span class="avatar-choice-card">' + avatarMarkup(avatar.id, 'avatar-choice-art') +
         '<span class="avatar-choice-name">' + escapeHtml(avatar.name) + '</span></span></label>';
     }).join('');
@@ -550,9 +593,7 @@
       body: JSON.stringify({
         messages: messages,
         schema: opts.schema,
-        sessionId: opts.sessionId,
-        identityIndex: opts.identityIndex,
-        isEmail: opts.isEmail != null ? opts.isEmail : (simMode === 'email')
+        sessionId: opts.sessionId
       })
     });
     if(!response.ok){
@@ -721,7 +762,7 @@
     var hasCust = !!state.persona;
     newScenarioBtn.disabled = state.busy;
     feedbackBtn.disabled = state.busy || !hasCust || state.messages.length < 2;
-    clearChatBtn.disabled = state.busy || !hasCust || state.ended;
+    if(clearChatBtn) clearChatBtn.disabled = state.busy || !hasCust || state.ended;
     endBtn.disabled = state.busy || !hasCust || state.ended;
   }
 
@@ -982,7 +1023,7 @@
   /* ---------- Zendesk Ticket Journey & Pending Intervals ---------- */
   function setLinearState(newStatus){
     state.status = newStatus;
-    if(newStatus === 'PENDING'){
+    if(newStatus === 'PENDING' || newStatus === 'SOLVED'){
       scheduleEmailReply();
     } else {
       state.emailNextReplyTs = null;
@@ -995,32 +1036,46 @@
   }
 
   function scheduleEmailReply(){
-    var minM = parseInt(emailMinMins.value, 10) || 30;
-    var maxM = parseInt(emailMaxMins.value, 10) || 120;
-    if(minM > maxM) maxM = minM + 30;
-    var randM = Math.floor(minM + Math.random() * (maxM - minM));
-    state.emailNextReplyTs = Date.now() + randM * 60 * 1000;
+    var minH = parseFloat(emailMinMins ? emailMinMins.value : 1) || 1;
+    var maxH = parseFloat(emailMaxMins ? emailMaxMins.value : 48) || 48;
+    if(minH > maxH) maxH = minH + 1;
+    // Calculate random simulated wait time up to 48 hours
+    var randHours = minH + Math.random() * (maxH - minH);
+    state.emailNextReplyTs = Date.now() + Math.round(randHours * 3600 * 1000);
     updatePendingBanner();
   }
 
   function updatePendingBanner(){
     if(!emailPendingBanner) return;
-    if(simMode !== 'email' || state.status !== 'PENDING' || !state.emailNextReplyTs || state.ended){
+    if(simMode !== 'email' || (state.status !== 'PENDING' && state.status !== 'SOLVED') || !state.emailNextReplyTs || state.ended){
+      emailPendingBanner.hidden = true;
+      return;
+    }
+    var diffMs = state.emailNextReplyTs - Date.now();
+    if(diffMs <= 0){
       emailPendingBanner.hidden = true;
       return;
     }
     emailPendingBanner.hidden = false;
-    var diffMs = state.emailNextReplyTs - Date.now();
-    var minsRemaining = Math.max(1, Math.round(diffMs / 60000));
-    emailPendingMins.textContent = minsRemaining + ' minutes';
-    emailClockStamp.textContent = new Date(state.emailNextReplyTs).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    var totalMins = Math.max(1, Math.round(diffMs / 60000));
+    var hours = Math.floor(totalMins / 60);
+    var mins = totalMins % 60;
+    var formattedTime = hours > 0 ? (hours + 'h ' + (mins > 0 ? mins + 'm' : '')) : (mins + ' minutes');
+    
+    if(emailPendingMins) emailPendingMins.textContent = formattedTime;
+    if(emailClockStamp){
+      var replyDate = new Date(state.emailNextReplyTs);
+      var isToday = replyDate.toDateString() === new Date().toDateString();
+      emailClockStamp.textContent = (isToday ? 'Today ' : (replyDate.toLocaleDateString([], {month:'short', day:'numeric'}) + ' ')) +
+        replyDate.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    }
   }
 
   function checkPendingEmailReplies(){
     if(simMode !== 'email') return;
     var now = Date.now();
     emailSessions.forEach(function(s){
-      if(s.status === 'PENDING' && s.emailNextReplyTs && now >= s.emailNextReplyTs && !s.busy && !s.ended && s.persona){
+      if((s.status === 'PENDING' || s.status === 'SOLVED') && s.emailNextReplyTs && now >= s.emailNextReplyTs && !s.busy && !s.ended && s.persona){
         triggerCustomerReply(s);
       }
     });
@@ -1135,13 +1190,67 @@
     });
   }
 
+  /* ---------- Live Response Timer Ticker ---------- */
+  function updateReplyTimerTicker(){
+    if(!replyTimer || !replyTimerClock) return;
+    if(!timerOn || !state.persona || state.ended){
+      replyTimerClock.textContent = '00:00';
+      replyTimer.classList.remove('warning', 'danger');
+      return;
+    }
+    var lastCustTs = null;
+    var lastAgentTs = null;
+    for(var i = state.messages.length - 1; i >= 0; i--){
+      var m = state.messages[i];
+      if(!lastCustTs && m.role === 'customer') lastCustTs = m.ts;
+      if(!lastAgentTs && m.role === 'agent' && !m.internalNote) lastAgentTs = m.ts;
+      if(lastCustTs) break;
+    }
+
+    var targetTs = lastCustTs;
+    if(!targetTs || (lastAgentTs && lastAgentTs > targetTs)){
+      replyTimerClock.textContent = '00:00';
+      replyTimer.classList.remove('warning', 'danger');
+      return;
+    }
+
+    var elapsedSec = Math.max(0, Math.floor((Date.now() - targetTs) / 1000));
+    var mins = Math.floor(elapsedSec / 60);
+    var secs = elapsedSec % 60;
+    var str = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    replyTimerClock.textContent = str;
+
+    if(elapsedSec >= 120){
+      replyTimer.classList.remove('warning');
+      replyTimer.classList.add('danger');
+    } else if(elapsedSec >= 60){
+      replyTimer.classList.remove('danger');
+      replyTimer.classList.add('warning');
+    } else {
+      replyTimer.classList.remove('warning', 'danger');
+    }
+  }
+
   /* ---------- Prompt Builders ---------- */
   function buildSystemPrompt(s){
     var p = s.persona;
     return [
-      "You are roleplaying as a customer named " + p.name + " in a " + (simMode === 'email' ? 'support email thread' : 'live chat') + " with a support agent for Wyze.",
-      "Stay strictly in character. Do not say you are an AI or virtual assistant.",
-      "Persona facts (reveal only when asked):",
+      "You are roleplaying as a regular, NON-TECHNICAL customer named " + p.name + " in a " + (simMode === 'email' ? 'support email thread' : 'live chat') + " with a Wyze support agent.",
+      "CRITICAL ROLEPLAY CONSTRAINTS:",
+      "1. You are an ordinary customer who bought a Wyze device. You are NOT tech-savvy.",
+      "2. You DO NOT know what the technical cause of your problem is.",
+      "3. You DO NOT know how to troubleshoot or what steps to take in advance.",
+      "4. You NEVER predict what the agent will do next or suggest troubleshooting steps.",
+      "5. You NEVER jump ahead or perform future SOP steps until the agent explicitly tells you to do so right now.",
+      "6. If asked for account or device details, give only what was asked.",
+      "7. If asked a question (e.g. 'What color is the light?'), look at the device and answer simply what you see.",
+      "8. If given a single instruction, perform only that step, report what happened, and ask what to do next.",
+      "9. If the agent uses unfamiliar technical jargon, ask what that means like an ordinary person.",
+      "10. Emotional tone: " + (p.emotionalState || 'Normal') + ".",
+      simMode === 'email'
+        ? "11. For Email support: Write a realistic, substantive customer email with full sentences and paragraphs describing what happened."
+        : "11. For Live Chat: Keep messages conversational, natural, and brief (1 to 3 sentences).",
+      "Persona details (reveal only when asked):",
       "- Name: " + p.name,
       "- Email: " + p.email,
       "- Phone: " + p.phone,
@@ -1150,10 +1259,10 @@
       "- MAC Address: " + p.macAddress,
       "- Order Number: " + p.orderNumber,
       "- Serial Number: " + p.serialNumber,
+      "- Purchase Date: " + p.purchaseDate,
+      "- Proof of Purchase: " + p.proofOfPurchase,
       "- Issue: " + p.issueCategory,
-      "- Emotional state: " + (p.emotionalState || 'Normal'),
-      simMode === 'email' ? "For emails: you can freely write your response in however way you want without requiring strict email formatting." : "For live chat: keep messages concise and natural.",
-      "The underlying issue details: " + p.hiddenSummary
+      "- Hidden ground truth (FOR CONTEXT ONLY - DO NOT REVEAL DIRECTLY): " + p.hiddenSummary
     ].join('\n');
   }
 
@@ -1170,24 +1279,12 @@
     s.holdDeadline = null;
     s.holdMinutes = null;
 
-    // Auto-turn on Timer on conversation start per user instructions
-    timerOn = true;
-    if(replyTimer) replyTimer.hidden = false;
-    if(timerToggle) timerToggle.checked = true;
-    if(drawerTimerToggle) drawerTimerToggle.checked = true;
-
     // Standard Random Selection from the Expanded Wyze Catalog
     var categoryKeys = Object.keys(CATEGORY_LABELS).filter(function(k){ return k !== 'random'; });
     var randomKey = categoryKeys[Math.floor(Math.random() * categoryKeys.length)];
     var category = CATEGORY_LABELS[randomKey];
 
     var emotion = (emotionSelect && EMOTION_LABELS[emotionSelect.value]) || EMOTION_LABELS.random;
-
-    // Rotate sequentially through the 60 unique customer identities
-    var seq = parseInt(localStorage.getItem('ecewise:cust_identity_seq') || '0', 10);
-    var nextSeq = (seq + 1) % 60;
-    try { localStorage.setItem('ecewise:cust_identity_seq', String(nextSeq)); } catch(e){}
-    s.identityIndex = nextSeq;
 
     var system = [
       "You generate one fictional customer persona and an opening " + (simMode === 'email' ? 'support email' : 'live-chat message') + " for a Wyze customer support simulator.",
@@ -1197,7 +1294,8 @@
       "- Scenario type: " + category,
       "- Emotional mood: " + emotion,
       "- hiddenSummary: 2-3 sentences on the real root cause and ideal SOP troubleshooting steps.",
-      "- openingMessage: Opening inquiry written naturally as a regular customer with zero technical background."
+      "- openingMessage: Opening inquiry written naturally as a regular customer. For email, make it a substantive, detailed email (2-3 paragraphs) explaining background context.",
+      "- subject: Email subject line if email simulation."
     ].join('\n');
 
     var schema = {
@@ -1229,12 +1327,7 @@
       var raw = await runModel([
         { role: "system", content: system },
         { role: "user", content: "Generate the fictional persona and opening inquiry now." }
-      ], {
-        schema: schema,
-        sessionId: s.sessionId,
-        identityIndex: nextSeq,
-        isEmail: simMode === 'email'
-      });
+      ], { schema: schema, sessionId: s.sessionId });
 
       var persona = JSON.parse(raw);
       persona.name = persona.name || makeFictionalName();
@@ -1247,6 +1340,12 @@
       s.messages = [{ role: 'customer', text: persona.openingMessage, ts: Date.now(), gapSec: null }];
       s.traineeName = loginProfile ? loginProfile.name : '';
       s.avatarId = loginProfile ? loginProfile.avatarId : 'alex';
+
+      // Automatically turn Timer ON when conversation starts
+      timerOn = true;
+      if(timerToggle) timerToggle.checked = true;
+      if(replyTimer) replyTimer.hidden = false;
+      updateReplyTimerTicker();
 
       clearCaseFields();
       renderPersonaBar();
@@ -1788,60 +1887,73 @@
   /* ---------- Authentication Flows ---------- */
   function setupAuthHandlers(){
     // Tab switching
-    tabSignIn.addEventListener('click', function(){
-      tabSignIn.classList.add('active');
-      tabSignIn.setAttribute('aria-selected', 'true');
-      tabSignUp.classList.remove('active');
-      tabSignUp.setAttribute('aria-selected', 'false');
-      signInView.hidden = false;
-      signUpView.hidden = true;
-      forgotPasswordView.hidden = true;
-      signInSwitchRow.hidden = false;
-      signUpSwitchRow.hidden = true;
-      forgotSwitchRow.hidden = true;
+    on(tabSignIn, 'click', function(){
+      if(tabSignIn){
+        tabSignIn.classList.add('active');
+        tabSignIn.setAttribute('aria-selected', 'true');
+      }
+      if(tabSignUp){
+        tabSignUp.classList.remove('active');
+        tabSignUp.setAttribute('aria-selected', 'false');
+      }
+      if(signInView) signInView.hidden = false;
+      if(signUpView) signUpView.hidden = true;
+      if(forgotPasswordView) forgotPasswordView.hidden = true;
+      if(signInSwitchRow) signInSwitchRow.hidden = false;
+      if(signUpSwitchRow) signUpSwitchRow.hidden = true;
+      if(forgotSwitchRow) forgotSwitchRow.hidden = true;
       setStatus('Sign in with your registered ECE credentials.');
     });
 
-    tabSignUp.addEventListener('click', function(){
-      tabSignUp.classList.add('active');
-      tabSignUp.setAttribute('aria-selected', 'true');
-      tabSignIn.classList.remove('active');
-      tabSignIn.setAttribute('aria-selected', 'false');
-      signUpView.hidden = false;
-      signInView.hidden = true;
-      forgotPasswordView.hidden = true;
-      signUpDetailsStep.hidden = false;
-      signUpAvatarStep.hidden = true;
-      signInSwitchRow.hidden = true;
-      signUpSwitchRow.hidden = false;
-      forgotSwitchRow.hidden = true;
+    on(tabSignUp, 'click', function(){
+      if(tabSignUp){
+        tabSignUp.classList.add('active');
+        tabSignUp.setAttribute('aria-selected', 'true');
+      }
+      if(tabSignIn){
+        tabSignIn.classList.remove('active');
+        tabSignIn.setAttribute('aria-selected', 'false');
+      }
+      if(signUpView) signUpView.hidden = false;
+      if(signInView) signInView.hidden = true;
+      if(forgotPasswordView) forgotPasswordView.hidden = true;
+      if(signUpDetailsStep) signUpDetailsStep.hidden = false;
+      if(signUpAvatarStep) signUpAvatarStep.hidden = true;
+      if(signInSwitchRow) signInSwitchRow.hidden = true;
+      if(signUpSwitchRow) signUpSwitchRow.hidden = false;
+      if(forgotSwitchRow) forgotSwitchRow.hidden = true;
       setStatus('Create your unique account for progress tracking.');
     });
 
-    switchToSignUp.addEventListener('click', function(){ tabSignUp.click(); });
-    switchToSignIn.addEventListener('click', function(){ tabSignIn.click(); });
-    backToSignInFromForgot.addEventListener('click', function(){ tabSignIn.click(); });
+    on(switchToSignUp, 'click', function(){ if(tabSignUp) tabSignUp.click(); });
+    on(switchToSignIn, 'click', function(){ if(tabSignIn) tabSignIn.click(); });
+    on(backToSignInFromForgot, 'click', function(){ if(tabSignIn) tabSignIn.click(); });
 
-    forgotPassLink.addEventListener('click', function(){
-      signInView.hidden = true;
-      signUpView.hidden = true;
-      forgotPasswordView.hidden = false;
-      forgotStep1.hidden = false;
-      forgotStep2.hidden = true;
-      signInSwitchRow.hidden = true;
-      signUpSwitchRow.hidden = true;
-      forgotSwitchRow.hidden = false;
+    on(forgotPassLink, 'click', function(){
+      if(signInView) signInView.hidden = true;
+      if(signUpView) signUpView.hidden = true;
+      if(forgotPasswordView) forgotPasswordView.hidden = false;
+      if(forgotStep1) forgotStep1.hidden = false;
+      if(forgotStep2) forgotStep2.hidden = true;
+      if(signInSwitchRow) signInSwitchRow.hidden = true;
+      if(signUpSwitchRow) signUpSwitchRow.hidden = true;
+      if(forgotSwitchRow) forgotSwitchRow.hidden = false;
       setStatus('Verify your corporate ECE address to reset password.');
     });
 
-    cancelForgotBtn.addEventListener('click', function(){ tabSignIn.click(); });
+    on(cancelForgotBtn, 'click', function(){ if(tabSignIn) tabSignIn.click(); });
 
     // Multi-step sign up
-    continueSignUpBtn.addEventListener('click', function(){
-      var email = $('signUpEmail').value.trim();
-      var name = $('signUpName').value.trim();
-      var pw = $('signUpPassword').value;
-      var rpw = $('signUpRepeatPassword').value;
+    on(continueSignUpBtn, 'click', function(){
+      var emailEl = $('signUpEmail');
+      var nameEl = $('signUpName');
+      var pwEl = $('signUpPassword');
+      var rpwEl = $('signUpRepeatPassword');
+
+      var email = emailEl ? emailEl.value.trim() : '';
+      var name = nameEl ? nameEl.value.trim() : '';
+      var pw = pwEl ? pwEl.value : '';
+      var rpw = rpwEl ? rpwEl.value : '';
 
       if(!email || !name || !pw || !rpw){
         setStatus('Please complete all required fields.', true);
@@ -1856,21 +1968,23 @@
         return;
       }
 
-      signUpDetailsStep.hidden = true;
-      signUpAvatarStep.hidden = false;
+      if(signUpDetailsStep) signUpDetailsStep.hidden = true;
+      if(signUpAvatarStep) signUpAvatarStep.hidden = false;
       setStatus('Select your representative support avatar.');
     });
 
-    backToSignUpDetailsBtn.addEventListener('click', function(){
-      signUpAvatarStep.hidden = true;
-      signUpDetailsStep.hidden = false;
+    on(backToSignUpDetailsBtn, 'click', function(){
+      if(signUpAvatarStep) signUpAvatarStep.hidden = true;
+      if(signUpDetailsStep) signUpDetailsStep.hidden = false;
     });
 
     // Sign In Submit
-    signInForm.addEventListener('submit', async function(ev){
+    on(signInForm, 'submit', async function(ev){
       ev.preventDefault();
-      var email = $('signInEmail').value.trim();
-      var password = $('signInPassword').value;
+      var emailEl = $('signInEmail');
+      var pwEl = $('signInPassword');
+      var email = emailEl ? emailEl.value.trim() : '';
+      var password = pwEl ? pwEl.value : '';
 
       setStatus('Authenticating credentials…');
       try {
@@ -1891,13 +2005,16 @@
     });
 
     // Sign Up Submit
-    signUpForm.addEventListener('submit', async function(ev){
+    on(signUpForm, 'submit', async function(ev){
       ev.preventDefault();
-      var email = $('signUpEmail').value.trim();
-      var name = $('signUpName').value.trim();
-      var password = $('signUpPassword').value;
-      var selectedAvatar = signUpForm.querySelector('input[name="signUpAvatar"]:checked');
-      var avatarId = selectedAvatar ? selectedAvatar.value : 'pip';
+      var emailEl = $('signUpEmail');
+      var nameEl = $('signUpName');
+      var pwEl = $('signUpPassword');
+      var email = emailEl ? emailEl.value.trim() : '';
+      var name = nameEl ? nameEl.value.trim() : '';
+      var password = pwEl ? pwEl.value : '';
+      var selectedAvatar = signUpForm ? signUpForm.querySelector('input[name="signUpAvatar"]:checked') : null;
+      var avatarId = selectedAvatar ? selectedAvatar.value : 'alex';
 
       setStatus('Creating your ECE trainee account…');
       try {
@@ -1918,8 +2035,9 @@
     });
 
     // Forgot Password Flow
-    sendResetCodeBtn.addEventListener('click', async function(){
-      var email = $('forgotEmail').value.trim();
+    on(sendResetCodeBtn, 'click', async function(){
+      var emailEl = $('forgotEmail');
+      var email = emailEl ? emailEl.value.trim() : '';
       if(!email){
         setStatus('Please enter your ECE email address.', true);
         return;
@@ -1936,26 +2054,31 @@
           setStatus(data.error || 'Could not verify account.', true);
           return;
         }
-        forgotStep1.hidden = true;
-        forgotStep2.hidden = false;
-        dispatchBody.innerHTML = '<p>Verification code issued: <strong>' + data.code + '</strong></p><small class="muted">Expires in 15 minutes.</small>';
+        if(forgotStep1) forgotStep1.hidden = true;
+        if(forgotStep2) forgotStep2.hidden = false;
+        if(dispatchBody) dispatchBody.innerHTML = '<p>Verification code issued: <strong>' + data.code + '</strong></p><small class="muted">Expires in 15 minutes.</small>';
         setStatus('Code dispatched. Enter your code and new password.');
       } catch(err){
         setStatus('Password reset service unavailable.', true);
       }
     });
 
-    backToForgotStep1Btn.addEventListener('click', function(){
-      forgotStep2.hidden = true;
-      forgotStep1.hidden = false;
+    on(backToForgotStep1Btn, 'click', function(){
+      if(forgotStep2) forgotStep2.hidden = true;
+      if(forgotStep1) forgotStep1.hidden = false;
     });
 
-    forgotPasswordForm.addEventListener('submit', async function(ev){
+    on(forgotPasswordForm, 'submit', async function(ev){
       ev.preventDefault();
-      var email = $('forgotEmail').value.trim();
-      var code = $('resetCode').value.trim();
-      var newPw = $('newPassword').value;
-      var repeatPw = $('repeatNewPassword').value;
+      var emailEl = $('forgotEmail');
+      var codeEl = $('resetCode');
+      var pwEl = $('newPassword');
+      var rpwEl = $('repeatNewPassword');
+
+      var email = emailEl ? emailEl.value.trim() : '';
+      var code = codeEl ? codeEl.value.trim() : '';
+      var newPw = pwEl ? pwEl.value : '';
+      var repeatPw = rpwEl ? rpwEl.value : '';
 
       try {
         var res = await fetch('/api/auth/forgot-password', {
@@ -1989,11 +2112,26 @@
     appRoot.hidden = false;
     appRoot.setAttribute('aria-hidden', 'false');
 
+    // Populate Left Sidebar profile
+    var leftUserName = $('leftUserName');
+    var leftUserEmail = $('leftUserEmail');
+    var leftAvatarArt = $('leftAvatarArt');
+    if(leftUserName) leftUserName.textContent = user.name;
+    if(leftUserEmail) leftUserEmail.textContent = user.email;
+    if(leftAvatarArt) leftAvatarArt.innerHTML = avatarMarkup(user.avatarId || 'alex', 'left-profile-avatar-svg');
+
     agentIdentity.hidden = false;
-    agentIdentity.innerHTML = avatarMarkup(user.avatarId || 'pip', 'identity-avatar') + '<span>' + escapeHtml(user.name) + '</span>';
+    agentIdentity.innerHTML = avatarMarkup(user.avatarId || 'alex', 'identity-avatar') + '<span>' + escapeHtml(user.name) + '</span>';
     fTraineeName.value = user.name;
 
     initializeWorkspace();
+
+    // Check if walkthrough was already seen by this user; if new, execute walkthrough
+    var walkthroughKey = 'ecewise:' + user.id + ':walkthrough_seen';
+    var walkthroughSeen = localStorage.getItem(walkthroughKey);
+    if(!walkthroughSeen){
+      if(welcomeModal) welcomeModal.hidden = false;
+    }
   }
 
   function initializeWorkspace(){
@@ -2022,96 +2160,163 @@
   /* ---------- Event Listeners Setup ---------- */
   function attachAppListeners(){
     // Mode toggles
-    modeChatBtn.addEventListener('click', function(){ switchMode('chat'); });
-    modeEmailBtn.addEventListener('click', function(){ switchMode('email'); });
+    on(modeChatBtn, 'click', function(){ switchMode('chat'); });
+    on(modeEmailBtn, 'click', function(){ switchMode('email'); });
 
     // Scenario & Controls
-    newScenarioBtn.addEventListener('click', startScenario);
-    feedbackBtn.addEventListener('click', getFeedback);
-    endBtn.addEventListener('click', endConversation);
-    caseBtn.addEventListener('click', openCase);
-    closeCase.addEventListener('click', closeCaseFn);
+    on(newScenarioBtn, 'click', startScenario);
+    on(feedbackBtn, 'click', getFeedback);
+    on(endBtn, 'click', endConversation);
+    on(caseBtn, 'click', openCase);
+    on(closeCase, 'click', closeCaseFn);
 
-    trainerModeToggle.addEventListener('change', function(){
-      trainerMode = trainerModeToggle.checked;
-      renderAnswerKey();
-    });
-
-    twoChatsToggle.addEventListener('change', function(){
-      twoChats = twoChatsToggle.checked;
-      if(twoChats && chatSessions.length === 1){
-        chatSessions.push(newSession('chat'));
+    on(trainerModeToggle, 'change', function(){
+      if(trainerModeToggle){
+        trainerMode = trainerModeToggle.checked;
+        renderAnswerKey();
       }
-      renderTabs();
-      saveWorkspaceState();
     });
 
-    timerToggle.addEventListener('change', function(){
-      timerOn = timerToggle.checked;
-      replyTimer.hidden = !timerOn;
-      saveWorkspaceState();
+    on(twoChatsToggle, 'change', function(){
+      if(twoChatsToggle){
+        twoChats = twoChatsToggle.checked;
+        if(twoChats && chatSessions.length === 1){
+          chatSessions.push(newSession('chat'));
+        }
+        renderTabs();
+        saveWorkspaceState();
+      }
     });
 
-    themeSelect.addEventListener('change', function(){
-      document.documentElement.setAttribute('data-theme', themeSelect.value);
-      try { localStorage.setItem('ecewise:theme', themeSelect.value); } catch(e){}
+    on(timerToggle, 'change', function(){
+      if(timerToggle){
+        timerOn = timerToggle.checked;
+        if(replyTimer) replyTimer.hidden = !timerOn;
+        saveWorkspaceState();
+      }
+    });
+
+    on(themeSelect, 'change', function(){
+      if(themeSelect){
+        document.documentElement.setAttribute('data-theme', themeSelect.value);
+        try { localStorage.setItem('ecewise:theme', themeSelect.value); } catch(e){}
+      }
     });
     try {
       var savedTheme = localStorage.getItem('ecewise:theme');
-      if(savedTheme){
+      if(savedTheme && themeSelect){
         themeSelect.value = savedTheme;
         document.documentElement.setAttribute('data-theme', savedTheme);
       }
     } catch(e){}
 
-    // Clear Chat Button
-    clearChatBtn.addEventListener('click', function(){
-      if(state.busy || state.ended || !state.persona) return;
-      if(!confirm('Clear conversation and start fresh with this ticket?')) return;
-      state.messages = [];
-      state.typeStart = null;
-      renderMessages();
-      scheduleSave(state);
-      saveWorkspaceState();
+    // Collapsing Left Sidebar Navigation
+    var leftPanel = $('leftPanel');
+    var panelCollapseTrigger = $('panelCollapseTrigger');
+    var sidebarToggleBtn = $('sidebarToggleBtn');
+
+    function toggleSidebar(){
+      if(!leftPanel) return;
+      leftPanel.classList.toggle('collapsed');
+      var isCollapsed = leftPanel.classList.contains('collapsed');
+      try {
+        localStorage.setItem('ecewise:left_panel_collapsed', isCollapsed ? 'true' : 'false');
+      } catch(e){}
+    }
+
+    if(panelCollapseTrigger) panelCollapseTrigger.addEventListener('click', toggleSidebar);
+    if(sidebarToggleBtn) sidebarToggleBtn.addEventListener('click', toggleSidebar);
+
+    try {
+      if(localStorage.getItem('ecewise:left_panel_collapsed') === 'true' && leftPanel){
+        leftPanel.classList.add('collapsed');
+      }
+    } catch(e){}
+
+    // Avatar Selection Modal & Independent User Profile Saving
+    var leftAvatarBtn = $('leftAvatarBtn');
+    var leftProfileCard = $('leftProfileCard');
+    var avatarChangeModal = $('avatarChangeModal');
+    var closeAvatarModal = $('closeAvatarModal');
+    var cancelAvatarModal = $('cancelAvatarModal');
+    var saveAvatarModalBtn = $('saveAvatarModalBtn');
+
+    function openAvatarModal(){
+      if(!avatarChangeModal) return;
+      renderAvatarModalChoices(loginProfile ? loginProfile.avatarId : 'alex');
+      avatarChangeModal.hidden = false;
+    }
+
+    if(leftAvatarBtn) leftAvatarBtn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      openAvatarModal();
     });
+    if(closeAvatarModal) closeAvatarModal.addEventListener('click', function(){ avatarChangeModal.hidden = true; });
+    if(cancelAvatarModal) cancelAvatarModal.addEventListener('click', function(){ avatarChangeModal.hidden = true; });
+
+    if(saveAvatarModalBtn){
+      saveAvatarModalBtn.addEventListener('click', function(){
+        var selected = document.querySelector('input[name="modalAvatarChoice"]:checked');
+        if(!selected || !loginProfile) return;
+        var newAvatarId = selected.value;
+        loginProfile.avatarId = newAvatarId;
+
+        // Save independently to user profile in storage
+        try {
+          localStorage.setItem('ecewise:auth_user', JSON.stringify(loginProfile));
+          localStorage.setItem('ecewise:' + loginProfile.id + ':avatarId', newAvatarId);
+        } catch(e){}
+
+        state.avatarId = newAvatarId;
+
+        var leftAvatarArt = $('leftAvatarArt');
+        if(leftAvatarArt) leftAvatarArt.innerHTML = avatarMarkup(newAvatarId, 'left-profile-avatar-svg');
+        if(agentIdentity) agentIdentity.innerHTML = avatarMarkup(newAvatarId, 'identity-avatar') + '<span>' + escapeHtml(loginProfile.name) + '</span>';
+
+        renderMessages();
+        doSave(state);
+
+        if(avatarChangeModal) avatarChangeModal.hidden = true;
+      });
+    }
 
     // Retry Button
-    retryBtn.addEventListener('click', function(){
+    on(retryBtn, 'click', function(){
       clearError();
       if(typeof lastFailedAction === 'function') lastFailedAction();
     });
 
     // Zendesk Composer Navigation
-    zdNavPublicReply.addEventListener('click', function(){
+    on(zdNavPublicReply, 'click', function(){
       activeComposerTab = 'public';
-      zdNavPublicReply.classList.add('active');
-      zdNavInternalNote.classList.remove('active');
-      agentInput.placeholder = 'Type your public email reply to the customer… (Enter to send)';
+      if(zdNavPublicReply) zdNavPublicReply.classList.add('active');
+      if(zdNavInternalNote) zdNavInternalNote.classList.remove('active');
+      if(agentInput) agentInput.placeholder = 'Type your public email reply to the customer… (Enter to send)';
     });
 
-    zdNavInternalNote.addEventListener('click', function(){
+    on(zdNavInternalNote, 'click', function(){
       activeComposerTab = 'internal';
-      zdNavInternalNote.classList.add('active');
-      zdNavPublicReply.classList.remove('active');
-      agentInput.placeholder = 'Type an internal note (only visible to team members)… (Enter to save note)';
+      if(zdNavInternalNote) zdNavInternalNote.classList.add('active');
+      if(zdNavPublicReply) zdNavPublicReply.classList.remove('active');
+      if(agentInput) agentInput.placeholder = 'Type an internal note (only visible to team members)… (Enter to save note)';
     });
 
     // Zendesk Linear Status Select in Header
-    zdStatusSelect.addEventListener('change', function(){
-      setLinearState(zdStatusSelect.value);
+    on(zdStatusSelect, 'change', function(){
+      if(zdStatusSelect) setLinearState(zdStatusSelect.value);
     });
 
     // Zendesk Fast Forward & Advance Time Button
-    emailFastForwardBtn.addEventListener('click', async function(){
+    on(emailFastForwardBtn, 'click', async function(){
       if(state.busy || state.ended || !state.persona) return;
-      emailPendingBanner.hidden = true;
+      if(emailPendingBanner) emailPendingBanner.hidden = true;
       await triggerCustomerReply(state);
     });
 
     // Zendesk Views Modal
-    openZdViewsBtn.addEventListener('click', openZdViews);
-    closeZdViewsBtn.addEventListener('click', function(){ zdViewsModal.hidden = true; });
-    dismissZdViewsBtn.addEventListener('click', function(){ zdViewsModal.hidden = true; });
+    on(openZdViewsBtn, 'click', openZdViews);
+    on(closeZdViewsBtn, 'click', function(){ if(zdViewsModal) zdViewsModal.hidden = true; });
+    on(dismissZdViewsBtn, 'click', function(){ if(zdViewsModal) zdViewsModal.hidden = true; });
 
     document.querySelectorAll('.zd-filter-pill').forEach(function(pill){
       pill.addEventListener('click', function(){
@@ -2122,35 +2327,35 @@
       });
     });
 
-    zdNewEmailBtn.addEventListener('click', startScenario);
+    on(zdNewEmailBtn, 'click', startScenario);
 
     // Chat form submit
-    chatForm.addEventListener('submit', function(ev){
+    on(chatForm, 'submit', function(ev){
       ev.preventDefault();
-      var text = agentInput.value.trim();
+      var text = agentInput ? agentInput.value.trim() : '';
       if(!text || state.busy || !state.persona) return;
-      var sentWpm = state.typeStart ? wpmFrom(agentInput.value.length, state.typeStart) : null;
-      agentInput.value = '';
+      var sentWpm = (agentInput && state.typeStart) ? wpmFrom(agentInput.value.length, state.typeStart) : null;
+      if(agentInput) agentInput.value = '';
       state.typeStart = null;
       updateSpeedUI();
       sendAgentMessage(text, sentWpm);
     });
 
-    agentInput.addEventListener('input', function(){
-      if(!state.typeStart && agentInput.value) state.typeStart = Date.now();
+    on(agentInput, 'input', function(){
+      if(agentInput && !state.typeStart && agentInput.value) state.typeStart = Date.now();
       updateSpeedUI();
     });
 
-    agentInput.addEventListener('keydown', function(ev){
+    on(agentInput, 'keydown', function(ev){
       if(ev.key === 'Enter' && !ev.shiftKey){
         ev.preventDefault();
-        chatForm.requestSubmit();
+        if(chatForm) chatForm.requestSubmit();
       }
     });
 
     // Case Fields
     Object.keys(caseFields).forEach(function(k){
-      caseFields[k].addEventListener('input', function(){
+      on(caseFields[k], 'input', function(){
         scheduleSave();
         saveWorkspaceState();
       });
@@ -2165,17 +2370,17 @@
     });
 
     // Trainee Analytics Cockpit Modal
-    myAnalyticsBtn.addEventListener('click', function(){
-      profileAnalyticsModal.hidden = false;
+    on(myAnalyticsBtn, 'click', function(){
+      if(profileAnalyticsModal) profileAnalyticsModal.hidden = false;
       loadTraineeAnalytics();
     });
-    agentIdentity.addEventListener('click', function(){
-      profileAnalyticsModal.hidden = false;
+    on(agentIdentity, 'click', function(){
+      if(profileAnalyticsModal) profileAnalyticsModal.hidden = false;
       loadTraineeAnalytics();
     });
-    closeProfileAnalytics.addEventListener('click', function(){ profileAnalyticsModal.hidden = true; });
-    refreshAnalyticsBtn.addEventListener('click', loadTraineeAnalytics);
-    $('refreshAiBtn').addEventListener('click', triggerAiInsights);
+    on(closeProfileAnalytics, 'click', function(){ if(profileAnalyticsModal) profileAnalyticsModal.hidden = true; });
+    on(refreshAnalyticsBtn, 'click', loadTraineeAnalytics);
+    on('refreshAiBtn', 'click', triggerAiInsights);
 
     // Analytics Sub-tabs
     var paTabs = [
@@ -2292,8 +2497,17 @@
       }
     });
 
-    // Info Modal
-    on(infoBtn, 'click', function(){ if(infoModal) infoModal.hidden = false; });
+    // Walkthrough Guide & How to Use Modal
+    on(infoBtn, 'click', function(){
+      if(welcomeModal) welcomeModal.hidden = false;
+      else if(infoModal) infoModal.hidden = false;
+    });
+    on('finishWelcome', 'click', function(){
+      if(welcomeModal) welcomeModal.hidden = true;
+      if(loginProfile && loginProfile.id){
+        try { localStorage.setItem('ecewise:' + loginProfile.id + ':walkthrough_seen', 'true'); } catch(e){}
+      }
+    });
     on('closeInfo', 'click', function(){ if(infoModal) infoModal.hidden = true; });
 
     // Sign out
@@ -2309,7 +2523,6 @@
 
     // Copy notes
     on(copyBtn, 'click', async function(){
-
       var lines = ['Ticket: ' + (state.ticketId || '')];
       state.messages.forEach(function(m){
         lines.push((m.role === 'agent' ? 'Agent: ' : 'Customer: ') + m.text);
@@ -2327,8 +2540,9 @@
       setTimeout(function(){ copyBtn.textContent = 'Copy transcript & notes'; }, 1500);
     });
 
-    // Periodic timers
+    // Periodic timers & live reply clock ticker
     setInterval(function(){
+      updateReplyTimerTicker();
       checkChatAbandonment();
       updatePendingBanner();
       checkPendingEmailReplies();

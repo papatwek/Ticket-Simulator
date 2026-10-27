@@ -34,10 +34,7 @@ function initDb(): DatabaseSync | null {
   if (_db) return _db;
 
   try {
-    const candidate = new DatabaseSync(DB_PATH);
-    // Defensive verification: verify filesystem is truly writable
-    candidate.exec(`CREATE TABLE IF NOT EXISTS _health_check (id INT); DROP TABLE IF EXISTS _health_check;`);
-    _db = candidate;
+    _db = new DatabaseSync(DB_PATH);
     _db.exec(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
@@ -83,7 +80,7 @@ function initDb(): DatabaseSync | null {
 
     return _db;
   } catch (err) {
-    console.warn('SQLite disk write test failed or read-only volume; falling back to in-memory DatabaseSync:', err);
+    console.warn('SQLite disk initialization fell back to memory store:', err);
     try {
       _db = new DatabaseSync(':memory:');
       _db.exec(`
@@ -122,7 +119,6 @@ function initDb(): DatabaseSync | null {
     } catch (memErr) {
       console.warn('SQLite in-memory fallback failed, using pure JavaScript memory maps:', memErr);
       _sqliteDisabled = true;
-      _db = null;
       return null;
     }
   }

@@ -1,12 +1,17 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextRequest, NextResponse } from 'next/server';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { traineeName, kpis, categoryBreakdown } = body || {};
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not configured');
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
 
     const systemInstruction = [
       "You are the Lead QA & Coaching Director for a customer contact center handling live chat support for Wyze smart-home devices.",
@@ -57,7 +62,7 @@ export async function POST(req: NextRequest) {
     };
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-2.5-flash',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
         systemInstruction,
