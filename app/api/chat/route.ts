@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
+import { CUSTOMER_POOL, getCustomerByIdx } from '@/lib/customerPool';
 
-// Supported model fallback cascade for high availability
-const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash'];
+// Supported model fallback cascade using valid, active Gemini models
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+
+let globalPersonaSeq = 0;
 
 export async function POST(req: Request) {
   let body: any;
@@ -12,8 +15,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid JSON request payload' }, { status: 400 });
   }
 
-  const { messages, schema, sessionId } = body || {};
+  const { messages, schema, sessionId, identityIndex, isEmail } = body || {};
   const rawMessages: Array<{ role: string; content?: string; text?: string }> = Array.isArray(messages) ? messages : [];
+
+  // Determine rotated identity for consistent, non-repeating personas
+  let chosenIdx = typeof identityIndex === 'number' ? identityIndex : globalPersonaSeq++;
+  const activeIdentity = getCustomerByIdx(chosenIdx);
 
   // Extract last agent message for conversational intelligence fallback
   let lastAgentMsg = '';
@@ -69,7 +76,27 @@ export async function POST(req: Request) {
     try {
       const ai = new GoogleGenAI({ apiKey });
 
-      let systemInstruction = '';
+      let systemInstruction = [
+        `You are roleplaying strictly as an everyday retail customer named ${activeIdentity.name}.`,
+        `Product: ${activeIdentity.product}. Emotional Tone: ${activeIdentity.emotionalState}.`,
+        `STRICT PERSONA RULES:`,
+        `1. YOU ARE A REGULAR CONSUMER WITH ZERO TECHNICAL KNOWLEDGE.`,
+        `2. NEVER suggest what to do next, do NOT predict troubleshooting solutions, and do NOT offer technical theories.`,
+        `3. You rely completely on the trainee agent to guide you.`,
+        `4. Answer the agent's questions directly and truthfully based on your details:`,
+        `   - Name: ${activeIdentity.name}, Email: ${activeIdentity.email}, Phone: ${activeIdentity.phone}`,
+        `   - Order/POP: ${activeIdentity.orderNumber} (purchased from ${activeIdentity.retailer} on ${activeIdentity.purchaseDate})`,
+        `   - MAC Address: ${activeIdentity.macAddress}, Serial Number: ${activeIdentity.serialNumber}`,
+        `5. If the agent gives you a single troubleshooting instruction (e.g. unplug device, look at the LED, press setup button, switch Wi-Fi network):`,
+        `   - Carry out only that single step.`,
+        `   - Report what you physically observe in everyday layman words.`,
+        `   - Ask: "What should I do next?" or "Does that look right?"`,
+        isEmail
+          ? `6. For EMAIL simulation: write a realistic, detailed email response (1 to 3 paragraphs) including purchase context and symptom details.`
+          : `6. For LIVE CHAT: keep responses conversational, concise, and focused on the agent's exact message.`,
+        `7. Never break character. Never state that you are an AI or simulation.`
+      ].join('\n');
+
       const chatContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
 
       for (const msg of rawMessages) {
@@ -77,7 +104,7 @@ export async function POST(req: Request) {
         if (!text) continue;
 
         if (msg.role === 'system') {
-          systemInstruction += (systemInstruction ? '\n\n' : '') + text;
+          systemInstruction += '\n\n' + text;
         } else if (msg.role === 'assistant' || msg.role === 'model' || msg.role === 'agent') {
           chatContents.push({ role: 'model', parts: [{ text }] });
         } else {
@@ -89,10 +116,9 @@ export async function POST(req: Request) {
         chatContents.push({ role: 'user', parts: [{ text: 'Please proceed with the support roleplay scenario.' }] });
       }
 
-      const config: any = {};
-      if (systemInstruction) {
-        config.systemInstruction = systemInstruction;
-      }
+      const config: any = {
+        systemInstruction: systemInstruction,
+      };
 
       if (schema && typeof schema === 'object') {
         config.responseMimeType = 'application/json';
@@ -124,72 +150,75 @@ export async function POST(req: Request) {
   }
 
   // 3. Intelligent Deterministic Simulation Engine
-  // Generates rich, context-aware responses matching Wyze support SOPs
+  // Rotates through the 60+ unique customer identities and behaves as a non-technical customer
   if (schema && schema.properties && schema.properties.openingMessage) {
-    const products = [
-      { name: "Wyze Cam v4", issue: "Device offline or won't connect to Wi-Fi", text: "Hi, my new Wyze Cam v4 in the backyard went offline yesterday. The light on the front is solid yellow and won't reconnect no matter what I do." },
-      { name: "Wyze Battery Cam Pro", issue: "Wireless camera battery draining too fast or not charging", text: "Hello! My Battery Cam Pro used to last over a month, but now after the recent update the battery drops from 100% to 15% in just 48 hours." },
-      { name: "Wyze Video Doorbell v2", issue: "Two-way audio — the speaker or microphone isn't working", text: "Hi there. When someone rings my Video Doorbell v2, I can hear them through the phone, but they cannot hear me speaking through the chime speaker." },
-      { name: "Wyze Cam Floodlight Pro", issue: "Motion detection or event clips not triggering when they should", text: "My floodlight camera lights turn on at night, but no event video clips are appearing in my Wyze app events tab anymore." },
-      { name: "Wyze Lock Bolt", issue: "App or account login trouble", text: "Hi, my fingerprint unlocks my Lock Bolt just fine, but the Wyze app keeps saying 'Device Bluetooth Disconnected' whenever I stand next to it." },
-      { name: "Wyze Mesh Router Pro 6E", issue: "Smart-home integration issue — routines, Alexa, or Google Assistant won't work", text: "Hello, since setting up the Wyze Mesh Router 6E, my smart plugs and bulbs keep losing connection every few hours." },
-      { name: "Wyze Cam Plus Unlimited", issue: "Billing or Cam Plus subscription dispute", text: "Hi, I was charged twice for my annual Cam Plus Unlimited renewal on my credit card last Friday. Can someone look into this?" }
-    ];
-    const pick = products[Math.floor(Math.random() * products.length)];
-
-    const fallbackPersona = {
-      name: "Jordan Alvarez",
-      email: "customer-jordan.a@example.invalid",
-      phone: "+1 (202) 555-0142",
-      shippingAddress: "418 Example Lane, Sampleville, ZZ 00000",
-      product: pick.name,
-      macAddress: "02:4B:9A:C3:7E:11",
-      orderNumber: "TEST-WZ-882941",
-      serialNumber: "TEST-SN-991204",
-      purchaseDate: "2025-08-14",
-      issueCategory: pick.issue,
-      emotionalState: "Frustrated",
-      hiddenSummary: `Customer's ${pick.name} has a troubleshooting or configuration issue. Follow standard Wyze SOP: acknowledge, verify customer name/email, perform device diagnostic, and guide step-by-step resolution.`,
-      openingMessage: pick.text,
+    const isEmailScenario = isEmail || (schema.properties.subject !== undefined);
+    const persona = {
+      name: activeIdentity.name,
+      email: activeIdentity.email,
+      phone: activeIdentity.phone,
+      shippingAddress: activeIdentity.shippingAddress,
+      product: activeIdentity.product,
+      macAddress: activeIdentity.macAddress,
+      orderNumber: activeIdentity.orderNumber,
+      serialNumber: activeIdentity.serialNumber,
+      purchaseDate: activeIdentity.purchaseDate,
+      retailer: activeIdentity.retailer,
+      issueCategory: activeIdentity.issueCategory,
+      emotionalState: activeIdentity.emotionalState,
+      hiddenSummary: `Customer is experiencing ${activeIdentity.symptomDetails}. They have zero technical background and will follow instructions one at a time. Ideal SOP: verify account/POP, check status LED, power-cycle/reset, confirm 2.4 GHz network, and re-pair.`,
+      openingMessage: isEmailScenario ? activeIdentity.emailBody : activeIdentity.chatOpening,
+      subject: activeIdentity.emailSubject,
       resolutionSteps: [
-        "Acknowledge the customer's frustration with empathy and verify name and email.",
-        "Check status LED or device behavior indicator.",
-        "Verify network requirements (2.4 GHz Wi-Fi, distance from router).",
-        "Perform power-cycle or reset sequence per device guidelines.",
-        "Re-pair or test live stream / feature in the Wyze app.",
-        "Confirm resolution and provide case summary with ticket ID."
+        "Acknowledge customer concerns with empathy and confirm customer name & email.",
+        "Verify Proof of Purchase (Order # or retailer receipt) and product model.",
+        "Check device status indicator or current LED color.",
+        "Guide customer through simple power-cycle or reset step without technical jargon.",
+        "Ensure smartphone is on a 2.4 GHz Wi-Fi network and guide setup.",
+        "Confirm live stream or device function is restored and summarize case resolution."
       ]
     };
-    return NextResponse.json({ text: JSON.stringify(fallbackPersona) });
+    return NextResponse.json({ text: JSON.stringify(persona) });
   }
 
-  // Dynamic intelligent conversational response based on agent's prompt
+  // Conversational response logic: innocent non-tech customer reacting to agent
   const lowerMsg = (lastAgentMsg || '').toLowerCase();
-  let replyText = "Thank you for checking in with me. How should we proceed with fixing this?";
+  let replyText = "";
   let ticketStatus = "OPEN";
 
-  if (/name|email|verify|account|who am i/i.test(lowerMsg)) {
-    replyText = "Sure thing! My name is Jordan Alvarez, and the email linked to my Wyze account is customer-jordan.a@example.invalid.";
-  } else if (/mac|serial|order|model|hardware/i.test(lowerMsg)) {
-    replyText = "Here are the device details from the sticker underneath: The MAC address is 02:4B:9A:C3:7E:11 and the serial number is TEST-SN-991204.";
-  } else if (/light|led|color|indicator|status/i.test(lowerMsg)) {
-    replyText = "Looking at the front right now, the LED light is currently sitting on solid yellow. It doesn't seem to be flashing or turning blue at all.";
-  } else if (/unplug|power cycle|reboot|restart|power/i.test(lowerMsg)) {
-    replyText = "Okay, I just unplugged the power cable from the back, waited 30 seconds, and plugged it back in. Now the light started flashing yellow!";
-  } else if (/2\.4|5ghz|router|wifi|wi-fi|network|band|password/i.test(lowerMsg)) {
-    replyText = "Good catch! My home Wi-Fi was set to combined 5GHz/2.4GHz. I just switched my smartphone specifically to my router's 2.4GHz network.";
-  } else if (/setup|button|press|hold|chime|ready/i.test(lowerMsg)) {
-    replyText = "I held down the setup button on the bottom of the camera for 3 seconds... and I just heard the camera announce: 'Ready to connect'!";
-  } else if (/qr|code|scan|camera|lens|screen/i.test(lowerMsg)) {
-    replyText = "I held up the QR code on my phone screen about 6 inches from the lens. It just said 'QR code scanned, please wait'! And now the LED turned solid blue!";
-  } else if (/work|live|stream|see|feed|fixed|solved|resolved/i.test(lowerMsg)) {
-    replyText = "Yes! The live video feed just loaded up in the Wyze app! It is working completely now. Thank you so much for your patience and help!";
+  if (/name|who are you|who am i/i.test(lowerMsg) && /email/i.test(lowerMsg)) {
+    replyText = `My name is ${activeIdentity.name}, and my email address linked to the order is ${activeIdentity.email}.`;
+  } else if (/name/i.test(lowerMsg) && !/product|device/i.test(lowerMsg)) {
+    replyText = `My name is ${activeIdentity.name}.`;
+  } else if (/email/i.test(lowerMsg)) {
+    replyText = `The email address on my Wyze account is ${activeIdentity.email}.`;
+  } else if (/order|pop|proof of purchase|receipt|bought|where did you purchase/i.test(lowerMsg)) {
+    replyText = `I bought it from ${activeIdentity.retailer} on ${activeIdentity.purchaseDate}. My order number is ${activeIdentity.orderNumber}.`;
+  } else if (/mac|serial|sticker|barcode/i.test(lowerMsg)) {
+    replyText = `I looked at the small sticker on the bottom of the device. The MAC address is ${activeIdentity.macAddress} and the Serial Number says ${activeIdentity.serialNumber}.`;
+  } else if (/light|led|color|indicator|front/i.test(lowerMsg)) {
+    replyText = `Looking at the front of the ${activeIdentity.product} right now, the little light is sitting solid yellow. It's not blinking or changing color.`;
+  } else if (/unplug|power cycle|reboot|restart|power cord|wall outlet/i.test(lowerMsg)) {
+    replyText = `Okay, I unplugged the power adapter from the wall, waited about 30 seconds, and plugged it back in. Now the yellow light is blinking slowly. What should I do next?`;
+  } else if (/setup button|bottom button|pin|hold down|press and hold/i.test(lowerMsg)) {
+    replyText = `I found the button and held it down for a few seconds. The device just made a chime sound and announced 'Ready to connect'. What's the next step?`;
+  } else if (/qr|code|scan|camera lens|screen/i.test(lowerMsg)) {
+    replyText = `I held up the QR code on my phone in front of the lens like you said... and it just beeped and said 'QR code scanned, please wait'! Now the light changed to solid blue!`;
+  } else if (/2\.4|5ghz|router|wifi|wi-fi|network name|ssid/i.test(lowerMsg)) {
+    replyText = `I checked my phone's Wi-Fi list. I see two names for my home internet: one ends in '5G' and the other one doesn't. I just connected my phone to the regular one without 5G. Is that right?`;
+  } else if (/app|open|live|stream|feed|picture|see/i.test(lowerMsg)) {
+    replyText = `Yes! I just opened the live view in the Wyze app and the video feed came right up in clear 2.5K! The camera is working completely now. Thank you so much for walking me through that!`;
     ticketStatus = "RESOLVED";
-  } else if (/anything else|further|help|wrap|recap/i.test(lowerMsg)) {
-    replyText = "That's everything I needed! Thank you so much for solving this so quickly. Have a great day!";
+  } else if (/anything else|further questions|all set|wrap up|case recap/i.test(lowerMsg)) {
+    replyText = `That's everything I needed help with! You were so patient and helpful. Thank you again, have a wonderful day!`;
     ticketStatus = "RESOLVED";
   } else {
-    replyText = "I'm ready and following your instructions. What is the next step you'd like me to try?";
+    replyText = `I'm here and ready. What is the next step you would like me to try with the ${activeIdentity.product}?`;
+  }
+
+  // Format email response if requested
+  if (isEmail) {
+    replyText = `Hello,\n\n${replyText}\n\nThank you,\n${activeIdentity.name}`;
   }
 
   const fallbackReply = {

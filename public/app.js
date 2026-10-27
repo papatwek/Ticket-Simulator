@@ -42,45 +42,66 @@
 
   var AVATARS = [
     {
-      id: 'pip',
-      name: 'Pip the fox',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><path d="M13 29 18 6l17 15L52 7l7 24" fill="#F29B58" stroke="#B95637" stroke-width="3" stroke-linejoin="round"/><path d="m19 22 3-9 8 8m20 0 8-9 2 12" fill="#FFD3A3"/><circle cx="36" cy="38" r="25" fill="#F29B58" stroke="#B95637" stroke-width="3"/><path d="M22 43c1-7 7-10 14-10s13 3 14 10c0 9-7 14-14 14s-14-5-14-14Z" fill="#FFF1D9"/><ellipse cx="28" cy="36" rx="2.2" ry="3.2" fill="#293542"/><ellipse cx="44" cy="36" rx="2.2" ry="3.2" fill="#293542"/><path d="m33 44 3-2 3 2-3 3z" fill="#A94B43"/><path d="M31 49q5 4 10 0" fill="none" stroke="#8C4638" stroke-width="2" stroke-linecap="round"/><path d="M12 34v8m48-8v8" stroke="#46AFA5" stroke-width="5" stroke-linecap="round"/></svg>'
+      id: 'alex',
+      name: 'Alex Morgan (Wyze Teal)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_alex_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00A389"/><stop offset="100%" stop-color="#0369A1"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_alex_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1E293B"/><circle cx="36" cy="32" r="14" fill="#F8D3B4"/><path d="M22 28c1-10 7-15 14-15s13 5 14 15c-3-2-8-3-14-3s-11 1-14 3z" fill="#33241C"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#A75A38" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#22D3EE" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#0F172A"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#0F172A"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#F43F5E"/></svg>'
     },
     {
-      id: 'momo',
-      name: 'Momo the cat',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><path d="m13 30 3-22 18 13L53 8l6 24" fill="#9E91E8" stroke="#655BB5" stroke-width="3" stroke-linejoin="round"/><path d="m20 22 1-8 8 6m21 1 8-7 2 12" fill="#F6C0D8"/><path d="M11 39c0-15 10-25 25-25s25 10 25 25-10 26-25 26S11 54 11 39Z" fill="#B8ADF6" stroke="#655BB5" stroke-width="3"/><ellipse cx="27" cy="38" rx="2.2" ry="3" fill="#293542"/><ellipse cx="45" cy="38" rx="2.2" ry="3" fill="#293542"/><path d="m33 45 3-2 3 2-3 3z" fill="#DB7D9D"/><path d="M32 50q4 3 8 0" fill="none" stroke="#655BB5" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="46" r="3" fill="#F39BB7" opacity=".8"/><circle cx="52" cy="46" r="3" fill="#F39BB7" opacity=".8"/><path d="M16 30q20-22 40 0" fill="none" stroke="#FFD86A" stroke-width="4" stroke-linecap="round"/><path d="M10 36v9m52-9v9" stroke="#FFD86A" stroke-width="5" stroke-linecap="round"/></svg>'
+      id: 'sam',
+      name: 'Sam Taylor (Amber Specialist)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_sam_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#D97706"/><stop offset="100%" stop-color="#B45309"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_sam_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#312E81"/><circle cx="36" cy="32" r="14" fill="#E4A87C"/><path d="M21 28c0-8 6-15 15-15s15 7 15 15c-4-4-9-5-15-5s-11 1-15 5z" fill="#18181B"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#18181B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#18181B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#8C4638" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#FACC15" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#E11D48"/></svg>'
     },
     {
-      id: 'bibi',
-      name: 'Bibi the axolotl',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><path d="M17 31 5 23l3 18 10 1m37-11 12-8-3 18-10 1" fill="#F58BA9" stroke="#C14F78" stroke-width="3" stroke-linejoin="round"/><path d="M20 19q16-12 32 0v7H20z" fill="#FFB1C4"/><path d="M12 40c0-15 10-23 24-23s24 8 24 23-10 23-24 23-24-8-24-23Z" fill="#70D2BE" stroke="#32998F" stroke-width="3"/><ellipse cx="27" cy="39" rx="2.2" ry="3" fill="#293542"/><ellipse cx="45" cy="39" rx="2.2" ry="3" fill="#293542"/><path d="M32 48q4 4 8 0" fill="none" stroke="#287E79" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="46" r="3" fill="#F58BA9"/><circle cx="52" cy="46" r="3" fill="#F58BA9"/><path d="M16 30q20-20 40 0" fill="none" stroke="#FFD86A" stroke-width="4" stroke-linecap="round"/><path d="M10 36v10m52-10v10" stroke="#FFD86A" stroke-width="5" stroke-linecap="round"/></svg>'
+      id: 'jordan',
+      name: 'Jordan Reed (Cyan Tech)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_jordan_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0284C7"/><stop offset="100%" stop-color="#0F766E"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_jordan_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#0F172A"/><circle cx="36" cy="32" r="14" fill="#F4C7A3"/><path d="M22 26c2-7 7-11 14-11s12 4 14 11c-3-2-7-3-14-3s-11 1-14 3z" fill="#4B3621"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#9A3412" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#10B981"/></svg>'
     },
     {
-      id: 'toto',
-      name: 'Toto the turtle',
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><path d="M16 45q-9 1-10 9 8 4 15-2m35-7q10 1 11 9-8 4-15-2" fill="#73BD79" stroke="#3B875E" stroke-width="3"/><path d="M19 45c0-15 7-23 17-23s17 8 17 23c0 11-8 17-17 17s-17-6-17-17Z" fill="#79CE8A" stroke="#3B875E" stroke-width="3"/><path d="M16 45q0-23 20-23t20 23q-8 9-20 9t-20-9Z" fill="#40A789" stroke="#287C70" stroke-width="3"/><path d="M24 36q12-11 24 0m-24 8q12-11 24 0" fill="none" stroke="#9BE0A4" stroke-width="2"/><ellipse cx="30" cy="43" rx="2.2" ry="3" fill="#293542"/><ellipse cx="42" cy="43" rx="2.2" ry="3" fill="#293542"/><path d="M32 51q4 3 8 0" fill="none" stroke="#287C70" stroke-width="2" stroke-linecap="round"/><path d="M18 33q18-17 36 0" fill="none" stroke="#FFD86A" stroke-width="4" stroke-linecap="round"/><path d="M13 38v8m46-8v8" stroke="#FFD86A" stroke-width="5" stroke-linecap="round"/></svg>'
+      id: 'taylor',
+      name: 'Taylor Kim (Violet Senior)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_taylor_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="100%" stop-color="#4C1D95"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_taylor_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#374151"/><circle cx="36" cy="32" r="14" fill="#FBD8BF"/><path d="M21 27c0-9 6-13 15-13s15 4 15 13v9h-5v-7H26v7h-5z" fill="#4A044E"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#111827"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#111827"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#831843" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#A78BFA" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E1B4B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E1B4B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#C084FC" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#FB7185"/></svg>'
+    },
+    {
+      id: 'morgan',
+      name: 'Morgan Lee (Emerald Lead)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_morgan_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#059669"/><stop offset="100%" stop-color="#047857"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_morgan_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1E293B"/><circle cx="36" cy="15" r="5" fill="#1C1917"/><circle cx="36" cy="32" r="14" fill="#D2996E"/><path d="M22 28c1-10 6-14 14-14s13 4 14 14c-3-3-8-4-14-4s-11 1-14 4z" fill="#1C1917"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#0C0A09"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#0C0A09"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#78350F" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#34D399" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#064E3B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#064E3B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#6EE7B7" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#F59E0B"/></svg>'
+    },
+    {
+      id: 'casey',
+      name: 'Casey Rivera (Rose Advisor)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_casey_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E11D48"/><stop offset="100%" stop-color="#BE123C"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_casey_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#475569"/><circle cx="36" cy="32" r="14" fill="#FCE7D8"/><path d="M21 27c1-9 6-14 15-14s14 5 15 14c-4-3-8-4-15-4s-11 1-15 4z" fill="#581C87"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#9F1239" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#FDA4AF" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#881337"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#881337"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#F43F5E" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#10B981"/></svg>'
+    },
+    {
+      id: 'jamie',
+      name: 'Jamie Chen (Indigo Specialist)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_jamie_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4F46E5"/><stop offset="100%" stop-color="#3730A3"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_jamie_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1F2937"/><circle cx="36" cy="32" r="14" fill="#F8C798"/><path d="M22 28c1-10 6-14 14-14s13 4 14 14c-3-2-8-3-14-3s-11 1-14 3z" fill="#172554"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#111827"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#111827"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#9A3412" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#818CF8" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E1B4B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E1B4B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#A5B4FC" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#22C55E"/></svg>'
+    },
+    {
+      id: 'robin',
+      name: 'Robin Patel (Coral Expert)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_robin_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#EA580C"/><stop offset="100%" stop-color="#C2410C"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_robin_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#047857"/><circle cx="36" cy="32" r="14" fill="#C58557"/><path d="M21 26c0-9 6-13 15-13s15 4 15 13c-4-3-8-4-15-4s-11 1-15 4z" fill="#0F172A"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#713F12" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#FB923C" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#7C2D12"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#7C2D12"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#FDBA74" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#06B6D4"/></svg>'
+    },
+    {
+      id: 'chris',
+      name: 'Chris Evans (Sky Support)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_chris_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0284C7"/><stop offset="100%" stop-color="#0369A1"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_chris_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1E293B"/><circle cx="36" cy="32" r="14" fill="#F8D3B4"/><path d="M22 27c1-9 7-14 14-14s13 5 14 14c-3-2-7-3-14-3s-11 1-14 3z" fill="#713F12"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#A75A38" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#0C4A6E"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#0C4A6E"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#7DD3FC" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#F43F5E"/></svg>'
+    },
+    {
+      id: 'avery',
+      name: 'Avery Brooks (Bronze Specialist)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_avery_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#78350F"/><stop offset="100%" stop-color="#451A03"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_avery_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#3B82F6"/><circle cx="36" cy="32" r="14" fill="#8D5B3C"/><path d="M21 27c0-9 6-13 15-13s15 4 15 13c-4-3-8-4-15-4s-11 1-15 4z" fill="#18181B"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#18181B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#18181B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#5A2E17" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#D97706" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1F2937"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1F2937"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#EC4899"/></svg>'
+    },
+    {
+      id: 'riley',
+      name: 'Riley Gomez (Plum Advocate)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_riley_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#831843"/><stop offset="100%" stop-color="#500724"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_riley_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#1E293B"/><circle cx="36" cy="32" r="14" fill="#FCE7D8"/><path d="M22 28c1-10 6-14 14-14s13 4 14 14c-3-2-8-3-14-3s-11 1-14 3z" fill="#9D174D"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#1E293B"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#9F1239" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#F472B6" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#831843"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#831843"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#FBCFE8" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#10B981"/></svg>'
+    },
+    {
+      id: 'devon',
+      name: 'Devon Scott (Navy Lead)',
+      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><defs><linearGradient id="av_devon_bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1E3A8A"/><stop offset="100%" stop-color="#172554"/></linearGradient></defs><circle cx="36" cy="36" r="34" fill="url(#av_devon_bg)"/><path d="M18 64c2-9 9-15 18-15s16 6 18 15" fill="#334155"/><circle cx="36" cy="32" r="14" fill="#E6B48B"/><path d="M21 27c0-9 6-13 15-13s15 4 15 13c-4-3-8-4-15-4s-11 1-15 4z" fill="#1E293B"/><ellipse cx="31" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><ellipse cx="41" cy="32" rx="1.8" ry="2.2" fill="#0F172A"/><path d="M33 38q3 2.5 6 0" fill="none" stroke="#8C4638" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27q15-13 30 0" fill="none" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/><rect x="19" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><rect x="48" y="27" width="5" height="10" rx="2.5" fill="#1E293B"/><path d="M49 35q-2 8-12 8" fill="none" stroke="#93C5FD" stroke-width="1.8" stroke-linecap="round"/><circle cx="36" cy="43" r="2" fill="#FBBF24"/></svg>'
     }
-  ].concat([
-    ['red-panda','Rumi the red panda','🐼','#F8D8C8','#D9754F'],
-    ['owl','Olive the owl','🦉','#D8D2F4','#8876C7'],
-    ['frog','Fern the frog','🐸','#D6F0D2','#55A66C'],
-    ['penguin','Pip the penguin','🐧','#D8EAF5','#5987AA'],
-    ['rabbit','Clover the bunny','🐰','#F7DCE8','#D987AA'],
-    ['bear','Bramble the bear','🐻','#F1DEC8','#A8754C'],
-    ['dog','Scout the dog','🐶','#F6E7C7','#D69A45'],
-    ['dino','Dew the dinosaur','🦖','#D5EDC9','#65A35A'],
-    ['bee','Bumble the bee','🐝','#F9E9AE','#D6A928'],
-    ['raccoon','Rascal the raccoon','🦝','#D9DDE2','#7C8794'],
-    ['whale','Wally the whale','🐳','#CDEAF4','#4D9FC0'],
-    ['unicorn','Nova the unicorn','🦄','#EEDCF8','#A47BC0']
-  ].map(function(item){
-    return {
-      id: item[0],
-      name: item[1],
-      art: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="' + item[3] + '"/><circle cx="36" cy="36" r="29" fill="' + item[4] + '" opacity=".18"/><text x="36" y="51" text-anchor="middle" font-size="48" font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">' + item[2] + '</text></svg>'
-    };
-  }));
+  ];
 
   var WYZE_CATALOG = [
     "Cameras & Indoor/Outdoor: Wyze Cam v4 (2.5K QHD, Color Night Vision, Wi-Fi 6), Wyze Cam Pan v3 (360 Pan/Tilt, IP65 Weatherproof), Wyze Battery Cam Pro (2K Wire-Free, radar detection), Wyze Cam OG & OG Telephoto (3x zoom, PIP), Wyze Cam Floodlight Pro (3000 lumens, 180 FOV, ambient sensor), Wyze Cam Floodlight v2, Wyze Cam v3, Wyze Cam v3 Pro, Wyze Cam Outdoor v2",
@@ -529,7 +550,9 @@
       body: JSON.stringify({
         messages: messages,
         schema: opts.schema,
-        sessionId: opts.sessionId
+        sessionId: opts.sessionId,
+        identityIndex: opts.identityIndex,
+        isEmail: opts.isEmail != null ? opts.isEmail : (simMode === 'email')
       })
     });
     if(!response.ok){
@@ -1147,12 +1170,24 @@
     s.holdDeadline = null;
     s.holdMinutes = null;
 
+    // Auto-turn on Timer on conversation start per user instructions
+    timerOn = true;
+    if(replyTimer) replyTimer.hidden = false;
+    if(timerToggle) timerToggle.checked = true;
+    if(drawerTimerToggle) drawerTimerToggle.checked = true;
+
     // Standard Random Selection from the Expanded Wyze Catalog
     var categoryKeys = Object.keys(CATEGORY_LABELS).filter(function(k){ return k !== 'random'; });
     var randomKey = categoryKeys[Math.floor(Math.random() * categoryKeys.length)];
     var category = CATEGORY_LABELS[randomKey];
 
     var emotion = (emotionSelect && EMOTION_LABELS[emotionSelect.value]) || EMOTION_LABELS.random;
+
+    // Rotate sequentially through the 60 unique customer identities
+    var seq = parseInt(localStorage.getItem('ecewise:cust_identity_seq') || '0', 10);
+    var nextSeq = (seq + 1) % 60;
+    try { localStorage.setItem('ecewise:cust_identity_seq', String(nextSeq)); } catch(e){}
+    s.identityIndex = nextSeq;
 
     var system = [
       "You generate one fictional customer persona and an opening " + (simMode === 'email' ? 'support email' : 'live-chat message') + " for a Wyze customer support simulator.",
@@ -1162,7 +1197,7 @@
       "- Scenario type: " + category,
       "- Emotional mood: " + emotion,
       "- hiddenSummary: 2-3 sentences on the real root cause and ideal SOP troubleshooting steps.",
-      "- openingMessage: Opening inquiry written naturally as a regular customer."
+      "- openingMessage: Opening inquiry written naturally as a regular customer with zero technical background."
     ].join('\n');
 
     var schema = {
@@ -1194,7 +1229,12 @@
       var raw = await runModel([
         { role: "system", content: system },
         { role: "user", content: "Generate the fictional persona and opening inquiry now." }
-      ], { schema: schema, sessionId: s.sessionId });
+      ], {
+        schema: schema,
+        sessionId: s.sessionId,
+        identityIndex: nextSeq,
+        isEmail: simMode === 'email'
+      });
 
       var persona = JSON.parse(raw);
       persona.name = persona.name || makeFictionalName();
@@ -1206,7 +1246,7 @@
       s.emailSubject = persona.subject || ('Help with ' + persona.product + ' - ' + persona.issueCategory);
       s.messages = [{ role: 'customer', text: persona.openingMessage, ts: Date.now(), gapSec: null }];
       s.traineeName = loginProfile ? loginProfile.name : '';
-      s.avatarId = loginProfile ? loginProfile.avatarId : 'pip';
+      s.avatarId = loginProfile ? loginProfile.avatarId : 'alex';
 
       clearCaseFields();
       renderPersonaBar();

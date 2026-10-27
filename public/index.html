@@ -160,18 +160,14 @@
         <strong>Wyze <span class="brand-tag">- ECE Ticket Simulator</span></strong>
         <span>Live-Chat &amp; Email Support Practice</span>
       </div>
+      <button type="button" class="btn btn-ghost how-to-use-btn" id="howToUseBtn" title="Interactive Simulator Walkthrough &amp; Guide">📖 How to use</button>
     </div>
     <div class="sim-mode-toggle" role="radiogroup" aria-label="Simulation Mode">
       <button type="button" class="mode-tab active" id="modeChatBtn" title="Switch to Real-time Live-Chat Simulation">💬 Live Chat</button>
       <button type="button" class="mode-tab" id="modeEmailBtn" title="Switch to Asynchronous Email Ticketing Simulation">✉️ Email Ticket</button>
     </div>
     <div class="toolbar-controls">
-      <select id="themeSelect" class="tb-select" aria-label="Visual Theme" title="Switch visual theme">
-        <option value="wyze">Theme: Wyze Teal</option>
-        <option value="dark">Theme: Dark Cockpit</option>
-        <option value="warm">Theme: Warm Classic</option>
-      </select>
-      <select id="emotionSelect" class="tb-select" aria-label="Customer mood">
+      <select id="emotionSelect" class="tb-select" aria-label="Customer mood" title="Set simulated customer emotional state">
         <option value="random">Mood: Random</option>
         <option value="calm">Calm</option>
         <option value="annoyed">Mildly annoyed</option>
@@ -181,16 +177,13 @@
         <option value="confused">Confused</option>
       </select>
       <label class="toggle" id="twoChatsToggleWrap" title="Run two customers at once, like a real live-chat queue"><input type="checkbox" id="twoChatsToggle"/><span>2 chats</span></label>
-      <label class="toggle" id="timerToggleWrap" title="On-screen reply timer that glows yellow/red if you take too long"><input type="checkbox" id="timerToggle"/><span>Timer</span></label>
-      <button id="newScenarioBtn" class="btn btn-primary">Start new customer</button>
-      <button id="feedbackBtn" class="btn btn-ghost" disabled>Coaching notes</button>
-      <button id="caseBtn" class="btn btn-ghost">Case file</button>
-      <label class="toggle" title="View ground truth answer key"><input type="checkbox" id="trainerModeToggle"/><span>Trainer view</span></label>
-      <button id="historyBtn" class="btn btn-ghost">History</button>
-      <button id="myAnalyticsBtn" class="btn btn-ghost" title="View my performance stats, chat speed, and AI coaching insights">📊 My Performance</button>
-      <button id="adminConsoleBtn" class="btn btn-ghost" title="Leadership Admin: Trainee management, password resets, account deactivation, and analytics">🛡️ Leadership Admin</button>
-      <button id="infoBtn" class="icon-btn" aria-label="How this works" title="How this works">?</button>
-      <button id="signOutBtn" class="btn btn-ghost" title="Sign out of your account">Sign out</button>
+      <button id="newScenarioBtn" class="btn btn-primary" title="Launch a new simulated customer inquiry">Start new customer</button>
+      <button id="feedbackBtn" class="btn btn-ghost" disabled title="View QA feedback on current conversation">Coaching notes</button>
+      <button id="caseBtn" class="btn btn-ghost" title="Document ticket case file">Case file</button>
+      <button type="button" class="btn btn-ghost hub-toggle-btn" id="rightDrawerToggleBtn" title="Open Profile, Performance, Themes, and Leadership Admin">
+        <span id="hubBtnAvatar">👤</span>
+        <span>Agent Hub</span>
+      </button>
     </div>
   </header>
 
@@ -258,11 +251,11 @@
             <span>Customer Reply Interval:</span>
           </div>
           <div class="interval-controls">
-            <label>Min <input type="number" id="emailMinMins" min="15" max="60" value="30"/>m</label>
+            <label>Min <input type="number" id="emailMinMins" min="15" max="1440" value="30"/>m</label>
             <span class="interval-sep">to</span>
-            <label>Max <input type="number" id="emailMaxMins" min="60" max="180" value="120"/>m</label>
+            <label>Max <input type="number" id="emailMaxMins" min="60" max="2880" value="2880"/>m</label>
           </div>
-          <span class="interval-note muted">(Simulated wait between 30m and 2h)</span>
+          <span class="interval-note muted">(Simulated wait up to 48 hours; trainee SLA 24h)</span>
         </div>
 
         <div class="email-pending-banner" id="emailPendingBanner" hidden>
@@ -318,7 +311,6 @@
 
       <form class="chat-input" id="chatForm">
         <textarea id="agentInput" placeholder="Type your reply as the agent… (Enter to send, Shift+Enter for a new line)" disabled rows="2"></textarea>
-        <button type="button" class="btn btn-ghost" id="clearChatBtn" title="Archive this chat with an audit entry and require a new customer" disabled>Clear chat</button>
         
         <!-- Zendesk Submit Bar for Email Mode -->
         <div class="zd-submit-bar" id="zdSubmitBar" hidden>
@@ -872,6 +864,197 @@
 
     <div class="modal-actions" style="margin-top:16px;">
       <button type="button" class="btn btn-ghost" id="dismissZdViewsBtn">Close Views</button>
+    </div>
+  </div>
+</div>
+
+<!-- RIGHT-SIDE COLLAPSIBLE DRAWER (AGENT HUB) -->
+<div class="drawer-overlay" id="drawerOverlay" hidden></div>
+<aside class="right-drawer" id="rightDrawer" aria-label="Agent Hub Drawer" hidden>
+  <div class="drawer-header">
+    <div class="drawer-header-title">
+      <span class="drawer-icon">⚡</span>
+      <h3>Agent Hub</h3>
+    </div>
+    <button type="button" class="modal-close" id="closeRightDrawerBtn" aria-label="Close Agent Hub">×</button>
+  </div>
+
+  <div class="drawer-content">
+    <!-- Agent Profile Card -->
+    <div class="drawer-profile-card">
+      <div class="drawer-avatar-wrap" id="drawerAvatarWrap">
+        <span class="drawer-avatar" id="drawerAvatar">👤</span>
+      </div>
+      <div class="drawer-profile-meta">
+        <h4 id="drawerAgentName">Trainee Agent</h4>
+        <div class="drawer-email" id="drawerAgentEmail">agent@ececontactcenters.com</div>
+        <span class="drawer-badge">ECE Certified Trainee</span>
+      </div>
+    </div>
+
+    <!-- Section: Performance & Intelligence -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">PERFORMANCE &amp; ANALYTICS</div>
+      <button type="button" class="drawer-menu-item" id="drawerPerformanceBtn">
+        <span class="menu-icon">📊</span>
+        <div class="menu-text">
+          <strong>My Performance Cockpit</strong>
+          <span>Speed, frustration recovery &amp; AI insights</span>
+        </div>
+        <span class="menu-arrow">→</span>
+      </button>
+      <button type="button" class="drawer-menu-item" id="drawerHistoryBtn">
+        <span class="menu-icon">🗂️</span>
+        <div class="menu-text">
+          <strong>Past Session History</strong>
+          <span>View 7-day chat &amp; email session audit</span>
+        </div>
+        <span class="menu-arrow">→</span>
+      </button>
+      <button type="button" class="drawer-menu-item" id="drawerCoachingBtn">
+        <span class="menu-icon">📝</span>
+        <div class="menu-text">
+          <strong>QA Coaching Notes</strong>
+          <span>Review feedback and SOP scoring</span>
+        </div>
+        <span class="menu-arrow">→</span>
+      </button>
+    </div>
+
+    <!-- Section: Leadership & Supervisory -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">SUPERVISORY &amp; ADMIN</div>
+      <button type="button" class="drawer-menu-item" id="drawerAdminBtn">
+        <span class="menu-icon">🛡️</span>
+        <div class="menu-text">
+          <strong>Leadership Admin Console</strong>
+          <span>Trainee scorecards, access &amp; reset tools</span>
+        </div>
+        <span class="menu-arrow">→</span>
+      </button>
+      <div class="drawer-toggle-row">
+        <div class="toggle-info">
+          <strong>Trainer View Mode</strong>
+          <span>Reveal hidden customer state &amp; hints</span>
+        </div>
+        <label class="toggle"><input type="checkbox" id="drawerTrainerViewToggle"/><span></span></label>
+      </div>
+    </div>
+
+    <!-- Section: Preferences & Simulation Setup -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">PREFERENCES &amp; SETUP</div>
+      <div class="drawer-pref-row">
+        <label for="drawerThemeSelect">Visual Theme:</label>
+        <select id="drawerThemeSelect" class="drawer-select">
+          <option value="teal">Wyze Teal (Default)</option>
+          <option value="midnight">Wyze Midnight</option>
+          <option value="slate">Slate Modern</option>
+          <option value="light">Crisp Light</option>
+        </select>
+      </div>
+      <div class="drawer-toggle-row">
+        <div class="toggle-info">
+          <strong>Auto-Response Timer</strong>
+          <span>Measure seconds between message turns</span>
+        </div>
+        <label class="toggle"><input type="checkbox" id="drawerTimerToggle" checked/><span></span></label>
+      </div>
+      <button type="button" class="drawer-menu-item" id="drawerWalkthroughBtn">
+        <span class="menu-icon">📖</span>
+        <div class="menu-text">
+          <strong>Interactive Walkthrough</strong>
+          <span>Relaunch simulator feature guide</span>
+        </div>
+        <span class="menu-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="drawer-footer">
+    <button type="button" class="btn btn-outline btn-block" id="drawerSignOutBtn">
+      <span>🚪 Sign out</span>
+    </button>
+  </div>
+</aside>
+
+<!-- INTERACTIVE ONBOARDING WALKTHROUGH MODAL -->
+<div class="modal" id="walkthroughModal" role="dialog" aria-modal="true" aria-labelledby="wtTitle" hidden>
+  <div class="modal-content walkthrough-modal-content">
+    <div class="wt-header">
+      <div class="wt-header-title">
+        <span class="wt-badge">Simulator Guide</span>
+        <h2 id="wtTitle">Welcome to Wyze - ECE Ticket Simulator</h2>
+      </div>
+      <button type="button" class="modal-close" id="closeWalkthroughBtn" aria-label="Close walkthrough">×</button>
+    </div>
+
+    <!-- Walkthrough Step 1 -->
+    <div class="wt-step active" id="wtStep1">
+      <div class="wt-card">
+        <div class="wt-icon-large">🎧</div>
+        <h3>Dual Channel Simulation: Live Chat &amp; Email</h3>
+        <p>Switch seamlessly between fast-paced <strong>Live Chat</strong> and realistic <strong>Zendesk Email Ticketing</strong>.</p>
+        <ul class="wt-bullets">
+          <li><strong>Live Chat:</strong> Real-time customer conversation with instant response tracking, live typing speed (WPM), and an automatic <strong>7-minute inactivity auto-abandonment</strong> timer.</li>
+          <li><strong>Email Ticketing:</strong> Asynchronous customer inquiry handling structured with standard Zendesk status flows.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Walkthrough Step 2 -->
+    <div class="wt-step" id="wtStep2" hidden>
+      <div class="wt-card">
+        <div class="wt-icon-large">👥</div>
+        <h3>Realistic Customer Personas (60+ Rotations)</h3>
+        <p>Every scenario draws from a rotating pool of 60+ unique customers with synthetic names, emails, MAC addresses, serial numbers, and proof of purchase.</p>
+        <ul class="wt-bullets">
+          <li><strong>Zero Technical Knowledge:</strong> Simulated customers do not predict fixes or guess solutions. They rely solely on your guidance.</li>
+          <li><strong>Logical Comprehension:</strong> When you ask for their name, order number, or to check an LED light, they answer naturally with their exact details.</li>
+          <li><strong>One Step at a Time:</strong> Guide them clearly step by step without overwhelming technical jargon.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Walkthrough Step 3 -->
+    <div class="wt-step" id="wtStep3" hidden>
+      <div class="wt-card">
+        <div class="wt-icon-large">✉️</div>
+        <h3>Zendesk Ticketing &amp; 3 Concurrent Tabs</h3>
+        <p>Handle up to 3 email tickets simultaneously just like a production support desk.</p>
+        <ul class="wt-bullets">
+          <li><strong>Linear Ticket Journey:</strong> Update statuses across <span class="zd-badge zd-badge-new">New</span>, <span class="zd-badge zd-badge-open">Open</span>, <span class="zd-badge zd-badge-pending">Pending</span>, <span class="zd-badge zd-badge-onhold">On-hold</span>, and <span class="zd-badge zd-badge-solved">Solved</span>.</li>
+          <li><strong>Yellow Internal Notes:</strong> Post private agent-only notes formatted with distinctive yellow styling to document vendor or Tier-2 updates.</li>
+          <li><strong>Realistic 48-Hour Response SLA:</strong> Set simulated customer response intervals up to 48 hours with instant fast-forward testing.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Walkthrough Step 4 -->
+    <div class="wt-step" id="wtStep4" hidden>
+      <div class="wt-card">
+        <div class="wt-icon-large">📊</div>
+        <h3>Agent Hub, Performance Analytics &amp; Admin</h3>
+        <p>Click the <strong>Agent Hub</strong> button on the top right at any time to inspect your coaching progress.</p>
+        <ul class="wt-bullets">
+          <li><strong>Analytics Cockpit:</strong> Review average WPM, first response time distributions, frustration recovery rates, and case documentation completion.</li>
+          <li><strong>7-Day Audit Trail:</strong> Your session history is automatically saved for supervisor review.</li>
+          <li><strong>Leadership Admin:</strong> Team leads can access drill-downs, deactivate accounts, and trigger secure password resets.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="wt-footer">
+      <div class="wt-dots" id="wtDots">
+        <span class="wt-dot active" data-step="1"></span>
+        <span class="wt-dot" data-step="2"></span>
+        <span class="wt-dot" data-step="3"></span>
+        <span class="wt-dot" data-step="4"></span>
+      </div>
+      <div class="wt-nav-actions">
+        <button type="button" class="btn btn-ghost" id="wtPrevBtn" disabled>← Previous</button>
+        <button type="button" class="btn btn-primary" id="wtNextBtn">Next →</button>
+      </div>
     </div>
   </div>
 </div>
