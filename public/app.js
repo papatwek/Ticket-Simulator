@@ -440,6 +440,40 @@
   var closeAdminResetModal = $('closeAdminResetModal');
   var dismissAdminResetModal = $('dismissAdminResetModal');
 
+  // Review takeover, Bug report & Simulator tools
+  var endChatBtn = $('endChatBtn');
+  var reviewBanner = $('reviewBanner');
+  var reviewTitle = $('reviewTitle');
+  var reviewStatus = $('reviewStatus');
+  var reviewRefreshBtn = $('reviewRefreshBtn');
+  var closeReviewBtn = $('closeReviewBtn');
+  var emptyStartBtn = $('emptyStartBtn');
+  var clearCacheBtn = $('clearCacheBtn');
+  var reportBugBtn = $('reportBugBtn');
+  var reportBugModal = $('reportBugModal');
+  var closeReportBugBtn = $('closeReportBugBtn');
+  var cancelReportBugBtn = $('cancelReportBugBtn');
+  var reportBugForm = $('reportBugForm');
+  var bugSuccessNotice = $('bugSuccessNotice');
+  var toastContainer = $('toastContainer');
+
+  var reviewSessions = [];
+  var activeReviewId = null;
+
+  function showToast(msg, durationMs){
+    var container = $('toastContainer');
+    if(!container) return;
+    var t = document.createElement('div');
+    t.className = 'simulator-toast';
+    t.textContent = msg;
+    container.appendChild(t);
+    setTimeout(function(){ t.classList.add('show'); }, 10);
+    setTimeout(function(){
+      t.classList.remove('show');
+      setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, durationMs || 3500);
+  }
+
   var caseFields = {
     fCustomerName: $('fCustomerName'),
     fEmail: $('fEmail'),
@@ -719,44 +753,50 @@
   var saveTimer = null;
   function scheduleSave(s){
     s = (s && s.sessionId) ? s : state;
-    if(s === state) saveIndicator.textContent = 'Saving…';
+    if(s === state && saveIndicator) saveIndicator.textContent = 'Saving…';
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function(){ doSave(s); }, 400);
   }
 
   function captureNotes(){
+    if(!state || !state.notes) return;
     var n = state.notes;
-    n.fCustomerName = caseFields.fCustomerName.value;
-    n.fEmail = caseFields.fEmail.value;
-    n.fProduct = caseFields.fProduct.value;
-    n.fRecap = caseFields.fRecap.value;
-    n.fResources = caseFields.fResources.value;
-    n.fNextSteps = caseFields.fNextSteps.value;
-    n.fEscalation = caseFields.fEscalation.value;
-    state.traineeName = loginProfile ? loginProfile.name : fTraineeName.value;
-    state.lob = fLob.value;
+    if(caseFields.fCustomerName) n.fCustomerName = caseFields.fCustomerName.value;
+    if(caseFields.fEmail) n.fEmail = caseFields.fEmail.value;
+    if(caseFields.fProduct) n.fProduct = caseFields.fProduct.value;
+    if(caseFields.fRecap) n.fRecap = caseFields.fRecap.value;
+    if(caseFields.fResources) n.fResources = caseFields.fResources.value;
+    if(caseFields.fNextSteps) n.fNextSteps = caseFields.fNextSteps.value;
+    if(caseFields.fEscalation) n.fEscalation = caseFields.fEscalation.value;
+    state.traineeName = loginProfile ? loginProfile.name : (fTraineeName ? fTraineeName.value : '');
+    state.lob = fLob ? fLob.value : '';
   }
 
   function applyNotes(s){
-    caseFields.fCustomerName.value = s.notes.fCustomerName || '';
-    caseFields.fEmail.value = s.notes.fEmail || '';
-    caseFields.fProduct.value = s.notes.fProduct || '';
-    caseFields.fRecap.value = s.notes.fRecap || '';
-    caseFields.fResources.value = s.notes.fResources || '';
-    caseFields.fNextSteps.value = s.notes.fNextSteps || '';
-    caseFields.fEscalation.value = s.notes.fEscalation || '';
-    fTraineeName.value = loginProfile ? loginProfile.name : (s.traineeName || '');
-    fLob.value = s.lob || '';
+    if(!s || !s.notes) return;
+    if(caseFields.fCustomerName) caseFields.fCustomerName.value = s.notes.fCustomerName || '';
+    if(caseFields.fEmail) caseFields.fEmail.value = s.notes.fEmail || '';
+    if(caseFields.fProduct) caseFields.fProduct.value = s.notes.fProduct || '';
+    if(caseFields.fRecap) caseFields.fRecap.value = s.notes.fRecap || '';
+    if(caseFields.fResources) caseFields.fResources.value = s.notes.fResources || '';
+    if(caseFields.fNextSteps) caseFields.fNextSteps.value = s.notes.fNextSteps || '';
+    if(caseFields.fEscalation) caseFields.fEscalation.value = s.notes.fEscalation || '';
+    if(fTraineeName) fTraineeName.value = loginProfile ? loginProfile.name : (s.traineeName || '');
+    if(fLob) fLob.value = s.lob || '';
   }
 
   function clearCaseFields(){
-    Object.keys(caseFields).forEach(function(k){ caseFields[k].value = ''; });
-    Object.keys(state.notes).forEach(function(k){ state.notes[k] = ''; });
-    state.traineeName = loginProfile ? loginProfile.name : '';
-    state.avatarId = loginProfile ? loginProfile.avatarId : 'pip';
-    state.lob = '';
-    fTraineeName.value = loginProfile ? loginProfile.name : '';
-    fLob.value = '';
+    Object.keys(caseFields).forEach(function(k){ if(caseFields[k]) caseFields[k].value = ''; });
+    if(state && state.notes){
+      Object.keys(state.notes).forEach(function(k){ state.notes[k] = ''; });
+    }
+    if(state){
+      state.traineeName = loginProfile ? loginProfile.name : '';
+      state.avatarId = loginProfile ? loginProfile.avatarId : 'alex';
+      state.lob = '';
+    }
+    if(fTraineeName) fTraineeName.value = loginProfile ? loginProfile.name : '';
+    if(fLob) fLob.value = '';
   }
 
   /* ---------- UI Rendering & Tabs ---------- */
@@ -784,19 +824,20 @@
     s = s || state;
     s.busy = busy;
     if(s === state){
-      agentInput.disabled = busy || s.ended || !s.persona;
-      sendBtn.disabled = busy || s.ended || !s.persona;
-      if(simMode === 'chat') typingIndicator.hidden = !busy;
+      if(agentInput) agentInput.disabled = busy || s.ended || !s.persona;
+      if(sendBtn) sendBtn.disabled = busy || s.ended || !s.persona;
+      if(simMode === 'chat' && typingIndicator) typingIndicator.hidden = !busy;
       refreshControls();
     }
   }
 
   function refreshControls(){
-    var hasCust = !!state.persona;
-    newScenarioBtn.disabled = state.busy;
-    feedbackBtn.disabled = state.busy || !hasCust || state.messages.length < 2;
-    if(clearChatBtn) clearChatBtn.disabled = state.busy || !hasCust || state.ended;
-    endBtn.disabled = state.busy || !hasCust || state.ended;
+    var hasCust = !!(state && state.persona);
+    if(newScenarioBtn) newScenarioBtn.disabled = state ? state.busy : false;
+    if(feedbackBtn) feedbackBtn.disabled = state ? (state.busy || !hasCust || state.messages.length < 2) : true;
+    if(clearChatBtn) clearChatBtn.disabled = state ? (state.busy || !hasCust || state.ended) : true;
+    if(endBtn) endBtn.disabled = state ? (state.busy || !hasCust || state.ended) : true;
+    // Note: endChatBtn is always enabled regardless of situation per requirements
   }
 
   function renderPersonaBar(){
@@ -868,17 +909,49 @@
     chatTabs.hidden = false;
     zdTabsStrip.hidden = true;
     chatTabs.innerHTML = '';
+
+    // 1. Regular practice chat tabs
     sessions.forEach(function(s, i){
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'chat-tab' + (i === activeIndex ? ' active' : '');
+      var isCurActive = (activeReviewId === null && i === activeIndex);
+      b.className = 'chat-tab' + (isCurActive ? ' active' : '');
       var label = 'Chat ' + (i + 1);
       if(s.persona) label += ' · ' + (s.persona.name || '');
       b.textContent = label;
       b.title = s.persona ? (s.persona.name + ' — ' + s.persona.issueCategory) : 'No customer yet in this chat';
       b.setAttribute('role', 'tab');
-      b.setAttribute('aria-selected', i === activeIndex ? 'true' : 'false');
-      b.addEventListener('click', (function(idx){ return function(){ activateSlot(idx); }; })(i));
+      b.setAttribute('aria-selected', isCurActive ? 'true' : 'false');
+      b.addEventListener('click', (function(idx){
+        return function(){
+          activeReviewId = null;
+          if(reviewBanner) reviewBanner.hidden = true;
+          activateSlot(idx);
+        };
+      })(i));
+      chatTabs.appendChild(b);
+    });
+
+    // 2. Review tabs for multi-chat review in workspace
+    reviewSessions.forEach(function(r){
+      var b = document.createElement('button');
+      b.type = 'button';
+      var isCurActive = (activeReviewId === r.id);
+      b.className = 'chat-tab review-tab' + (isCurActive ? ' active' : '');
+      b.title = 'Reviewing session: ' + (r.ticketId || r.id) + ' (' + (r.traineeName || 'Agent') + ')';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', isCurActive ? 'true' : 'false');
+      b.innerHTML = '<span>👁️ ' + escapeHtml(r.ticketId || r.id) + ' (' + escapeHtml(r.traineeName || 'Agent') + ')</span>' +
+        '<span class="tab-close" title="Close review" data-close-review="' + r.id + '">×</span>';
+
+      b.addEventListener('click', function(ev){
+        if(ev.target.classList.contains('tab-close') || ev.target.getAttribute('data-close-review')){
+          ev.stopPropagation();
+          closeReviewSession(r.id);
+          return;
+        }
+        activateReviewSession(r.id);
+      });
       chatTabs.appendChild(b);
     });
   }
@@ -901,7 +974,8 @@
   }
 
   function activateSlot(idx){
-    if(idx === activeIndex) return;
+    activeReviewId = null;
+    if(reviewBanner) reviewBanner.hidden = true;
     captureNotes();
     doSave(state);
     activeIndex = idx;
@@ -918,6 +992,120 @@
     updateSpeedUI();
     updateCaseLabel();
     saveWorkspaceState();
+    if(agentInput && !state.ended){
+      agentInput.disabled = false;
+      agentInput.placeholder = activeComposerTab === 'internal'
+        ? 'Type an internal note (only visible to team & trainers, customer will not see or respond)… (Enter to save note)'
+        : (simMode === 'email' ? 'Type your public email reply to the customer… (Enter to submit)' : 'Type your reply as the agent… (Enter to send, Shift+Enter for a new line)');
+      agentInput.focus();
+    }
+  }
+
+  function activateReviewSession(id){
+    activeReviewId = id;
+    var r = reviewSessions.find(function(x){ return x.id === id; });
+    if(!r) return;
+
+    if(reviewBanner) reviewBanner.hidden = false;
+    if(reviewTitle) reviewTitle.textContent = 'Reviewing: ' + (r.ticketId || r.id) + ' · Trainee: ' + (r.traineeName || 'Agent') + ' · Product: ' + (r.product || 'Wyze Device');
+    if(reviewStatus) reviewStatus.textContent = 'Status: ' + (r.status || 'OPEN');
+
+    if(ticketIdEl) ticketIdEl.textContent = r.ticketId || r.id;
+    if(statusPill){
+      statusPill.hidden = false;
+      statusPill.dataset.status = (r.status || 'open').toLowerCase();
+      statusPill.textContent = (r.status || 'OPEN') + ' (OBSERVER)';
+    }
+
+    renderTabs();
+    renderReviewMessages(r);
+
+    if(agentInput){
+      agentInput.disabled = true;
+      agentInput.placeholder = 'Read-only review mode. You are observing this session transcript.';
+    }
+    if(sendBtn) sendBtn.disabled = true;
+  }
+
+  function closeReviewSession(id){
+    reviewSessions = reviewSessions.filter(function(x){ return x.id !== id; });
+    if(activeReviewId === id){
+      if(reviewSessions.length > 0){
+        activateReviewSession(reviewSessions[reviewSessions.length - 1].id);
+      } else {
+        activeReviewId = null;
+        if(reviewBanner) reviewBanner.hidden = true;
+        activateSlot(activeIndex);
+      }
+    } else {
+      renderTabs();
+    }
+  }
+
+  async function refreshActiveReviewSession(){
+    if(!activeReviewId) return;
+    var r = reviewSessions.find(function(x){ return x.id === activeReviewId; });
+    if(!r) return;
+    try {
+      var res = await fetch('/api/session?id=' + encodeURIComponent(r.id) + '&trainer=1&key=' + encodeURIComponent(TRAINER_PASSCODE));
+      if(res.ok){
+        var data = await res.json();
+        if(data && data.data && data.data.messages){
+          r.messages = data.data.messages.map(function(m){
+            return {
+              role: m.role || 'customer',
+              text: m.content || m.text || '',
+              ts: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
+              internalNote: m.role === 'internal' || m.internalNote
+            };
+          });
+          renderReviewMessages(r);
+          showToast('↻ Review session messages refreshed.');
+        }
+      }
+    } catch(e){}
+  }
+
+  function renderReviewMessages(r){
+    if(!chatLog) return;
+    chatLog.innerHTML = '';
+    var msgs = r.messages || [];
+    if(msgs.length === 0){
+      chatLog.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👁️</div><p>No messages recorded in this session yet.</p></div>';
+      return;
+    }
+    msgs.forEach(function(m){
+      if(m.internalNote || m.role === 'internal'){
+        var noteDiv = document.createElement('div');
+        noteDiv.className = 'zd-internal-note-row';
+        noteDiv.innerHTML = '<div class="zd-note-badge">🔒 Internal Note • ' + escapeHtml(r.traineeName || 'Agent') + ' · ' + fmtTime(m.ts) + '</div>' +
+          '<div class="zd-note-body">' + escapeHtml(m.text || m.content) + '</div>';
+        chatLog.appendChild(noteDiv);
+        return;
+      }
+      var isAgent = m.role === 'agent';
+      var row = document.createElement('div');
+      row.className = 'msg-row ' + (isAgent ? 'from-agent' : 'from-customer');
+
+      var contentDiv = document.createElement('div');
+      contentDiv.className = 'msg-content';
+      if(isAgent){
+        contentDiv.innerHTML = avatarMarkup('alex', 'message-avatar');
+      }
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = m.text || m.content;
+      contentDiv.appendChild(bubble);
+
+      var timeDiv = document.createElement('div');
+      timeDiv.className = 'msg-time';
+      timeDiv.textContent = (isAgent ? (escapeHtml(r.traineeName || 'Agent') + ' · ') : (escapeHtml(r.customerName || 'Customer') + ' · ')) + fmtTime(m.ts);
+
+      row.appendChild(contentDiv);
+      row.appendChild(timeDiv);
+      chatLog.appendChild(row);
+    });
+    chatLog.scrollTop = chatLog.scrollHeight;
   }
 
   function renderMessages(){
@@ -1015,28 +1203,33 @@
     modeEmailBtn.classList.toggle('active', simMode === 'email');
 
     if(simMode === 'email'){
-      twoChatsToggleWrap.style.display = 'none';
-      speedBar.hidden = true;
-      zdTabsStrip.hidden = false;
-      zdComposerNav.hidden = false;
-      zdSubmitBar.hidden = false;
-      sendBtn.textContent = 'Submit';
-      agentInput.placeholder = 'Type your public email reply to the customer… (Enter to submit)';
+      if(twoChatsToggleWrap) twoChatsToggleWrap.style.display = 'none';
+      if(speedBar) speedBar.hidden = true;
+      if(zdTabsStrip) zdTabsStrip.hidden = false;
+      if(zdComposerNav) zdComposerNav.hidden = false;
+      if(zdSubmitBar) zdSubmitBar.hidden = false;
+      if(sendBtn) sendBtn.textContent = activeComposerTab === 'internal' ? 'Add Note' : 'Submit';
+      if(agentInput) agentInput.placeholder = activeComposerTab === 'internal'
+        ? 'Type an internal note (only visible to team members)… (Enter to save note)'
+        : 'Type your public email reply to the customer… (Enter to submit)';
       sessions = emailSessions;
       activeIndex = activeEmailIdx;
     } else {
-      twoChatsToggleWrap.style.display = '';
-      speedBar.hidden = false;
-      zdTabsStrip.hidden = true;
-      zdComposerNav.hidden = true;
-      zdSubmitBar.hidden = true;
-      emailTicketHeader.hidden = true;
+      if(twoChatsToggleWrap) twoChatsToggleWrap.style.display = '';
+      if(speedBar) speedBar.hidden = false;
+      if(zdTabsStrip) zdTabsStrip.hidden = true;
+      if(zdComposerNav) zdComposerNav.hidden = false; // Available in Chat Mode!
+      if(zdSubmitBar) zdSubmitBar.hidden = true;
+      if(emailTicketHeader) emailTicketHeader.hidden = true;
       if(emailPendingBanner) emailPendingBanner.hidden = true;
-      sendBtn.textContent = 'Send';
-      agentInput.placeholder = 'Type a message to the customer… (Enter to send)';
+      if(sendBtn) sendBtn.textContent = activeComposerTab === 'internal' ? 'Add Note' : 'Send';
+      if(agentInput) agentInput.placeholder = activeComposerTab === 'internal'
+        ? 'Type an internal note (only visible to team & trainers, customer will not see or respond)… (Enter to save note)'
+        : 'Type your reply as the agent… (Enter to send, Shift+Enter for a new line)';
       sessions = chatSessions;
       activeIndex = activeChatIdx;
     }
+    if(chatForm) chatForm.classList.toggle('composer-internal', activeComposerTab === 'internal');
 
     state = sessions[activeIndex];
     applyNotes(state);
@@ -1454,7 +1647,9 @@
     var randomKey = categoryKeys[Math.floor(Math.random() * categoryKeys.length)];
     var category = CATEGORY_LABELS[randomKey];
 
-    var emotion = (emotionSelect && EMOTION_LABELS[emotionSelect.value]) || EMOTION_LABELS.random;
+    var emotionKeys = Object.keys(EMOTION_LABELS).filter(function(k){ return k !== 'random'; });
+    var randomEmotionKey = emotionKeys[Math.floor(Math.random() * emotionKeys.length)];
+    var emotion = EMOTION_LABELS[randomEmotionKey];
     var isEmail = simMode === 'email';
 
     var system = [
@@ -1533,6 +1728,12 @@
       updateCaseLabel();
       scheduleSave(s);
       saveWorkspaceState();
+
+      if(agentInput){
+        agentInput.disabled = false;
+        agentInput.focus();
+      }
+      if(sendBtn) sendBtn.disabled = false;
     } catch(err){
       console.error('Failed to start scenario:', err);
       showError("Could not connect simulated customer. Please click retry.", startScenario);
@@ -1549,8 +1750,9 @@
     if(!s.persona || s.ended || !text) return;
     clearError();
 
-    // Internal Note handling in Zendesk Email mode
-    if(simMode === 'email' && activeComposerTab === 'internal'){
+    // Internal Note handling in BOTH Live Chat and Email mode
+    // Internal notes must NEVER trigger a customer bot response on either Chat or Email
+    if(activeComposerTab === 'internal'){
       s.messages.push({
         role: 'agent',
         text: text,
@@ -1560,6 +1762,7 @@
       renderMessages();
       scheduleSave(s);
       saveWorkspaceState();
+      if(agentInput) agentInput.focus();
       return;
     }
 
@@ -1580,19 +1783,22 @@
 
     renderMessages();
     saveWorkspaceState();
+    if(agentInput) agentInput.focus();
 
     // Email Mode: update status based on submit action selector
     if(simMode === 'email'){
-      var submitState = zdSubmitActionSelect.value || 'PENDING';
+      var submitState = zdSubmitActionSelect ? (zdSubmitActionSelect.value || 'PENDING') : 'PENDING';
       setLinearState(submitState);
       scheduleSave(s);
       saveWorkspaceState();
+      if(agentInput) agentInput.focus();
       return;
     }
 
     // Live Chat Mode: trigger immediate customer reply directly
     try {
       await triggerCustomerReply(s);
+      if(agentInput && !s.ended) agentInput.focus();
     } catch(e){
       showError(e.message || "Customer failed to respond. Please try sending again.", function(){ sendAgentMessage(text, wpm); });
     }
@@ -2467,14 +2673,26 @@
       activeComposerTab = 'public';
       if(zdNavPublicReply) zdNavPublicReply.classList.add('active');
       if(zdNavInternalNote) zdNavInternalNote.classList.remove('active');
-      if(agentInput) agentInput.placeholder = 'Type your public email reply to the customer… (Enter to send)';
+      if(chatForm) chatForm.classList.remove('composer-internal');
+      if(agentInput){
+        agentInput.placeholder = simMode === 'email'
+          ? 'Type your public email reply to the customer… (Enter to submit)'
+          : 'Type your reply as the agent… (Enter to send, Shift+Enter for a new line)';
+        agentInput.focus();
+      }
+      if(sendBtn) sendBtn.textContent = simMode === 'email' ? 'Submit' : 'Send';
     });
 
     on(zdNavInternalNote, 'click', function(){
       activeComposerTab = 'internal';
       if(zdNavInternalNote) zdNavInternalNote.classList.add('active');
       if(zdNavPublicReply) zdNavPublicReply.classList.remove('active');
-      if(agentInput) agentInput.placeholder = 'Type an internal note (only visible to team members)… (Enter to save note)';
+      if(chatForm) chatForm.classList.add('composer-internal');
+      if(agentInput){
+        agentInput.placeholder = 'Type an internal note (only visible to team & trainers, customer will not see or respond)… (Enter to save note)';
+        agentInput.focus();
+      }
+      if(sendBtn) sendBtn.textContent = 'Add Note';
     });
 
     // Zendesk Linear Status Select in Header
@@ -2505,7 +2723,7 @@
 
     on(zdNewEmailBtn, 'click', startScenario);
 
-    // Chat form submit
+    // Chat form submit with immediate autofocus
     on(chatForm, 'submit', function(ev){
       ev.preventDefault();
       var text = agentInput ? agentInput.value.trim() : '';
@@ -2515,6 +2733,7 @@
       state.typeStart = null;
       updateSpeedUI();
       sendAgentMessage(text, sentWpm);
+      if(agentInput) agentInput.focus();
     });
 
     on(agentInput, 'input', function(){
@@ -2529,6 +2748,112 @@
       }
     });
 
+    // End Chat Button (Always available regardless of any situation)
+    on(endChatBtn, 'click', function(){
+      if(!state) return;
+      state.ended = true;
+      state.busy = false;
+      state.status = 'SOLVED';
+      setBusy(false, state);
+
+      var now = Date.now();
+      state.messages.push({
+        role: 'audit',
+        text: 'Conversation ended by trainee agent.',
+        ts: now
+      });
+
+      if(timerToggle){
+        timerOn = false;
+        timerToggle.checked = false;
+      }
+      if(replyTimer) replyTimer.hidden = true;
+
+      renderMessages();
+      renderPersonaBar();
+      renderTabs();
+
+      var avg = avgReplyWpm();
+      state.avgWpm = avg ? avg.avg : null;
+
+      scheduleSave(state);
+      saveWorkspaceState();
+
+      showToast('✅ Chat ended. Ticket status marked as Solved.');
+      if(agentInput){
+        agentInput.disabled = true;
+        agentInput.placeholder = 'Chat ended. Click "Start new customer" to begin next practice session.';
+      }
+      if(sendBtn) sendBtn.disabled = true;
+    });
+
+    on(emptyStartBtn, 'click', startScenario);
+
+    // Clear Cache Button
+    on(clearCacheBtn, 'click', function(){
+      try {
+        var keys = ['ecewise:state', 'ecewise:email_state', 'ece_used_persona_indices', 'ecewise:left_panel_collapsed'];
+        keys.forEach(function(k){ localStorage.removeItem(k); });
+        showToast('🧹 Simulator cache cleared successfully. Performance optimized.');
+      } catch(e){
+        showToast('Cache cleared.');
+      }
+    });
+
+    // Report Bug / Feedback
+    on(reportBugBtn, 'click', function(){
+      if(reportBugModal){
+        reportBugModal.hidden = false;
+        if(bugSuccessNotice) bugSuccessNotice.hidden = true;
+        if($('bugDescription')) $('bugDescription').value = '';
+      }
+    });
+    on(closeReportBugBtn, 'click', function(){ if(reportBugModal) reportBugModal.hidden = true; });
+    on(cancelReportBugBtn, 'click', function(){ if(reportBugModal) reportBugModal.hidden = true; });
+    on(reportBugForm, 'submit', function(ev){
+      ev.preventDefault();
+      var cat = $('bugCategory') ? $('bugCategory').value : 'other';
+      var desc = $('bugDescription') ? $('bugDescription').value.trim() : '';
+      if(!desc) return;
+      var reports = [];
+      try {
+        reports = JSON.parse(localStorage.getItem('ecewise:bug_reports') || '[]');
+      } catch(e){}
+      reports.push({
+        id: 'bug_' + Date.now(),
+        category: cat,
+        description: desc,
+        agent: loginProfile ? loginProfile.name : 'Unknown',
+        ticketId: state ? state.ticketId : 'None',
+        ts: Date.now()
+      });
+      try {
+        localStorage.setItem('ecewise:bug_reports', JSON.stringify(reports));
+      } catch(e){}
+      if(bugSuccessNotice) bugSuccessNotice.hidden = false;
+      showToast('🐛 Bug report submitted. Thank you for your feedback!');
+      setTimeout(function(){
+        if(reportBugModal) reportBugModal.hidden = true;
+      }, 1600);
+    });
+
+    // Review Banner Controls
+    on(closeReviewBtn, 'click', function(){
+      if(activeReviewId) closeReviewSession(activeReviewId);
+    });
+    on(reviewRefreshBtn, 'click', refreshActiveReviewSession);
+
+    // Expandable History Window
+    on(historyExpandBtn, 'click', function(){
+      if(historyModal){
+        var content = historyModal.querySelector('.modal-content');
+        if(content){
+          content.classList.toggle('expanded');
+          historyExpandBtn.textContent = content.classList.contains('expanded') ? '⤡' : '⤢';
+        }
+      }
+    });
+
     // Case Fields
     Object.keys(caseFields).forEach(function(k){
       on(caseFields[k], 'input', function(){
@@ -2540,7 +2865,6 @@
     // Quick Chips
     document.querySelectorAll('.quick-chip').forEach(function(chip){
       chip.addEventListener('click', function(){
-        if(emotionSelect) emotionSelect.value = chip.dataset.emotion || 'random';
         startScenario();
       });
     });
@@ -2659,7 +2983,6 @@
     on(dismissAdminResetModal, 'click', function(){ if(adminResetModal) adminResetModal.hidden = true; });
     on('dismissAdminResetModal', 'click', function(){ if(adminResetModal) adminResetModal.hidden = true; });
 
-
     // History Modal
     on(historyBtn, 'click', openHistory);
     on('closeHistory', 'click', function(){ if(historyModal) historyModal.hidden = true; });
@@ -2705,7 +3028,7 @@
       });
       lines.push('');
       Object.keys(caseFields).forEach(function(k){
-        lines.push(k + ': ' + (caseFields[k].value || ''));
+        if(caseFields[k]) lines.push(k + ': ' + (caseFields[k].value || ''));
       });
       try {
         await navigator.clipboard.writeText(lines.join('\n'));
@@ -2726,8 +3049,9 @@
   }
 
   async function openHistory(){
+    if(!historyModal) return;
     historyModal.hidden = false;
-    historyList.innerHTML = '<div class="muted text-center" style="padding:20px;">Loading session history…</div>';
+    if(historyList) historyList.innerHTML = '<div class="muted text-center" style="padding:20px;">Loading session history…</div>';
     try {
       var url = '/api/sessions' + (trainerAccess ? '?trainer=1&key=' + encodeURIComponent(TRAINER_PASSCODE) : '');
       var res = await fetch(url);
@@ -2735,18 +3059,84 @@
       var data = await res.json();
       var results = data.results || [];
       if(results.length === 0){
-        historyList.innerHTML = '<div class="muted text-center" style="padding:20px;">No past sessions recorded yet.</div>';
+        if(historyList) historyList.innerHTML = '<div class="muted text-center" style="padding:20px;">No past sessions recorded yet.</div>';
         return;
       }
-      historyList.innerHTML = '<div class="history-list-view">' + results.map(function(item){
-        return '<div class="history-item">' +
-          '<div><strong>' + escapeHtml(item.ticket_id || item.id) + '</strong> · ' + escapeHtml(item.trainee_name || 'Agent') +
-          '<div class="muted">' + escapeHtml(item.category || 'General Wyze') + ' · ' + fmtTime(item.created_at) + '</div></div>' +
-          '<span class="zd-badge zd-badge-' + (item.status||'open').toLowerCase() + '">' + item.status + '</span>' +
-          '</div>';
-      }).join('') + '</div>';
+      if(historyList){
+        historyList.innerHTML = '<div class="history-list-view">' + results.map(function(item){
+          var isCurActive = (activeReviewId === item.id);
+          return '<div class="history-item">' +
+            '<div><strong>' + escapeHtml(item.ticket_id || item.id) + '</strong> · ' + escapeHtml(item.trainee_name || 'Agent') +
+            '<div class="muted">' + escapeHtml(item.category || 'Wyze Support') + ' · ' + fmtTime(item.created_at) + '</div></div>' +
+            '<div class="history-item-actions">' +
+              '<span class="zd-badge zd-badge-' + (item.status||'open').toLowerCase().replace('_', '') + '">' + item.status + '</span>' +
+              '<button type="button" class="btn btn-sm btn-primary review-action-btn" data-id="' + item.id + '" data-ticket="' + escapeHtml(item.ticket_id || item.id) + '" data-trainee="' + escapeHtml(item.trainee_name || 'Agent') + '" data-cat="' + escapeHtml(item.category || '') + '" data-status="' + escapeHtml(item.status || 'OPEN') + '">' + (isCurActive ? 'Viewing 👁️' : 'Review in Chat ⤢') + '</button>' +
+            '</div>' +
+            '</div>';
+        }).join('') + '</div>';
+
+        historyList.querySelectorAll('.review-action-btn').forEach(function(btn){
+          btn.addEventListener('click', async function(){
+            var id = btn.getAttribute('data-id');
+            var ticket = btn.getAttribute('data-ticket');
+            var trainee = btn.getAttribute('data-trainee');
+            var cat = btn.getAttribute('data-cat');
+            var status = btn.getAttribute('data-status');
+
+            btn.textContent = 'Loading…';
+            btn.disabled = true;
+
+            try {
+              var sRes = await fetch('/api/session?id=' + encodeURIComponent(id) + '&trainer=1&key=' + encodeURIComponent(TRAINER_PASSCODE));
+              var sessionData = null;
+              if(sRes.ok){
+                var d = await sRes.json();
+                sessionData = d.data;
+              }
+
+              var msgs = [];
+              if(sessionData && sessionData.messages){
+                msgs = sessionData.messages.map(function(m){
+                  return {
+                    role: m.role || 'customer',
+                    text: m.content || m.text || '',
+                    ts: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
+                    internalNote: m.role === 'internal' || m.internalNote
+                  };
+                });
+              }
+
+              var existing = reviewSessions.find(function(x){ return x.id === id; });
+              if(!existing){
+                reviewSessions.push({
+                  id: id,
+                  ticketId: ticket,
+                  traineeName: trainee,
+                  customerName: (sessionData && sessionData.customer_name) || 'Customer',
+                  product: (sessionData && sessionData.product) || 'Wyze Device',
+                  category: cat,
+                  status: status,
+                  messages: msgs,
+                  createdAt: Date.now()
+                });
+              } else {
+                existing.messages = msgs;
+              }
+
+              if(historyModal) historyModal.hidden = true;
+              activateReviewSession(id);
+              showToast('👁️ Session ' + ticket + ' opened in workspace review.');
+            } catch(e){
+              showToast('Could not load session transcript.');
+            } finally {
+              btn.textContent = 'Review in Chat ⤢';
+              btn.disabled = false;
+            }
+          });
+        });
+      }
     } catch(err){
-      historyList.innerHTML = '<div class="muted text-center" style="padding:20px;">Could not load history.</div>';
+      if(historyList) historyList.innerHTML = '<div class="muted text-center" style="padding:20px;">Could not load history.</div>';
     }
   }
 
