@@ -824,19 +824,42 @@
     s = s || state;
     s.busy = busy;
     if(s === state){
-      if(agentInput) agentInput.disabled = busy || s.ended || !s.persona;
-      if(sendBtn) sendBtn.disabled = busy || s.ended || !s.persona;
-      if(simMode === 'chat' && typingIndicator) typingIndicator.hidden = !busy;
       refreshControls();
     }
+    renderTabs();
   }
 
   function refreshControls(){
     var hasCust = !!(state && state.persona);
-    if(newScenarioBtn) newScenarioBtn.disabled = state ? state.busy : false;
-    if(feedbackBtn) feedbackBtn.disabled = state ? (state.busy || !hasCust || state.messages.length < 2) : true;
-    if(clearChatBtn) clearChatBtn.disabled = state ? (state.busy || !hasCust || state.ended) : true;
-    if(endBtn) endBtn.disabled = state ? (state.busy || !hasCust || state.ended) : true;
+    var isBusy = !!(state && state.busy);
+    var isEnded = !!(state && state.ended);
+    var isReview = activeReviewId !== null;
+
+    if(agentInput){
+      var shouldDisable = isBusy || isEnded || !hasCust || isReview;
+      agentInput.disabled = shouldDisable;
+      if(isReview){
+        agentInput.placeholder = 'Read-only review mode. You are observing this session transcript.';
+      } else if(simMode === 'email'){
+        agentInput.placeholder = activeComposerTab === 'internal'
+          ? 'Type an internal note (only visible to team & trainers, customer will not see or respond)… (Enter to save note)'
+          : 'Type your public email reply to the customer… (Enter to submit)';
+      } else {
+        agentInput.placeholder = activeComposerTab === 'internal'
+          ? 'Type an internal note (only visible to team & trainers, customer will not see or respond)… (Enter to save note)'
+          : 'Type your reply as the agent… (Enter to send, Shift+Enter for a new line)';
+      }
+    }
+    if(sendBtn){
+      sendBtn.disabled = isBusy || isEnded || !hasCust || isReview;
+    }
+    if(typingIndicator){
+      typingIndicator.hidden = !isBusy || simMode !== 'chat' || isReview;
+    }
+    if(newScenarioBtn) newScenarioBtn.disabled = isBusy;
+    if(feedbackBtn) feedbackBtn.disabled = isBusy || !hasCust || (state ? state.messages.length < 2 : true);
+    if(clearChatBtn) clearChatBtn.disabled = isBusy || !hasCust || isEnded;
+    if(endBtn) endBtn.disabled = isBusy || !hasCust || isEnded;
     // Note: endChatBtn is always enabled regardless of situation per requirements
   }
 
@@ -918,6 +941,7 @@
       b.className = 'chat-tab' + (isCurActive ? ' active' : '');
       var label = 'Chat ' + (i + 1);
       if(s.persona) label += ' · ' + (s.persona.name || '');
+      if(s.busy) label += ' (⏳ waiting)';
       b.textContent = label;
       b.title = s.persona ? (s.persona.name + ' — ' + s.persona.issueCategory) : 'No customer yet in this chat';
       b.setAttribute('role', 'tab');
@@ -966,8 +990,9 @@
       var label = 'Email ' + (i + 1);
       if(s.ticketId) label = s.ticketId;
       var statusClass = 'zd-badge-' + (s.status || 'NEW').toLowerCase().replace('_', '');
+      var busyTxt = s.busy ? ' (⏳)' : '';
       b.innerHTML = '<span class="zd-badge ' + statusClass + '">' + (s.status || 'NEW') + '</span> ' +
-        '<span>' + (s.persona ? escapeHtml(s.persona.name) : 'Slot ' + (i + 1)) + '</span>';
+        '<span>' + (s.persona ? escapeHtml(s.persona.name) : 'Slot ' + (i + 1)) + busyTxt + '</span>';
       b.addEventListener('click', (function(idx){ return function(){ activateSlot(idx); }; })(i));
       zdTabsGroup.appendChild(b);
     });
@@ -992,11 +1017,7 @@
     updateSpeedUI();
     updateCaseLabel();
     saveWorkspaceState();
-    if(agentInput && !state.ended){
-      agentInput.disabled = false;
-      agentInput.placeholder = activeComposerTab === 'internal'
-        ? 'Type an internal note (only visible to team & trainers, customer will not see or respond)… (Enter to save note)'
-        : (simMode === 'email' ? 'Type your public email reply to the customer… (Enter to submit)' : 'Type your reply as the agent… (Enter to send, Shift+Enter for a new line)');
+    if(agentInput && !agentInput.disabled){
       agentInput.focus();
     }
   }
@@ -1247,28 +1268,48 @@
   }
 
   /* ---------- Zendesk Ticket Journey & Pending Intervals ---------- */
-  function setLinearState(newStatus){
-    state.status = newStatus;
-    if(newStatus === 'PENDING' || newStatus === 'SOLVED'){
-      scheduleEmailReply();
+  function setLinearState(newStatus, targetState){
+    var s = targetState || state;
+    s.status = newStatus;
+    if(newStatus === 'PENDING' || newStatus === 'SOLVED' || newStatus === 'OPEN'){
+      scheduleEmailReply(s);
     } else {
-      state.emailNextReplyTs = null;
+      s.emailNextReplyTs = null;
+      if(s.emailTimerId){ clearTimeout(s.emailTimerId); s.emailTimerId = null; }
     }
-    renderPersonaBar();
-    renderTabs();
-    updatePendingBanner();
-    scheduleSave(state);
+    if(s === state){
+      renderPersonaBar();
+      renderTabs();
+      updatePendingBanner();
+    }
+    scheduleSave(s);
     saveWorkspaceState();
   }
 
-  function scheduleEmailReply(){
+  function scheduleEmailReply(targetState){
+    var s = targetState || state;
     var minH = parseFloat(emailMinMins ? emailMinMins.value : 1) || 1;
     var maxH = parseFloat(emailMaxMins ? emailMaxMins.value : 48) || 48;
     if(minH > maxH) maxH = minH + 1;
-    // Calculate random simulated wait time up to 48 hours
+    // Calculate random simulated wait time up to 48 hours for metadata & banner
     var randHours = minH + Math.random() * (maxH - minH);
-    state.emailNextReplyTs = Date.now() + Math.round(randHours * 3600 * 1000);
-    updatePendingBanner();
+    s.emailNextReplyTs = Date.now() + Math.round(randHours * 3600 * 1000);
+
+    if(s.emailTimerId){
+      clearTimeout(s.emailTimerId);
+      s.emailTimerId = null;
+    }
+
+    // Deliver email response within regular responsive training time (5-6 seconds)
+    // while keeping realistic simulated projection in Zendesk banner and timestamps
+    s.emailTimerId = setTimeout(async function(){
+      s.emailTimerId = null;
+      if(!s.ended && s.persona && (s.status === 'PENDING' || s.status === 'SOLVED' || s.status === 'OPEN')){
+        await triggerCustomerReply(s);
+      }
+    }, 5500);
+
+    if(s === state) updatePendingBanner();
   }
 
   function updatePendingBanner(){
@@ -1310,6 +1351,11 @@
   // Robust, Self-Contained Customer Reply Trigger
   async function triggerCustomerReply(s){
     if(!s || s.ended || !s.persona) return;
+    if(s.emailTimerId){
+      clearTimeout(s.emailTimerId);
+      s.emailTimerId = null;
+    }
+
     setBusy(true, s);
     var turnNumber = Math.ceil(s.messages.length / 2);
 
@@ -1320,13 +1366,6 @@
       // Filter out internal notes (internal notes are agent-only in Zendesk)
       var publicMsgs = s.messages.filter(function(m){ return !m.internalNote; });
 
-      // Format:
-      // contents: [
-      //   { role: "user", parts: [{ text: "" }] },
-      //   { role: "model", parts: [{ text: "" }] },
-      //   ... all previous turns in order ...
-      //   { role: "user", parts: [{ text: "LATEST MESSAGE" }] }
-      // ]
       var contents = [];
       for(var i = 0; i < publicMsgs.length; i++){
         var m = publicMsgs[i];
@@ -1361,91 +1400,80 @@
           return (s.messages || []).some(function(m){ return m.role === 'customer' && m.text && m.text.indexOf(txt.slice(0, 20)) !== -1; });
         };
 
+        var reply = '';
         if(/name|email|verify|account|who am i/i.test(lower)){
-          return 'Yes, my name is ' + name + ' and my email associated with Wyze is ' + email + '.';
-        }
-        if(/mac|serial|order|invoice/i.test(lower)){
-          return 'The MAC address on the device is ' + mac + ' and order is ' + order + '.';
-        }
-        if(/light|led|color|indicator|front/i.test(lower)){
+          reply = 'Yes, my name is ' + name + ' and my email associated with Wyze is ' + email + '.';
+        } else if(/mac|serial|order|invoice/i.test(lower)){
+          reply = 'The MAC address on the device is ' + mac + ' and order is ' + order + '.';
+        } else if(/light|led|color|indicator|front/i.test(lower)){
           var ledOpts = [
             'The small light on the front is ' + led + ' and it isn\'t flashing.',
             'It\'s currently sitting on a ' + led + ' light right now.'
           ];
-          for(var i=0; i<ledOpts.length; i++) if(!alreadyUsed(ledOpts[i])) return ledOpts[i];
-          return 'The light is ' + led + '.';
-        }
-        if(/unplug|power cycle|reboot|restart|outlet|cord|30 second/i.test(lower)){
+          for(var i=0; i<ledOpts.length; i++) if(!alreadyUsed(ledOpts[i])) { reply = ledOpts[i]; break; }
+          if(!reply) reply = 'The light is ' + led + '.';
+        } else if(/unplug|power cycle|reboot|restart|outlet|cord|30 second/i.test(lower)){
           var rebootOpts = [
             'Okay, I just unplugged it for 30 seconds and plugged it back in. The light came back on ' + led + '.',
             'I unplugged the power adapter and plugged it back. It\'s still showing the same ' + led + ' light.'
           ];
-          for(var j=0; j<rebootOpts.length; j++) if(!alreadyUsed(rebootOpts[j])) return rebootOpts[j];
-          return 'I unplugged it and plugged it back in. The light is still ' + led + '.';
+          for(var j=0; j<rebootOpts.length; j++) if(!alreadyUsed(rebootOpts[j])) { reply = rebootOpts[j]; break; }
+          if(!reply) reply = 'I unplugged it and plugged it back in. The light is still ' + led + '.';
+        } else if(/button|setup|hold|press/i.test(lower)){
+          reply = 'I pressed and held the setup button on the camera until it clicked. It said "Ready to connect" and now the yellow light is flashing!';
+        } else if(/qr|scan|code|app/i.test(lower)){
+          reply = 'I pointed the camera at my phone screen, it made a chime and said "QR code scanned", and now the light just turned solid blue!';
+        } else if(/wifi|wi-fi|router|2\.4|5ghz|network/i.test(lower)){
+          reply = 'Our home Wi-Fi has both 2.4 and 5GHz bands. All our other devices in the house connect to it fine.';
+        } else if(/can i ask|may i ask|few questions|couple of questions/i.test(lower)){
+          reply = 'Sure, go right ahead and ask whatever you need.';
+        } else if(/hold|give me a moment|one moment|bear with me/i.test(lower)){
+          reply = 'Okay, take your time. I\'ll wait right here.';
+        } else if(/^hi|hello|hey|my name is/i.test(lower)){
+          reply = 'Hi, thanks for taking my case. My ' + prod + ' has been acting up and I need help getting it back online.';
+        } else {
+          reply = 'I\'m right here with the ' + prod + '. What is the next step you\'d like me to try?';
         }
-        if(/button|setup|hold|press/i.test(lower)){
-          return 'I pressed and held the setup button on the camera until it clicked. It said "Ready to connect" and now the yellow light is flashing!';
+
+        if(isEmail){
+          return 'Hello,\n\n' + reply + '\n\nI really want to get this sorted out soon. Please let me know what else you need from me.\n\nThank you,\n' + name + '\nOrder: ' + order;
         }
-        if(/qr|scan|code|app/i.test(lower)){
-          return 'I pointed the camera at my phone screen, it made a chime and said "QR code scanned", and now the light just turned solid blue!';
-        }
-        if(/wifi|wi-fi|router|2\.4|5ghz|network/i.test(lower)){
-          return 'Our home Wi-Fi has both 2.4 and 5GHz bands. All our other devices in the house connect to it fine.';
-        }
-        if(/can i ask|may i ask|few questions|couple of questions/i.test(lower)){
-          return 'Sure, go right ahead and ask whatever you need.';
-        }
-        if(/hold|give me a moment|one moment|bear with me/i.test(lower)){
-          return 'Okay, take your time. I\'ll wait right here.';
-        }
-        if(/^hi|hello|hey|my name is/i.test(lower)){
-          return 'Hi, thanks for taking my case. My ' + prod + ' has been acting up and I need help getting it back online.';
-        }
-        return 'I\'m right here with the ' + prod + '. What is the next step you\'d like me to try?';
+        return reply;
       }
 
-      // 4. ERROR HANDLING & RETRY
+      // 4. FAST SINGLE ATTEMPT WITH 4500ms TIMEOUT
       var replyText = null;
-      var attempt = 0;
-      var maxAttempts = 2; // Initial try + 1 automatic retry
       var latestUserMsg = (contents[contents.length - 1] && contents[contents.length - 1].parts && contents[contents.length - 1].parts[0])
         ? contents[contents.length - 1].parts[0].text
         : '';
 
-      while(attempt < maxAttempts && !replyText){
-        attempt++;
-        try {
-          var res = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: contents,
-              persona: s.persona,
-              turnNumber: turnNumber,
-              mode: isEmail ? 'email' : 'chat',
-              sessionId: s.sessionId || ''
-            })
-          });
+      try {
+        var res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: contents,
+            persona: s.persona,
+            turnNumber: turnNumber,
+            mode: isEmail ? 'email' : 'chat',
+            sessionId: s.sessionId || ''
+          }),
+          signal: AbortSignal.timeout(4500)
+        });
 
-          if(res.ok){
-            var data = await res.json();
-            var candidate = (data && (data.message || data.text)) ? String(data.message || data.text).trim() : '';
-            if(candidate){
-              replyText = candidate;
-            } else {
-              console.warn('[Turn ' + turnNumber + '] API returned empty response on attempt ' + attempt);
-            }
-          } else {
-            console.error('[Turn ' + turnNumber + '] API error ' + res.status + ' on attempt ' + attempt);
+        if(res.ok){
+          var data = await res.json();
+          var candidate = (data && (data.message || data.text)) ? String(data.message || data.text).trim() : '';
+          if(candidate){
+            replyText = candidate;
           }
-        } catch(apiErr){
-          console.error('[Turn ' + turnNumber + '] API error on attempt ' + attempt + ':', apiErr);
         }
+      } catch(apiErr){
+        console.warn('[Turn ' + turnNumber + '] API timeout or network notice, using fast in-character fallback:', apiErr?.message || apiErr);
       }
 
-      // If retry fails, dynamically generate in-character customer response
+      // If API is slow or unavailable, immediately generate in-character response
       if(!replyText){
-        console.warn('[Turn ' + turnNumber + '] Using in-character customer simulation engine.');
         replyText = getCustomerInCharacterReply(s, latestUserMsg);
       }
 
@@ -1458,8 +1486,6 @@
       } catch(e){}
 
       // 5. CONVERSATION STATE:
-      // Store full conversation history in array after every exchange
-      // Append bot reply to history before next call
       var now = Date.now();
       s.messages.push({
         role: 'customer',
@@ -1471,6 +1497,7 @@
       if(isEmail){
         s.status = 'OPEN';
         s.emailNextReplyTs = null;
+        if(s.emailTimerId){ clearTimeout(s.emailTimerId); s.emailTimerId = null; }
       }
 
       if(s === state){
@@ -1496,6 +1523,18 @@
       saveWorkspaceState();
     } finally {
       setBusy(false, s);
+      if(s === state){
+        renderMessages();
+        renderPersonaBar();
+        renderTabs();
+        updatePendingBanner();
+        refreshControls();
+        if(agentInput && !agentInput.disabled){
+          agentInput.focus();
+        }
+      } else {
+        renderTabs();
+      }
     }
   }
 
@@ -2703,6 +2742,10 @@
     // Zendesk Fast Forward & Advance Time Button
     on(emailFastForwardBtn, 'click', async function(){
       if(state.busy || state.ended || !state.persona) return;
+      if(state.emailTimerId){
+        clearTimeout(state.emailTimerId);
+        state.emailTimerId = null;
+      }
       if(emailPendingBanner) emailPendingBanner.hidden = true;
       await triggerCustomerReply(state);
     });
