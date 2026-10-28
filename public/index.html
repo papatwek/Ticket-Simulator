@@ -165,11 +165,10 @@
         </button>
       </div>
 
-      <!-- Trainee Profile Card -->
-      <div class="left-profile-card" id="leftProfileCard" title="Click to view performance or change your avatar">
-        <div class="left-avatar-container" id="leftAvatarBtn" title="Click to change avatar">
+      <!-- Trainee Profile Card (Avatar Locked to Account) -->
+      <div class="left-profile-card" id="leftProfileCard" title="Logged in account profile">
+        <div class="left-avatar-container" id="leftAvatarBtn">
           <span id="leftAvatarArt" class="left-avatar-art"></span>
-          <span class="avatar-edit-icon" title="Change avatar">✎</span>
         </div>
         <div class="left-profile-info">
           <div class="left-user-name" id="leftUserName">Trainee Agent</div>
@@ -189,9 +188,17 @@
           <span class="left-nav-icon">🛡️</span>
           <span class="left-nav-label">Leadership Admin</span>
         </button>
-        <button type="button" class="left-nav-item" id="historyBtn" title="Review past practice sessions and transcripts">
+        <button type="button" class="left-nav-item" id="historyBtn" title="Review past and live practice sessions">
           <span class="left-nav-icon">📜</span>
           <span class="left-nav-label">Session History</span>
+        </button>
+        <button type="button" class="left-nav-item" id="clearCacheBtn" title="Clear local simulator cache to optimize performance">
+          <span class="left-nav-icon">🧹</span>
+          <span class="left-nav-label">Clear Cache</span>
+        </button>
+        <button type="button" class="left-nav-item" id="reportBugBtn" title="Report a bug or submit feedback to training leadership">
+          <span class="left-nav-icon">🐛</span>
+          <span class="left-nav-label">Report Bug / Feedback</span>
         </button>
         <button type="button" class="left-nav-item" id="infoBtn" title="Open the full simulator instructions walkthrough">
           <span class="left-nav-icon">❓</span>
@@ -246,15 +253,6 @@
         </div>
 
         <div class="toolbar-controls">
-          <select id="emotionSelect" class="tb-select" aria-label="Customer mood">
-            <option value="random">Mood: Random</option>
-            <option value="calm">Calm</option>
-            <option value="annoyed">Mildly annoyed</option>
-            <option value="frustrated">Frustrated</option>
-            <option value="upset">Very upset</option>
-            <option value="anxious">Anxious / worried</option>
-            <option value="confused">Confused</option>
-          </select>
           <label class="toggle" id="twoChatsToggleWrap" title="Run two customers at once, like a real live-chat queue"><input type="checkbox" id="twoChatsToggle"/><span>2 chats</span></label>
           
           <div class="reply-timer-widget" id="replyTimer" title="Automatic live response timer">
@@ -263,9 +261,8 @@
             <span class="timer-clock" id="replyTimerClock">00:00</span>
           </div>
 
-          <button id="newScenarioBtn" class="btn btn-primary">Start new customer</button>
-          <button id="feedbackBtn" class="btn btn-ghost" disabled>Coaching notes</button>
-          <button id="caseBtn" class="btn btn-ghost">Case file</button>
+          <button id="newScenarioBtn" class="btn btn-primary" type="button" title="Start a new random customer scenario">Start new customer</button>
+          <button id="endChatBtn" class="btn btn-danger" type="button" title="End active conversation immediately">End Chat</button>
         </div>
       </header>
 
@@ -285,6 +282,19 @@
           <span class="agent-identity" id="agentIdentity" hidden title="Click to view your personal performance analytics"></span>
         </div>
         <div class="chat-meta" id="chatMeta"></div>
+      </div>
+
+      <!-- Live & Past Chat Review Takeover Banner -->
+      <div class="review-banner" id="reviewBanner" hidden>
+        <div class="review-banner-info">
+          <span class="review-badge">👁️ REVIEW MODE</span>
+          <span class="review-title" id="reviewTitle">Reviewing session WZ-123456</span>
+          <span class="review-status" id="reviewStatus">Status: LIVE</span>
+        </div>
+        <div class="review-banner-actions">
+          <button type="button" class="btn btn-sm btn-ghost" id="reviewRefreshBtn" title="Fetch latest messages for this live session">↻ Refresh</button>
+          <button type="button" class="btn btn-sm btn-danger" id="closeReviewBtn" title="Close review and return to active chat">✕ Close Review</button>
+        </div>
       </div>
 
       <!-- Zendesk 3-Ticket Concurrency Tab Bar (Email Mode Only) -->
@@ -370,14 +380,9 @@
       <div class="chat-log" id="chatLog" aria-live="polite">
         <div class="empty-state" id="emptyState">
           <div class="empty-state-icon">💬</div>
-          <p>Ready when you are.</p>
-          <p>Pick a scenario type and mood above — or click a quick starter below to begin the chat:</p>
-          <div class="quick-starts">
-            <button type="button" class="quick-chip" data-category="connectivity" data-emotion="frustrated">Wi-Fi won't connect (Frustrated)</button>
-            <button type="button" class="quick-chip" data-category="footage" data-emotion="anxious">Missing event clips (Anxious)</button>
-            <button type="button" class="quick-chip" data-category="billing" data-emotion="annoyed">Cam Plus dispute (Annoyed)</button>
-            <button type="button" class="quick-chip" data-category="random" data-emotion="random">Surprise scenario (Random)</button>
-          </div>
+          <p style="font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px;">Ready when you are.</p>
+          <p class="muted" style="margin:0 0 16px;max-width:380px;">Start a randomized simulation drill to practice customer troubleshooting across Wyze products.</p>
+          <button type="button" class="btn btn-primary" id="emptyStartBtn">Start new customer</button>
         </div>
       </div>
 
@@ -386,7 +391,7 @@
       </div>
 
       <!-- Zendesk Composer Navigation (Public reply vs Internal note) -->
-      <div class="zd-composer-nav" id="zdComposerNav" hidden>
+      <div class="zd-composer-nav" id="zdComposerNav">
         <button type="button" class="zd-nav-tab active" id="zdNavPublicReply">💬 Public Reply</button>
         <button type="button" class="zd-nav-tab zd-tab-internal" id="zdNavInternalNote">🔒 Internal Note</button>
       </div>
@@ -407,60 +412,6 @@
         <button type="submit" class="btn btn-primary" id="sendBtn" disabled>Send</button>
       </form>
     </section>
-
-    <aside class="pane case-pane" id="casePane" aria-label="Case documentation" hidden>
-      <div class="case-head">
-        <h2>Case file <span id="caseTabLabel" class="case-tab-label"></span></h2>
-        <div class="case-actions">
-          <button type="button" class="link-btn" id="copyBtn">Copy transcript & notes</button>
-          <button type="button" class="modal-close" id="closeCase" aria-label="Close">×</button>
-        </div>
-      </div>
-
-      <div class="field-grid">
-        <label>Name<input id="fCustomerName" type="text" placeholder="Ask the customer" autocomplete="off"/></label>
-        <label>Email<input id="fEmail" type="text" placeholder="Ask the customer" autocomplete="off"/></label>
-        <label>Product<input id="fProduct" type="text" placeholder="e.g. Wyze Cam v3" autocomplete="off"/></label>
-      </div>
-
-      <label class="notes-label">Recap / TS
-        <textarea id="fRecap" placeholder="What the customer reported and the troubleshooting steps you ran through…"></textarea>
-      </label>
-      <label class="notes-label">Resources
-        <textarea id="fResources" placeholder="KB articles, tools, or docs you referenced…"></textarea>
-      </label>
-      <label class="notes-label">Next Steps
-        <textarea id="fNextSteps" placeholder="What was agreed, follow-ups, or anything still pending…"></textarea>
-      </label>
-      <label class="notes-label">Escalation POC (if needed)
-        <textarea id="fEscalation" placeholder="Who/where the case escalates to and why, or leave blank if resolved…"></textarea>
-      </label>
-      <div class="save-indicator" id="saveIndicator" aria-live="polite"> </div>
-
-      <section class="post-section" aria-label="Post-drill summary">
-        <h3>Post-drill summary</h3>
-        <div class="post-fields">
-          <label>Trainee Name<input id="fTraineeName" type="text" placeholder="Set at login" autocomplete="off" readonly/></label>
-          <label>LOB<input id="fLob" type="text" placeholder="e.g. Cameras / Home Security" autocomplete="off"/></label>
-        </div>
-        <button id="endBtn" class="btn btn-primary btn-block" disabled>End conversation</button>
-        <div class="avg-wpm" id="avgWpmBox" hidden aria-live="polite">Average typing speed: <b id="avgWpmVal">—</b></div>
-        <div class="feedback-box" id="coachingBox" hidden>
-          <h3>Coaching points</h3>
-          <div id="coachingContent"></div>
-        </div>
-      </section>
-
-      <details class="answer-key" id="answerKey" hidden>
-        <summary>Trainer answer key</summary>
-        <dl id="answerKeyContent"></dl>
-      </details>
-
-      <div class="feedback-box" id="feedbackBox" hidden>
-        <h3>Coaching notes</h3>
-        <div id="feedbackContent"></div>
-      </div>
-    </aside>
   </main>
 </div>
 </div>
@@ -949,21 +900,42 @@
       <button type="button" class="btn btn-ghost" id="dismissZdViewsBtn">Close Views</button>
     </div>
   </div>
-<!-- Modal: Choose / Change Human Avatar -->
-<div class="modal" id="avatarChangeModal" hidden>
-  <div class="modal-content avatar-modal-content" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle">
+</div>
+
+<!-- Modal: Report Bug / Simulator Feedback -->
+<div class="modal" id="reportBugModal" hidden>
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="reportBugTitle">
     <div class="modal-header">
-      <h3 id="avatarModalTitle">Choose Your Professional Avatar</h3>
-      <button type="button" class="modal-close" id="closeAvatarModal" aria-label="Close">&times;</button>
+      <h3 id="reportBugTitle">🐛 Report Bug / Feedback</h3>
+      <button type="button" class="modal-close" id="closeReportBugBtn" aria-label="Close">×</button>
     </div>
-    <p class="muted" style="margin:4px 0 16px;">Choose a modern human avatar representation for your customer interactions, coaching notes, and team telemetry.</p>
-    <div class="avatar-choices avatar-choices-modal" id="avatarModalChoices"></div>
-    <div class="modal-actions" style="margin-top:20px;">
-      <button type="button" class="btn btn-ghost" id="cancelAvatarModal">Cancel</button>
-      <button type="button" class="btn btn-primary" id="saveAvatarModalBtn">Save &amp; Apply Avatar</button>
+    <form id="reportBugForm" style="margin-top:16px;">
+      <div style="margin-bottom:12px;">
+        <label for="bugCategory" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">Category</label>
+        <select id="bugCategory" class="input" style="width:100%;">
+          <option value="bot_response">AI / Customer Bot Response</option>
+          <option value="ui_glitch">UI / Layout Issue</option>
+          <option value="telemetry">Session History / Telemetry</option>
+          <option value="feature_request">Feature Request / Suggestion</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label for="bugDescription" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">Description / What happened?</label>
+        <textarea id="bugDescription" rows="4" class="input" placeholder="Please describe the issue or feedback with detail..." required style="width:100%;resize:vertical;"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancelReportBugBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="submitBugBtn">Submit Report</button>
+      </div>
+    </form>
+    <div id="bugSuccessNotice" class="alert-banner" hidden style="margin-top:14px;background:rgba(13,148,136,0.15);border:1px solid #0d9488;border-radius:8px;padding:12px;color:var(--text);font-size:13px;">
+      ✅ Thank you! Your bug report and diagnostics have been logged for the training team.
     </div>
   </div>
 </div>
+
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
 <script type="module" src="app.js?v=2"></script>
 </body>
