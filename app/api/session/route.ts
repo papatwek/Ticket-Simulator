@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveSessionToDb, getSessionDetailFromDb, isTrainerPasscode } from '@/lib/db';
-import { syncSessionToSupabase } from '@/lib/supabase';
+import { syncSessionToSupabase, fetchSessionWithMessagesFromSupabase } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -13,11 +13,32 @@ export async function GET(req: NextRequest) {
   const isTrainer = isTrainerPasscode(trainerKey);
 
   try {
+    // 1. Try local/in-memory DB
     const result = getSessionDetailFromDb(id, isTrainer);
-    if (result.error) {
+    if (result && result.data) {
+      return NextResponse.json({ ok: true, data: result.data });
+    }
+
+    // 2. Fetch directly from Supabase (sessions and messages tables)
+    const supabaseData = await fetchSessionWithMessagesFromSupabase(id);
+    if (supabaseData) {
+      return NextResponse.json({
+        ok: true,
+        data: {
+          sessionId: supabaseData.session.id,
+          status: supabaseData.session.status,
+          scenario_type: supabaseData.session.scenario_type,
+          createdAt: new Date(supabaseData.session.created_at).getTime(),
+          messages: supabaseData.messages,
+          trainee: supabaseData.trainee
+        }
+      });
+    }
+
+    if (result && result.error) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
-    return NextResponse.json({ ok: true, data: result.data });
+    return NextResponse.json({ ok: true, data: null });
   } catch (err: any) {
     console.warn('Session retrieval error (handled):', err);
     return NextResponse.json({ ok: true, data: null });
@@ -48,7 +69,7 @@ export async function POST(req: Request) {
         console.warn('[Session Save] Handled defensively:', dbErr);
       }
 
-      // 2. Sync to Supabase in background
+      // 2. Sync to Supabase in background matching trainees, sessions, and messages tables
       syncSessionToSupabase(body, userId, username).catch((sErr) => {
         console.warn('[Supabase Sync] Handled defensively:', sErr);
       });

@@ -409,11 +409,21 @@ export async function POST(req: Request) {
 
   // 8. REAL-TIME SUPABASE PERSISTENCE FOR MESSAGES
   if (sessionId) {
+    const traineeHeaderId = req.headers.get('x-trainee-id') || (body && (body.traineeId || body.userId));
+    const scenarioType = persona?.issueCategory || 'general_support';
     if (latestAgentMsg) {
-      syncSingleMessageToSupabase(sessionId, 'agent', latestAgentMsg).catch(() => {});
+      syncSingleMessageToSupabase(sessionId, 'agent', latestAgentMsg, {
+        traineeId: traineeHeaderId,
+        scenarioType: scenarioType,
+        status: 'OPEN'
+      }).catch(() => {});
     }
     if (botReply) {
-      syncSingleMessageToSupabase(sessionId, 'customer', botReply).catch(() => {});
+      syncSingleMessageToSupabase(sessionId, 'customer', botReply, {
+        traineeId: traineeHeaderId,
+        scenarioType: scenarioType,
+        status: 'OPEN'
+      }).catch(() => {});
     }
   }
 

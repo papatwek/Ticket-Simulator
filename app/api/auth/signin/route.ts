@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authenticateUser } from '@/lib/db';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { getSupabase } from '@/lib/supabase';
 
 export async function POST(req: Request) {
   try {
@@ -18,24 +11,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
     }
 
-    const supabase = getSupabaseClient();
+    const normalizedEmail = (email || '').trim().toLowerCase();
+
+    // 1. Try Supabase trainees table
+    const supabase = getSupabase();
     if (supabase) {
       try {
         const { data, error } = await supabase
           .from('trainees')
-          .select('*')
-          .eq('email', (email || '').trim().toLowerCase())
+          .select('id, email, name, avatar, created_at')
+          .eq('email', normalizedEmail)
           .single();
 
         if (!error && data) {
-          return NextResponse.json({ success: true, user: data });
+          const userObj = {
+            id: data.id,
+            email: data.email,
+            name: data.name,
+            avatar: data.avatar || 'pip',
+            avatarId: data.avatar || 'pip',
+          };
+          return NextResponse.json({ success: true, user: userObj });
         }
       } catch (err) {
-        console.warn('Supabase query error in signin, falling back to local DB:', err);
+        console.warn('[Supabase Signin] Query warning, falling back to local DB:', err);
       }
     }
 
-    // Default & Local DB Verification
+    // 2. Fall back to local DB verification
     const authResult = authenticateUser(email, password || '');
     if (authResult.error) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });

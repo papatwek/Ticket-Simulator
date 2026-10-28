@@ -1,45 +1,58 @@
 import { NextResponse } from 'next/server';
 import { createUser } from '@/lib/db';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { getSupabase, toValidUuid } from '@/lib/supabase';
+import crypto from 'node:crypto';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { email, name, password, avatarId, avatar } = body;
 
-    const chosenAvatar = avatarId || avatar || 'pip';
+    const chosenAvatar = avatar || avatarId || 'pip';
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const trimmedName = (name || '').trim();
 
-    // 1. Try Supabase insert if configured
-    const supabase = getSupabaseClient();
+    // 1. Try Supabase trainees table
+    const supabase = getSupabase();
     if (supabase) {
       try {
+        const traineeUuid = crypto.randomUUID();
         const { data, error } = await supabase
           .from('trainees')
           .insert([
-            { email: (email || '').trim().toLowerCase(), name: (name || '').trim(), avatar: chosenAvatar }
+            {
+              id: traineeUuid,
+              email: normalizedEmail,
+              name: trimmedName,
+              avatar: chosenAvatar,
+              created_at: new Date().toISOString()
+            }
           ])
-          .select()
+          .select('id, email, name, avatar, created_at')
           .single();
 
         if (!error && data) {
-          // Also sync to local DB for offline access
-          try { createUser(email, name, password || 'P@ssw0rd2026', chosenAvatar); } catch {}
-          return NextResponse.json({ success: true, user: data });
+          try { createUser(normalizedEmail, trimmedName, password || 'Wyze2026!', chosenAvatar); } catch {}
+          return NextResponse.json({
+            success: true,
+            user: {
+              id: data.id,
+              email: data.email,
+              name: data.name,
+              avatar: data.avatar || 'pip',
+              avatarId: data.avatar || 'pip'
+            }
+          });
+        } else if (error) {
+          console.warn('[Supabase Signup] Trainees insert warning:', error.message);
         }
       } catch (err) {
-        console.warn('Supabase insert error in signup, falling back to local DB:', err);
+        console.warn('[Supabase Signup] Insert error, falling back to local DB:', err);
       }
     }
 
     // 2. Local DB User Registration
-    const result = createUser(email, name, password, chosenAvatar);
+    const result = createUser(normalizedEmail, trimmedName, password, chosenAvatar);
     return NextResponse.json({ success: true, user: result.user });
   } catch (error: any) {
     console.error('Signup routing error:', error);
