@@ -39,110 +39,120 @@ function generateContextualCustomerResponse(
     return allMessages.some(m => m.role === 'customer' && m.text && m.text.includes(text.slice(0, 25)));
   };
 
+  let reply = '';
   // 1. Identity / Verification Questions (Name, Email, Account, Phone, Address)
   if (/(name|email|verify|account|who am i|spell|phone|address)/i.test(msg)) {
     if (/(email)/i.test(msg) && !/(name)/i.test(msg)) {
-      return `My email is ${email}.`;
+      reply = `My email is ${email}.`;
+    } else if (/(name)/i.test(msg) && !/(email)/i.test(msg)) {
+      reply = `My name is ${name}.`;
+    } else {
+      reply = `Yes, my name is ${name} and my email associated with Wyze is ${email}.`;
     }
-    if (/(name)/i.test(msg) && !/(email)/i.test(msg)) {
-      return `My name is ${name}.`;
-    }
-    return `Yes, my name is ${name} and my email associated with Wyze is ${email}.`;
   }
 
   // 2. Hardware Identifiers (MAC address, Serial number, Order number, Receipt)
-  if (/(mac|serial|order|invoice|receipt|model)/i.test(msg)) {
+  else if (/(mac|serial|order|invoice|receipt|model)/i.test(msg)) {
     if (/(mac)/i.test(msg)) {
-      return `The MAC address on the back label is ${mac}.`;
+      reply = `The MAC address on the back label is ${mac}.`;
+    } else {
+      reply = `My order number is ${order} and the MAC address on the camera is ${mac}.`;
     }
-    return `My order number is ${order} and the MAC address on the camera is ${mac}.`;
   }
 
   // 3. LED / Status Light Questions
-  if (/(light|led|color|indicator|front|flash|blinking|solid)/i.test(msg)) {
+  else if (/(light|led|color|indicator|front|flash|blinking|solid)/i.test(msg)) {
     const responses = [
       `The small light on the front is ${led} and it isn't flashing.`,
       `It's currently sitting on a ${led} light right now.`,
       `I'm looking at it right now and the status light is still ${led}.`
     ];
     for (const r of responses) {
-      if (!alreadySent(r)) return r;
+      if (!alreadySent(r)) { reply = r; break; }
     }
-    return `The light is ${led}.`;
+    if (!reply) reply = `The light is ${led}.`;
   }
 
   // 4. Instructions: Power cycle / Unplug / Restart / Reboot
-  if (/(unplug|power cycle|reboot|restart|outlet|cord|adapter|power off|30 second)/i.test(msg)) {
+  else if (/(unplug|power cycle|reboot|restart|outlet|cord|adapter|power off|30 second)/i.test(msg)) {
     const responses = [
       `Okay, I just unplugged the power cable, waited 30 seconds, and plugged it back in. The light came back on ${led}.`,
       `I power cycled it like you asked. It paused for a second and then the light went back to ${led}.`,
       `I unplugged it from the wall outlet and plugged it back. It's still showing the same ${led} light.`
     ];
     for (const r of responses) {
-      if (!alreadySent(r)) return r;
+      if (!alreadySent(r)) { reply = r; break; }
     }
-    return `I unplugged it and plugged it back in. The light is still ${led}.`;
+    if (!reply) reply = `I unplugged it and plugged it back in. The light is still ${led}.`;
   }
 
   // 5. Instructions: Setup button / Pair / Factory reset / Hold
-  if (/(setup button|press.*button|hold.*button|click.*button|pin|reset button)/i.test(msg)) {
+  else if (/(setup button|press.*button|hold.*button|click.*button|pin|reset button)/i.test(msg)) {
     const responses = [
       `I pressed and held the setup button on the bottom. The camera said "Ready to connect" and now the yellow light is flashing!`,
       `I held down the button until it clicked. It just announced "Ready to connect" and the light started blinking.`
     ];
     for (const r of responses) {
-      if (!alreadySent(r)) return r;
+      if (!alreadySent(r)) { reply = r; break; }
     }
-    return `I held the setup button down and it said "Ready to connect".`;
+    if (!reply) reply = `I held the setup button down and it said "Ready to connect".`;
   }
 
   // 6. Instructions: QR code / Scan / Wyze App
-  if (/(qr|scan|barcode|code|app.*add|camera.*screen)/i.test(msg)) {
-    return `I pointed the camera at my phone screen, it made a chime and said "QR code scanned", and now the light just turned solid blue!`;
+  else if (/(qr|scan|barcode|code|app.*add|camera.*screen)/i.test(msg)) {
+    reply = `I pointed the camera at my phone screen, it made a chime and said "QR code scanned", and now the light just turned solid blue!`;
   }
 
   // 7. Network / Wi-Fi Questions (2.4GHz vs 5GHz, Router distance)
-  if (/(wifi|wi-fi|router|2\.4|5ghz|network|ssid|password|frequency)/i.test(msg)) {
-    return `I think our home router has both 2.4 and 5GHz. All our phones and laptops are connected to the same Wi-Fi with no issues.`;
+  else if (/(wifi|wi-fi|router|2\.4|5ghz|network|ssid|password|frequency)/i.test(msg)) {
+    reply = `I think our home router has both 2.4 and 5GHz. All our phones and laptops are connected to the same Wi-Fi with no issues.`;
   }
 
   // 8. Agent Greetings / Introductions ("Hi I'm Patrick from Wyze", "Thanks for contacting Wyze")
-  if (/^(hi|hello|hey|good day|thanks for contacting|my name is|thank you for reaching)/i.test(msg)) {
+  else if (/^(hi|hello|hey|good day|thanks for contacting|my name is|thank you for reaching)/i.test(msg)) {
     const responses = [
       `Hi, thanks for taking my case. My ${prod} is having issues and I really need help getting it sorted out.`,
       `Hello! Thanks for answering. I'm having trouble with my ${prod} and don't know what to do next.`
     ];
     for (const r of responses) {
-      if (!alreadySent(r)) return r;
+      if (!alreadySent(r)) { reply = r; break; }
     }
-    return `Hi, thanks for helping me with my ${prod}.`;
+    if (!reply) reply = `Hi, thanks for helping me with my ${prod}.`;
   }
 
   // 9. Agent asks permission to ask questions ("Can I ask you a few questions?", "May I have a moment?")
-  if (/(can i ask|may i ask|few questions|couple of questions|ask you|check a few things)/i.test(msg)) {
-    return `Sure, go right ahead and ask whatever you need.`;
+  else if (/(can i ask|may i ask|few questions|couple of questions|ask you|check a few things)/i.test(msg)) {
+    reply = `Sure, go right ahead and ask whatever you need.`;
   }
 
   // 10. Agent asks to place on hold / wait
-  if (/(hold|give me a moment|one moment|bear with me|check my resources|looking into)/i.test(msg)) {
-    return `Okay, take your time. I'll wait right here.`;
+  else if (/(hold|give me a moment|one moment|bear with me|check my resources|looking into)/i.test(msg)) {
+    reply = `Okay, take your time. I'll wait right here.`;
   }
 
   // 11. Agent asks if anything else / closing
-  if (/(anything else|further assistance|all set|resolved|good to go)/i.test(msg)) {
-    return `Everything is working now, thank you so much for your help!`;
+  else if (/(anything else|further assistance|all set|resolved|good to go)/i.test(msg)) {
+    reply = `Everything is working now, thank you so much for your help!`;
   }
 
   // 12. Default sequential acknowledgment
-  const defaults = [
-    `Okay, I'm following along with my ${prod}. What should I do next?`,
-    `I understand. Please let me know what the next step is.`,
-    `Got it. I'm right here with the device whenever you're ready.`
-  ];
-  for (const d of defaults) {
-    if (!alreadySent(d)) return d;
+  else {
+    const defaults = [
+      `Okay, I'm following along with my ${prod}. What should I do next?`,
+      `I understand. Please let me know what the next step is.`,
+      `Got it. I'm right here with the device whenever you're ready.`
+    ];
+    for (const d of defaults) {
+      if (!alreadySent(d)) { reply = d; break; }
+    }
+    if (!reply) reply = `Okay, what should I try next with my ${prod}?`;
   }
-  return `Okay, what should I try next with my ${prod}?`;
+
+  if (isEmail) {
+    return `Hello,\n\n${reply}\n\nI really appreciate you following up on my ticket regarding my ${prod}. Please let me know the next troubleshooting steps or instructions whenever you get a chance.\n\nThank you,\n${name}\nAccount: ${email}`;
+  }
+
+  return reply;
 }
 
 export async function POST(req: Request) {
@@ -303,55 +313,41 @@ export async function POST(req: Request) {
 
   let botReply: string | null = null;
 
-  // 5. ATTEMPT 1: CALL DEDICATED RENDER AI BACKEND
-  const renderEndpoints = [
-    `${RENDER_BACKEND_URL}/api/chat`,
-    `${RENDER_BACKEND_URL}/chat`,
-    RENDER_BACKEND_URL,
-    `${RENDER_BACKEND_URL}/api/generate`
-  ];
+  // 5. ATTEMPT 1: CALL DEDICATED RENDER AI BACKEND (Single fast check with 1200ms timeout)
+  try {
+    const renderRes = await fetch(`${RENDER_BACKEND_URL}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: apiContents,
+        messages: messages || [],
+        message: latestAgentMsg,
+        prompt: latestAgentMsg,
+        persona,
+        turnNumber: turnNum,
+        mode: isEmailMode ? 'email' : 'chat',
+        systemInstruction,
+        sessionId: sessionId || ''
+      }),
+      signal: AbortSignal.timeout(1200)
+    });
 
-  for (const endpoint of renderEndpoints) {
-    try {
-      console.log(`[Render AI Backend] Calling ${endpoint} for Turn ${turnNum}...`);
-      const renderRes = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: apiContents,
-          messages: messages || [],
-          message: latestAgentMsg,
-          prompt: latestAgentMsg,
-          persona,
-          turnNumber: turnNum,
-          mode: isEmailMode ? 'email' : 'chat',
-          systemInstruction,
-          sessionId: sessionId || ''
-        }),
-        signal: AbortSignal.timeout(4000)
-      });
-
-      console.log(`[Render AI Backend] ${endpoint} returned status ${renderRes.status}`);
-      if (renderRes.ok) {
-        const renderData = await renderRes.json().catch(() => ({}));
-        const candidate = renderData.message || renderData.text || renderData.reply || renderData.response;
-        if (candidate && typeof candidate === 'string' && candidate.trim()) {
-          botReply = candidate.trim();
-          console.log(`[Turn ${turnNum}] AI response received from Render backend: "${botReply.slice(0, 50)}..."`);
-          break;
-        }
+    if (renderRes.ok) {
+      const renderData = await renderRes.json().catch(() => ({}));
+      const candidate = renderData.message || renderData.text || renderData.reply || renderData.response;
+      if (candidate && typeof candidate === 'string' && candidate.trim()) {
+        botReply = candidate.trim();
+        console.log(`[Turn ${turnNum}] AI response received from Render backend: "${botReply.slice(0, 50)}..."`);
       }
-    } catch (renderErr: any) {
-      console.warn(`[Render AI Backend] Notice on ${endpoint}:`, renderErr?.message || renderErr);
-      // Fast fallback to Gemini
-      break;
     }
+  } catch (renderErr: any) {
+    // Fast skip to Gemini
   }
 
-  // 6. ATTEMPT 2: LOCAL GEMINI API (using validated modern models)
+  // 6. ATTEMPT 2: LOCAL GEMINI API (Prioritizing validated gemini-3.5-flash with strict timeout)
   const apiKey = process.env.GEMINI_API_KEY;
   if (!botReply && apiKey) {
     const ai = new GoogleGenAI({
@@ -359,10 +355,11 @@ export async function POST(req: Request) {
       httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
     });
 
-    for (const modelName of GEMINI_MODELS) {
+    const activeModels = ['gemini-3.5-flash', 'gemini-3.8-flash'];
+    for (const modelName of activeModels) {
       try {
         console.log(`[Turn ${turnNum}] Generating response via Gemini model: ${modelName}`);
-        const response = await ai.models.generateContent({
+        const genPromise = ai.models.generateContent({
           model: modelName,
           contents: apiContents,
           config: {
@@ -373,9 +370,13 @@ export async function POST(req: Request) {
           }
         });
 
-        if (response && response.text && response.text.trim()) {
-          botReply = response.text.trim();
-          console.log(`[Turn ${turnNum}] Gemini ${modelName} succeeded: "${botReply.slice(0, 50)}..."`);
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2800));
+        const response: any = await Promise.race([genPromise, timeoutPromise]);
+
+        const trimmed = response && response.text ? response.text.trim() : '';
+        if (trimmed) {
+          botReply = trimmed;
+          console.log(`[Turn ${turnNum}] Gemini ${modelName} succeeded: "${trimmed.slice(0, 50)}..."`);
           break;
         }
       } catch (err: any) {
