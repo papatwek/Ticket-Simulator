@@ -3940,3 +3940,251 @@ select.tb-select:focus {
   gap: 12px;
 }
 
+/* ==========================================================================
+   High-Contrast Buttons, End Chat & Review Takeover Styling
+   ========================================================================== */
+.btn-danger {
+  background: #DC2626 !important;
+  color: #FFFFFF !important;
+  border-color: #B91C1C !important;
+  box-shadow: 0 1px 4px rgba(220, 38, 38, 0.35) !important;
+  font-weight: 700 !important;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #EF4444 !important;
+  border-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+}
+
+/* High-Contrast Modal Close & Expand Controls */
+.modal-close {
+  background: #0F172A !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+  color: #FFFFFF !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  position: absolute !important;
+  top: 14px !important;
+  right: 14px !important;
+  z-index: 50 !important;
+}
+
+.modal-close:hover {
+  background: #EF4444 !important;
+  border-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  transform: scale(1.1) !important;
+}
+
+.history-expand-btn {
+  background: #0F172A !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+  color: #FFFFFF !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  position: absolute !important;
+  top: 14px !important;
+  right: 54px !important;
+  z-index: 50 !important;
+}
+
+.history-expand-btn:hover {
+  background: var(--accent) !important;
+  border-color: var(--accent-hover) !important;
+  color: #FFFFFF !important;
+  transform: scale(1.1) !important;
+}
+
+.modal-content.expanded {
+  max-width: 95vw !important;
+  width: 95vw !important;
+  height: 90vh !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.modal-content.expanded #historyList {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(90vh - 120px) !important;
+}
+
+/* Review Takeover Banner in Workspace */
+.review-banner {
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.18), rgba(99, 102, 241, 0.18));
+  border-bottom: 2px solid #0EA5E9;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--text);
+  font-size: 13px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.review-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.review-badge {
+  background: #0EA5E9;
+  color: #FFFFFF;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.review-title {
+  font-weight: 700;
+}
+
+.review-status {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.review-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Review Tabs */
+.chat-tab.review-tab {
+  background: rgba(14, 165, 233, 0.15) !important;
+  border-color: rgba(14, 165, 233, 0.5) !important;
+  color: #0284C7 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+[data-theme="dark"] .chat-tab.review-tab {
+  color: #38BDF8 !important;
+}
+
+.chat-tab.review-tab.active {
+  background: #0284C7 !important;
+  color: #FFFFFF !important;
+  border-color: #0284C7 !important;
+}
+
+.tab-close {
+  font-size: 14px;
+  font-weight: 800;
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.8;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.tab-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.3);
+  color: #EF4444;
+}
+
+/* Internal Note Active Composer Highlight */
+.composer-internal textarea {
+  background: #FEF9C3 !important;
+  border-color: #EAB308 !important;
+  color: #713F12 !important;
+}
+
+[data-theme="dark"] .composer-internal textarea {
+  background: #25200C !important;
+  border-color: #CA8A04 !important;
+  color: #FEF08A !important;
+}
+
+/* Toasts */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.simulator-toast {
+  pointer-events: auto;
+  background: #0F172A;
+  color: #F8FAFC;
+  border: 1px solid #334155;
+  border-left: 4px solid var(--teal);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  max-width: 380px;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.simulator-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.15s ease;
+}
+
+.history-item:hover {
+  background: var(--panel-subtle);
+}
+
+.history-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
