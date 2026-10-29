@@ -828,7 +828,7 @@ export async function POST(req: Request) {
         systemInstruction,
         sessionId: sessionId || ''
       }),
-      signal: AbortSignal.timeout(1200)
+      signal: AbortSignal.timeout(15000)
     });
 
     if (renderRes.ok) {
