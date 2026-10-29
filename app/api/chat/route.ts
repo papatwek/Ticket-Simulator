@@ -1,7 +1,99 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { getRandomPersona, SYNTHETIC_PERSONAS, CustomerPersona, WYZE_CATALOG, getProductMeta } from '@/lib/personas';
+import { getRandomPersona, SYNTHETIC_PERSONAS, CustomerPersona } from '@/lib/personas';
 import { syncSingleMessageToSupabase } from '@/lib/supabase';
+
+// Wyze Product Catalog knowledge base for device context
+const WYZE_CATALOG = [
+  "STOCK KNOWLEDGE & DIVERSITY RULES:",
+  "- You must generate scenarios across the ENTIRE catalog below. Do not repeatedly default to basic indoor cameras.",
+  "- If an agent asks for documentation, reference the specific support link provided for that product family.",
+  "",
+  "1. CAMERAS (Reference: https://support.wyze.com/hc/en-us/categories/360004553112)",
+  "   - Plug-in Indoor/Outdoor: Wyze Cam v1, v2, v3, v3 Pro, v4, Wyze Cam Pan v1, v2, v3, Wyze Cam OG (Standard & Telephoto)",
+  "   - Wireless/Battery: Wyze Cam Outdoor (v1 & v2), Wyze Battery Cam Pro, Wyze Solar Cam, Wyze Solar Cam Pan / 2K",
+  "   - Lighting Cameras: Wyze Cam Floodlight, Floodlight Pro, Floodlight v2, Bulb Cam, Bulb Cam Pan Color",
+  "   - Video Doorbells: Wyze Video Doorbell, Doorbell Pro, Doorbell v2, Battery Video Doorbell",
+  "",
+  "2. CONNECTED HOME (Reference: https://support.wyze.com/hc/en-us/categories/360004553132)",
+  "   - Power: Wyze Plug, Wyze Plug Outdoor",
+  "   - Climate: Wyze Thermostat",
+  "   - Access: Wyze Lock, Wyze Lock Bolt, Wyze Gun Safe",
+  "   - Cleaning: Wyze Robot Vacuum, Wyze Cordless Vacuum, Wyze Handheld Vacuum",
+  "   - Network: Wyze Mesh Router, Wyze Mesh Router Pro 6E",
+  "   - Kitchen: Wyze Scale, Wyze Scale S, Wyze Scale X",
+  "",
+  "3. POWER & LIGHTING (Reference: https://support.wyze.com/hc/en-us/categories/360004553132)",
+  "   - Bulbs: Wyze Bulb, Wyze Bulb Color, Wyze Bulb Color BR30, Wyze Bulb White",
+  "   - Light Strips: Wyze Light Strip, Wyze Light Strip Pro",
+  "   - Switches: Wyze Switch",
+  "   - Solar: Wyze Solar Panel",
+  "",
+  "4. LIFESTYLE & AUDIO (Reference: https://support.wyze.com/hc/en-us/categories/360004553132)",
+  "   - Audio: Wyze Headphones, Wyze Buds, Wyze Buds Pro",
+  "   - Wearables: Wyze Watch 44mm, Wyze Watch 47mm, Wyze Band",
+  "",
+  "5. SENSORS & HOME MONITORING (Reference: https://support.wyze.com/hc/en-us/categories/360004553152)",
+  "   - Home Monitoring: Wyze Sense Hub, Wyze Keypad",
+  "   - Sensors: Wyze Entry Sensor v2, Wyze Motion Sensor v2, Wyze Climate Sensor, Wyze Leak Sensor",
+  "",
+  "6. SUBSCRIPTIONS & SERVICES (Reference: https://support.wyze.com/hc/en-us/categories/360004553172)",
+  "   - Plans: Cam Plus, Cam Plus Lite, Cam Protect, Wyze Home Monitoring"
+];
+
+interface WyzeProductMeta {
+  family: 'CAMERAS' | 'CONNECTED HOME' | 'POWER & LIGHTING' | 'LIFESTYLE & AUDIO' | 'SENSORS & HOME MONITORING' | 'SUBSCRIPTIONS & SERVICES';
+  deviceNoun: string;
+  supportLink: string;
+  isCamera: boolean;
+}
+
+function getProductMeta(productName: string = ''): WyzeProductMeta {
+  const p = (productName || '').toLowerCase();
+
+  if (p.includes('vacuum')) {
+    return { family: 'CONNECTED HOME', deviceNoun: 'vacuum', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553132', isCamera: false };
+  }
+  if (p.includes('router') || p.includes('mesh')) {
+    return { family: 'CONNECTED HOME', deviceNoun: 'router', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553132', isCamera: false };
+  }
+  if (p.includes('lock') || p.includes('safe')) {
+    return { family: 'CONNECTED HOME', deviceNoun: 'lock', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553132', isCamera: false };
+  }
+  if (p.includes('thermostat')) {
+    return { family: 'CONNECTED HOME', deviceNoun: 'thermostat', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553132', isCamera: false };
+  }
+  if (p.includes('scale')) {
+    return { family: 'CONNECTED HOME', deviceNoun: 'scale', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553132', isCamera: false };
+  }
+  if (p.includes('plug')) {
+    return { family: 'CONNECTED HOME', deviceNoun: 'plug', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553132', isCamera: false };
+  }
+  if (p.includes('bulb') || p.includes('strip') || p.includes('switch') || p.includes('solar panel')) {
+    return { family: 'POWER & LIGHTING', deviceNoun: p.includes('bulb') ? 'bulb' : p.includes('strip') ? 'light strip' : 'switch', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553132', isCamera: false };
+  }
+  if (p.includes('headphone') || p.includes('buds')) {
+    return { family: 'LIFESTYLE & AUDIO', deviceNoun: 'headphones', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553132', isCamera: false };
+  }
+  if (p.includes('watch') || p.includes('band')) {
+    return { family: 'LIFESTYLE & AUDIO', deviceNoun: 'watch', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553132', isCamera: false };
+  }
+  if (p.includes('sensor') || p.includes('sense') || p.includes('keypad') || p.includes('leak') || p.includes('entry')) {
+    return { family: 'SENSORS & HOME MONITORING', deviceNoun: 'sensor', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553152', isCamera: false };
+  }
+  if (p.includes('cam plus') || p.includes('protect') || p.includes('monitoring') || p.includes('subscription')) {
+    return { family: 'SUBSCRIPTIONS & SERVICES', deviceNoun: 'subscription', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553172', isCamera: false };
+  }
+  if (p.includes('doorbell')) {
+    return { family: 'CAMERAS', deviceNoun: 'doorbell', supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553112', isCamera: true };
+  }
+  return {
+    family: 'CAMERAS',
+    deviceNoun: p.includes('cam') ? 'camera' : 'device',
+    supportLink: 'https://support.wyze.com/hc/en-us/categories/360004553112',
+    isCamera: p.includes('cam') || !p
+  };
+}
 
 // Supported active modern Gemini models per gemini-api skill (never use deprecated 2.0 or 2.5)
 const GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'] as const;
