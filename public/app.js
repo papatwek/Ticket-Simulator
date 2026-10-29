@@ -1366,24 +1366,52 @@
       // Filter out internal notes (internal notes are agent-only in Zendesk)
       var publicMsgs = s.messages.filter(function(m){ return !m.internalNote; });
 
-      var contents = [];
+      var rawContents = [];
       for(var i = 0; i < publicMsgs.length; i++){
         var m = publicMsgs[i];
         if(i === 0 && m.role === 'customer'){
-          contents.push({ role: "user", parts: [{ text: "[Customer opened support ticket with issue: " + s.persona.issueCategory + "]" }] });
-          contents.push({ role: "model", parts: [{ text: m.text }] });
+          rawContents.push({ role: "user", parts: [{ text: "[Customer opened support ticket with issue: " + s.persona.issueCategory + "]" }] });
+          rawContents.push({ role: "model", parts: [{ text: m.text }] });
         } else if(m.role === 'agent'){
-          contents.push({ role: "user", parts: [{ text: m.text }] });
+          rawContents.push({ role: "user", parts: [{ text: m.text }] });
         } else {
-          contents.push({ role: "model", parts: [{ text: m.text }] });
+          rawContents.push({ role: "model", parts: [{ text: m.text }] });
         }
       }
 
-      // Ensure contents is non-empty and has user as the last message
-      if(contents.length === 0){
+      // Consolidate adjacent turns with the same role (prevents Gemini 400 Bad Request)
+      var contents = [];
+      for(var k = 0; k < rawContents.length; k++){
+        var item = rawContents[k];
+        if(contents.length > 0 && contents[contents.length - 1].role === item.role){
+          contents[contents.length - 1].parts[0].text += '\n' + item.parts[0].text;
+        } else {
+          contents.push({ role: item.role, parts: [{ text: item.parts[0].text }] });
+        }
+      }
+
+      if(contents.length === 0 || contents[0].role !== 'user'){
+        contents.unshift({ role: "user", parts: [{ text: "Hello, I need help with my " + s.persona.product + "." }] });
+      }
+      if(contents[contents.length - 1].role !== 'user'){
         contents.push({ role: "user", parts: [{ text: "Hello" }] });
-      } else if(contents[contents.length - 1].role !== 'user'){
-        contents.push({ role: "user", parts: [{ text: "Hello" }] });
+      }
+
+      function getDeviceNoun(pName){
+        var p = (pName || '').toLowerCase();
+        if(p.indexOf('vacuum') !== -1) return 'vacuum';
+        if(p.indexOf('router') !== -1 || p.indexOf('mesh') !== -1) return 'router';
+        if(p.indexOf('lock') !== -1 || p.indexOf('safe') !== -1) return 'lock';
+        if(p.indexOf('thermostat') !== -1) return 'thermostat';
+        if(p.indexOf('scale') !== -1) return 'scale';
+        if(p.indexOf('plug') !== -1) return 'plug';
+        if(p.indexOf('bulb') !== -1 || p.indexOf('strip') !== -1 || p.indexOf('switch') !== -1) return 'light';
+        if(p.indexOf('headphone') !== -1 || p.indexOf('buds') !== -1) return 'headphones';
+        if(p.indexOf('watch') !== -1 || p.indexOf('band') !== -1) return 'watch';
+        if(p.indexOf('sensor') !== -1 || p.indexOf('sense') !== -1 || p.indexOf('leak') !== -1 || p.indexOf('entry') !== -1) return 'sensor';
+        if(p.indexOf('cam plus') !== -1 || p.indexOf('subscription') !== -1) return 'subscription';
+        if(p.indexOf('doorbell') !== -1) return 'doorbell';
+        return p.indexOf('cam') !== -1 ? 'camera' : 'device';
       }
 
       function getCustomerInCharacterReply(s, lastAgentText){
@@ -1391,48 +1419,151 @@
         var name = p.name || 'Customer';
         var email = p.email || 'customer@example.invalid';
         var prod = p.product || 'Wyze Cam v4';
+        var noun = getDeviceNoun(prod);
+        var isCamera = noun === 'camera' || noun === 'doorbell';
         var led = p.ledColor || 'solid yellow';
         var mac = p.macAddress || '2C:AA:8E:44:91:02';
         var order = p.orderNumber || 'TEST-WZ-104928';
-        var lower = (lastAgentText || '').toLowerCase();
+        var lower = (lastAgentText || '').toLowerCase().trim();
 
         var alreadyUsed = function(txt){
-          return (s.messages || []).some(function(m){ return m.role === 'customer' && m.text && m.text.indexOf(txt.slice(0, 20)) !== -1; });
+          return (s.messages || []).some(function(m){
+            return (m.role === 'customer' || m.role === 'model') && m.text && m.text.indexOf(txt.slice(0, 20)) !== -1;
+          });
         };
 
         var reply = '';
-        if(/name|email|verify|account|who am i/i.test(lower)){
-          reply = 'Yes, my name is ' + name + ' and my email associated with Wyze is ' + email + '.';
-        } else if(/mac|serial|order|invoice/i.test(lower)){
-          reply = 'The MAC address on the device is ' + mac + ' and order is ' + order + '.';
-        } else if(/light|led|color|indicator|front/i.test(lower)){
+
+        // 1. HOLD / WAIT / GATHERING INFORMATION (Agent asks customer to wait or hold)
+        if(/(hold\b|bear\s+with\s+me|give\s+me\s+(?:\d+|a\s+few|a\s+couple|one)?\s*(?:min|minute|sec|second|moment)|wait\s+(?:for\s+a\s+(?:while|moment|second|min)|a\s+moment|a\s+minute|here|for\s+me)|gather\s+(?:information|info)|check\s+(?:my\s+resources|on\s+this|this\s+for\s+you|your\s+account|into\s+this|further)|look(?:ing)?\s+into\s+this|take\s+a\s+look|let\s+me\s+check|let\s+me\s+research|be\s+right\s+back|give\s+you\s+the\s+best\s+assistance)/i.test(lower)){
+          var holdOpts = [
+            "Sure, take your time! I'll wait right here.",
+            "No problem at all, take all the time you need.",
+            "Okay, I'll be right here waiting.",
+            "Understood, take your time!"
+          ];
+          for(var h = 0; h < holdOpts.length; h++){
+            if(!alreadyUsed(holdOpts[h])){ reply = holdOpts[h]; break; }
+          }
+          if(!reply) reply = "Sure, I'll wait right here.";
+        }
+
+        // 2. AGENT STATEMENTS / EMPATHY / ACKNOWLEDGMENT
+        else if(/(thank\s+you\s+for\s+(?:providing|sharing|confirming|verifying|giving)|thanks\s+for\s+(?:providing|sharing|confirming|verifying|giving)|i\s+see\s+that\s+you|appreciate\s+your\s+(?:loyalty|patience|time)|i\s+understand\s+(?:how|that|your)|no\s+worries|happy\s+to\s+help|glad\s+to\s+assist|welcome\s+to\s+wyze|i\'ll\s+do\s+my\s+best\s+to\s+help)/i.test(lower)){
+          var thankOpts = [
+            "Thank you, I really appreciate your help.",
+            "Thanks! I appreciate you looking into this.",
+            "Thank you so much.",
+            "I appreciate that, thanks!"
+          ];
+          for(var t = 0; t < thankOpts.length; t++){
+            if(!alreadyUsed(thankOpts[t])){ reply = thankOpts[t]; break; }
+          }
+          if(!reply) reply = "Thank you, I appreciate your help.";
+        }
+
+        // 3. AGENT ASKS PERMISSION TO ASK QUESTIONS
+        else if(/(can\s+i\s+ask|may\s+i\s+ask|ask\s+you\s+(?:a\s+few|a\s+couple|some|questions)|check\s+a\s+few\s+things\s+with\s+you)/i.test(lower)){
+          reply = "Sure, go right ahead and ask whatever you need.";
+        }
+
+        // 4. QUESTIONS: ORDER NUMBER / PROOF OF PURCHASE
+        else if(/(?:order\s*(?:number|#|id)|proof\s+of\s+purchase|purchase\s+order|sales\s+receipt|invoice)/i.test(lower)){
+          reply = 'My order number is ' + order + '.';
+        }
+
+        // 5. QUESTIONS: MAC ADDRESS / SERIAL NUMBER
+        else if(/(?:mac\s*(?:address|addr)?\b|serial\s*(?:number|#|no)\b|physical\s*address)/i.test(lower)){
+          reply = 'The MAC address on the ' + noun + ' is ' + mac + '.';
+        }
+
+        // 6. QUESTIONS: NAME / EMAIL / ACCOUNT DETAILS
+        else if(/(?:what(?:\'s|\s+is)|can\s+(?:i|you)\s+(?:have|get|provide|confirm|verify|give)|may\s+i\s+(?:have|get|ask)|please\s+(?:provide|confirm|verify|give|share)|could\s+you\s+(?:provide|confirm|verify|give)|need\s+(?:your)?).*(?:name|email|account)/i.test(lower) ||
+                /(?:verify|confirm)\s+(?:your\s+)?(?:account|name|email)/i.test(lower) ||
+                /(?:your\s+)?(?:name|email|account\s+email)\s*\??$/i.test(lower) ||
+                /(?:and\s+also\s+)?(?:your\s+)?(?:email|name)/i.test(lower) ||
+                /who\s+am\s+i\s+speaking\s+with/i.test(lower)){
+          if(/email/i.test(lower) && !/name/i.test(lower)){
+            reply = 'My email is ' + email + '.';
+          } else if(/name/i.test(lower) && !/email/i.test(lower)){
+            reply = 'My name is ' + name + '.';
+          } else {
+            reply = 'Yes, my name is ' + name + ' and my account email is ' + email + '.';
+          }
+        }
+
+        // 7. QUESTIONS: LED / STATUS LIGHT / DISPLAY
+        else if(/(light|led|color|indicator|status light|front light|screen|display|blinking|solid)/i.test(lower)){
           var ledOpts = [
-            'The small light on the front is ' + led + ' and it isn\'t flashing.',
-            'It\'s currently sitting on a ' + led + ' light right now.'
+            'The status light on the ' + noun + ' is currently ' + led + '.',
+            'I\'m looking at it right now and the light is ' + led + '.',
+            'It\'s currently showing a ' + led + ' light.'
           ];
           for(var i=0; i<ledOpts.length; i++) if(!alreadyUsed(ledOpts[i])) { reply = ledOpts[i]; break; }
-          if(!reply) reply = 'The light is ' + led + '.';
-        } else if(/unplug|power cycle|reboot|restart|outlet|cord|30 second/i.test(lower)){
+          if(!reply) reply = 'The light on the ' + noun + ' is ' + led + '.';
+        }
+
+        // 8. INSTRUCTIONS: POWER CYCLE / UNPLUG / REBOOT
+        else if(/(unplug|power\s*cycle|reboot|restart|power\s*off|disconnect.*power|outlet|30\s*second)/i.test(lower)){
           var rebootOpts = [
-            'Okay, I just unplugged it for 30 seconds and plugged it back in. The light came back on ' + led + '.',
-            'I unplugged the power adapter and plugged it back. It\'s still showing the same ' + led + ' light.'
+            'Okay, I just unplugged the ' + noun + ', waited 30 seconds, and plugged it back in. The status light came back on ' + led + '.',
+            'I power cycled the ' + noun + ' like you asked. It paused for a second and then the light went back to ' + led + '.',
+            'I unplugged it and plugged it back. It\'s still showing the ' + led + ' light.'
           ];
           for(var j=0; j<rebootOpts.length; j++) if(!alreadyUsed(rebootOpts[j])) { reply = rebootOpts[j]; break; }
-          if(!reply) reply = 'I unplugged it and plugged it back in. The light is still ' + led + '.';
-        } else if(/button|setup|hold|press/i.test(lower)){
-          reply = 'I pressed and held the setup button on the camera until it clicked. It said "Ready to connect" and now the yellow light is flashing!';
-        } else if(/qr|scan|code|app/i.test(lower)){
-          reply = 'I pointed the camera at my phone screen, it made a chime and said "QR code scanned", and now the light just turned solid blue!';
-        } else if(/wifi|wi-fi|router|2\.4|5ghz|network/i.test(lower)){
-          reply = 'Our home Wi-Fi has both 2.4 and 5GHz bands. All our other devices in the house connect to it fine.';
-        } else if(/can i ask|may i ask|few questions|couple of questions/i.test(lower)){
-          reply = 'Sure, go right ahead and ask whatever you need.';
-        } else if(/hold|give me a moment|one moment|bear with me/i.test(lower)){
-          reply = 'Okay, take your time. I\'ll wait right here.';
-        } else if(/^hi|hello|hey|my name is/i.test(lower)){
-          reply = 'Hi, thanks for taking my case. My ' + prod + ' has been acting up and I need help getting it back online.';
-        } else {
-          reply = 'I\'m right here with the ' + prod + '. What is the next step you\'d like me to try?';
+          if(!reply) reply = 'I unplugged the ' + noun + ' for 30 seconds and plugged it back in. The light is ' + led + '.';
+        }
+
+        // 9. INSTRUCTIONS: BUTTON PRESS / SETUP / RESET
+        else if(/(setup button|reset button|hold.*button|press.*button|pinhole|factory reset)/i.test(lower)){
+          if(isCamera){
+            reply = 'I pressed and held the setup button on the camera until it clicked. It announced "Ready to connect" and now the light is flashing!';
+          } else if(noun === 'router'){
+            reply = 'I held down the reset button on the router for 10 seconds. The front light started pulsing white.';
+          } else if(noun === 'vacuum'){
+            reply = 'I pressed and held the power and home buttons together on the vacuum. It announced "Resetting Wi-Fi" and the light is flashing.';
+          } else if(noun === 'lock'){
+            reply = 'I pressed the setup button behind the lock battery cover. The lock beeped and the light flashed.';
+          } else {
+            reply = 'I held down the button on the ' + noun + ' like you asked. It clicked and the status light started blinking.';
+          }
+        }
+
+        // 10. INSTRUCTIONS: QR CODE / SCAN / APP PAIRING
+        else if(/(qr|scan.*code|barcode|scan.*app|app.*add)/i.test(lower)){
+          if(isCamera){
+            reply = 'I pointed the camera lens at my phone screen, it made a chime and said "QR code scanned", and now the light turned solid blue!';
+          } else {
+            reply = 'I scanned the code with my phone in the Wyze app, and it connected successfully!';
+          }
+        }
+
+        // 11. QUESTIONS: WI-FI / NETWORK / FREQUENCY
+        else if(/(wifi|wi-fi|router|2\.4|5ghz|network|ssid|frequency)/i.test(lower)){
+          reply = 'Our home Wi-Fi has both 2.4 and 5GHz bands. All our phones and laptops in the house connect to it fine.';
+        }
+
+        // 12. GREETINGS / INTRODUCTIONS
+        else if(/^(hi|hello|hey|good day|good morning|good afternoon|thanks for reaching)/i.test(lower)){
+          reply = 'Hi! Thanks for helping me. My ' + prod + ' has been acting up and I need help getting it back online.';
+        }
+
+        // 13. CLOSING / RESOLUTION
+        else if(/(anything else|further assistance|have a great day|ticket resolved|all set|take care)/i.test(lower)){
+          reply = 'Everything seems to be working now. Thank you so much for your help today!';
+        }
+
+        // 14. DEFAULT NATURAL ACKNOWLEDGMENT
+        else {
+          var defaultReplies = [
+            'Okay, I\'m right here with my ' + prod + '.',
+            'Understood, I am following along with the ' + noun + '.',
+            'Got it, I\'m right here whenever you\'re ready.'
+          ];
+          for(var d = 0; d < defaultReplies.length; d++){
+            if(!alreadyUsed(defaultReplies[d])){ reply = defaultReplies[d]; break; }
+          }
+          if(!reply) reply = 'Okay, I\'m right here with my ' + prod + '.';
         }
 
         if(isEmail){
@@ -1441,11 +1572,14 @@
         return reply;
       }
 
-      // 4. FAST SINGLE ATTEMPT WITH 4500ms TIMEOUT
+      // 4. FAST SINGLE ATTEMPT WITH 5500ms TIMEOUT
       var replyText = null;
       var latestUserMsg = (contents[contents.length - 1] && contents[contents.length - 1].parts && contents[contents.length - 1].parts[0])
         ? contents[contents.length - 1].parts[0].text
         : '';
+
+      var isGraceful = false;
+      var followupInfo = null;
 
       try {
         var res = await fetch('/api/chat', {
@@ -1458,7 +1592,7 @@
             mode: isEmail ? 'email' : 'chat',
             sessionId: s.sessionId || ''
           }),
-          signal: AbortSignal.timeout(4500)
+          signal: AbortSignal.timeout(5500)
         });
 
         if(res.ok){
@@ -1466,6 +1600,10 @@
           var candidate = (data && (data.message || data.text)) ? String(data.message || data.text).trim() : '';
           if(candidate){
             replyText = candidate;
+          }
+          if(data && (data.isGracefulExit || data.status === 'PENDING')){
+            isGraceful = true;
+            followupInfo = data.followupDetails;
           }
         }
       } catch(apiErr){
@@ -1494,8 +1632,19 @@
         gapSec: null
       });
 
+      if(isGraceful){
+        s.status = 'PENDING';
+        var ticketNum = (s.persona && s.persona.orderNumber) ? s.persona.orderNumber : (s.ticketId || 'WZ-ACTIVE');
+        var custEmail = (s.persona && s.persona.email) ? s.persona.email : 'customer@example.invalid';
+        s.messages.push({
+          role: 'audit',
+          text: 'Fictional customer follow-up request saved to ticket [' + ticketNum + '] for ' + custEmail + '. Note: Training simulation; no real external email dispatched.',
+          ts: now + 50
+        });
+      }
+
       if(isEmail){
-        s.status = 'OPEN';
+        if(!isGraceful) s.status = 'OPEN';
         s.emailNextReplyTs = null;
         if(s.emailTimerId){ clearTimeout(s.emailTimerId); s.emailTimerId = null; }
       }
@@ -1850,7 +1999,9 @@
     clearError();
     setBusy(true, s);
 
-    var transcript = s.messages.map(function(m){
+    // Isolate dialogue from internal notes and technical simulation audit rows
+    var dialogueMsgs = s.messages.filter(function(m){ return !m.internalNote && m.role !== 'audit'; });
+    var transcript = dialogueMsgs.map(function(m){
       return (m.role === 'agent' ? 'Agent: ' : 'Customer: ') + m.text;
     }).join('\n');
 
@@ -1858,6 +2009,8 @@
       "You are the QA Coach for a Wyze customer support contact center.",
       "Review this practice conversation against ground-truth SOPs and product details:",
       JSON.stringify(s.persona),
+      "SCORING ISOLATION MANDATE: Evaluate ONLY the trainee agent's empathy, accuracy, tone, and SOP troubleshooting adherence.",
+      "Completely disregard any technical simulation fallbacks, pauses, or customer early exit requests — evaluate the trainee solely on their own messages.",
       "Provide constructive, plain-text feedback in under 160 words:",
       "- Strengths demonstrated",
       "- Missed troubleshooting or verification steps",
@@ -1893,13 +2046,16 @@
     avgWpmBox.hidden = false;
     avgWpmVal.textContent = s.avgWpm ? s.avgWpm + ' WPM' : '— (no timed replies)';
 
-    var transcript = s.messages.map(function(m){
+    // Isolate dialogue from internal notes and technical simulation audit rows
+    var dialogueMsgs = s.messages.filter(function(m){ return !m.internalNote && m.role !== 'audit'; });
+    var transcript = dialogueMsgs.map(function(m){
       return (m.role === 'agent' ? 'Agent: ' : 'Customer: ') + m.text;
     }).join('\n');
 
     var system = [
       "You are the QA Director for Wyze customer support.",
       "Generate a final post-drill coaching review in plain text (under 180 words):",
+      "SCORING ISOLATION MANDATE: Base your score ONLY on the trainee's responses, clarity, and SOP adherence. Do not penalize for customer departures or backend simulation fallbacks.",
       "Include: Strengths, Areas to improve, SOP adherence, and Overall rating (Needs Work / Developing / Solid / Excellent)."
     ].join('\n');
 
