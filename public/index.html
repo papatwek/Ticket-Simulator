@@ -413,245 +413,350 @@
       </form>
     </section>
   </main>
-</div>
-</div>
-</div>
+    </div> <!-- closes .cockpit-main -->
 
-<!-- Trainee Performance & Analytics Cockpit Modal -->
-<div class="modal" id="profileAnalyticsModal" hidden>
-  <div class="modal-content analytics-modal-content" role="dialog" aria-modal="true" aria-labelledby="paTitle">
-    <button class="modal-close" id="closeProfileAnalytics" aria-label="Close">×</button>
-
-    <!-- Profile Header -->
-    <div class="pa-header">
-      <div class="pa-profile-info">
-        <div class="pa-avatar-wrap" id="paAvatarWrap"></div>
-        <div>
-          <div class="pa-title-row">
-            <h2 id="paTitle"><span id="paAgentName">Trainee Agent</span></h2>
-            <span class="pa-id-badge" id="paAgentEmail">agent@ececontactcenters.com</span>
+    <!-- ========================================================================
+         LEADERSHIP ADMIN CONSOLE PAGE (DEDICATED FULL-PAGE VIEW)
+         ======================================================================== -->
+    <div class="cockpit-page" id="leadershipAdminPage" hidden>
+      <header class="page-header">
+        <div class="page-header-left">
+          <button type="button" class="back-nav-btn" id="adminBackToCockpitBtn" title="Back to Training Simulator Cockpit">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Back to Simulator</span>
+          </button>
+          <div class="page-title-group">
+            <h2>🛡️ Leadership Admin — Trainee Management &amp; Telemetry</h2>
+            <p>Search trainee performance, manage credentials, trigger password resets, deactivate accounts, and view drill-down analytics.</p>
           </div>
-          <p class="pa-subtitle">ECE Live-Chat Agent Performance Cockpit • Wyze Support Division</p>
+        </div>
+        <div class="page-header-actions">
+          <button type="button" class="btn btn-primary" id="adminInviteBtn">+ Invite New Trainee</button>
+        </div>
+      </header>
+
+      <!-- Passcode gate if leadership access is not yet unlocked -->
+      <div class="admin-passcode-gate" id="adminPasscodeGate">
+        <div class="admin-gate-card">
+          <h3>🔒 Leadership Verification Required</h3>
+          <p class="muted">Enter the ECE Trainer / Leadership passcode to manage trainee accounts, trigger credential resets, and monitor team telemetry.</p>
+          <div class="admin-gate-input-row">
+            <input type="password" id="adminGatePasscode" placeholder="Enter leadership passcode" class="input" autocomplete="current-password"/>
+            <button type="button" class="btn btn-primary" id="adminGateUnlockBtn">Unlock Admin Console</button>
+          </div>
+          <div class="status-msg" id="adminGateStatus"></div>
         </div>
       </div>
-      <div class="pa-header-actions">
-        <button type="button" class="btn btn-ghost" id="refreshAnalyticsBtn">↻ Refresh Stats</button>
+
+      <!-- Authenticated Admin Content -->
+      <div class="admin-page-content" id="adminDashboardView" hidden>
+        <!-- Quick Metrics Summary Bar -->
+        <div class="admin-quick-summary" id="adminQuickSummary">
+          <div class="summary-chip"><span class="chip-val" id="adminTotalTraineesCount">0</span> Trainees</div>
+          <div class="summary-chip"><span class="chip-val text-teal" id="adminActiveCount">0</span> Active</div>
+          <div class="summary-chip"><span class="chip-val text-emerald" id="adminAvgResRate">0%</span> Avg Resolution Rate</div>
+          <div class="summary-chip"><span class="chip-val text-blue" id="adminAvgWpm">0 WPM</span> Avg Speed</div>
+        </div>
+
+        <!-- Toolbar: Search, Status Filter, View Switcher -->
+        <div class="admin-toolbar">
+          <div class="admin-search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="adminSearchInput" class="input search-input" placeholder="Search trainees by name or email..."/>
+            <select id="adminStatusFilter" class="tb-select">
+              <option value="all">Status: All Trainees</option>
+              <option value="active">Active Only</option>
+              <option value="deactivated">Deactivated Only</option>
+            </select>
+          </div>
+          <div class="admin-view-toggle">
+            <button type="button" class="view-btn active" id="adminViewTableBtn" title="Table View">📋 Table View</button>
+            <button type="button" class="view-btn" id="adminViewCardsBtn" title="Card View">🗂️ Card View</button>
+          </div>
+        </div>
+
+        <!-- Designated 9-Column Admin Table View -->
+        <div class="admin-table-wrap" id="adminTableView">
+          <table class="admin-trainees-table">
+            <thead>
+              <tr>
+                <th style="min-width:230px;">TRAINEE</th>
+                <th style="min-width:100px;">STATUS</th>
+                <th style="min-width:150px;">LAST ACTIVE / TICKET</th>
+                <th style="min-width:90px;text-align:center;">TOTAL DRILLS</th>
+                <th style="min-width:120px;text-align:center;">RESOLUTION RATE</th>
+                <th style="min-width:100px;text-align:center;">AVG WPM</th>
+                <th style="min-width:130px;text-align:center;">FRUSTRATION RECOVERY</th>
+                <th style="min-width:100px;text-align:center;">CASE DOCS</th>
+                <th style="min-width:210px;text-align:right;">LEADERSHIP ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="adminTraineesTableBody">
+              <tr><td colspan="9" class="muted text-center py-4">Loading trainees...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Cards Grid View -->
+        <div class="admin-cards-grid" id="adminCardsView" hidden></div>
       </div>
     </div>
 
-    <!-- Top KPI Ribbon -->
-    <div class="pa-kpi-grid">
-      <div class="pa-kpi-card">
-        <div class="pa-kpi-label">Typing Speed</div>
-        <div class="pa-kpi-val" id="paKpiWpm">—</div>
-        <div class="pa-kpi-sub" id="paKpiWpmSub">Target: ≥ 45 WPM</div>
-      </div>
-      <div class="pa-kpi-card">
-        <div class="pa-kpi-label">Avg Response Time</div>
-        <div class="pa-kpi-val" id="paKpiResp">—</div>
-        <div class="pa-kpi-sub" id="paKpiRespSub">Target: &lt; 60s</div>
-      </div>
-      <div class="pa-kpi-card">
-        <div class="pa-kpi-label">Resolution Rate</div>
-        <div class="pa-kpi-val" id="paKpiResRate">—</div>
-        <div class="pa-kpi-sub" id="paKpiResCount">0 completed</div>
-      </div>
-      <div class="pa-kpi-card">
-        <div class="pa-kpi-label">Chat Abandonment</div>
-        <div class="pa-kpi-val" id="paKpiAbandonRate">—</div>
-        <div class="pa-kpi-sub" id="paKpiAbandonCount">7-min breaches</div>
-      </div>
-      <div class="pa-kpi-card">
-        <div class="pa-kpi-label">Frustration Recovery</div>
-        <div class="pa-kpi-val" id="paKpiChurnRate">—</div>
-        <div class="pa-kpi-sub" id="paKpiChurnCount">De-escalation rate</div>
-      </div>
-      <div class="pa-kpi-card">
-        <div class="pa-kpi-label">Case File Docs</div>
-        <div class="pa-kpi-val" id="paKpiDocRate">—</div>
-        <div class="pa-kpi-sub">SOP data quality</div>
-      </div>
-    </div>
+    <!-- ========================================================================
+         TRAINEE PERFORMANCE & TELEMETRY PAGE (DEDICATED FULL-PAGE VIEW)
+         ======================================================================== -->
+    <div class="cockpit-page" id="traineeAnalyticsPage" hidden>
+      <header class="page-header">
+        <div class="page-header-left">
+          <button type="button" class="back-nav-btn" id="analyticsBackToAdminBtn" style="display:none;" title="Back to Leadership Admin">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Back to Admin Console</span>
+          </button>
+          <button type="button" class="back-nav-btn" id="analyticsBackToCockpitBtn" title="Back to Training Simulator Cockpit">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Back to Simulator</span>
+          </button>
+          <div class="page-title-group">
+            <h2 id="paPageTitle">📊 Trainee Performance &amp; Telemetry Cockpit</h2>
+            <p id="paPageSubtitle">Complete breakdown of response speed, SLA adherence, resolution rates, and AI coaching.</p>
+          </div>
+        </div>
+        <div class="page-header-actions">
+          <button type="button" class="btn btn-ghost" id="refreshAnalyticsBtn">↻ Refresh Telemetry</button>
+        </div>
+      </header>
 
-    <!-- Sub-Tabs Navigation -->
-    <div class="pa-tabs" role="tablist">
-      <button type="button" class="pa-tab active" id="paTabAi" role="tab" aria-selected="true">🌟 AI Coaching Insights</button>
-      <button type="button" class="pa-tab" id="paTabSpeed" role="tab" aria-selected="false">⚡ Speed & Latency</button>
-      <button type="button" class="pa-tab" id="paTabRes" role="tab" aria-selected="false">🎯 Resolutions & Abandonments</button>
-      <button type="button" class="pa-tab" id="paTabChurn" role="tab" aria-selected="false">🛡️ Frustration & Churn</button>
-      <button type="button" class="pa-tab" id="paTabTranscripts" role="tab" aria-selected="false">📜 My Session History</button>
-    </div>
-
-    <!-- SUB-TAB 1: AI COACHING INSIGHTS -->
-    <div class="pa-panel active" id="paPanelAi" role="tabpanel">
-      <div class="pa-ai-card">
-        <div class="pa-ai-header">
-          <div class="pa-ai-title">
-            <span class="ai-sparkle">✨</span>
+      <!-- Inside Page Content -->
+      <div class="analytics-page-content">
+        <!-- Profile Header Card -->
+        <div class="pa-header">
+          <div class="pa-profile-info">
+            <div class="pa-avatar-wrap" id="paAvatarWrap"></div>
             <div>
-              <h3>AI Performance & QA Coaching Synthesis</h3>
-              <p class="muted">Deep assessment of your customer interactions, SLA adherence, and troubleshooting accuracy.</p>
+              <div class="pa-title-row">
+                <h2 id="paTitle"><span id="paAgentName">Trainee Agent</span></h2>
+                <span class="pa-id-badge" id="paAgentEmail">agent@ececontactcenters.com</span>
+              </div>
+              <p class="pa-subtitle" id="paSubtitleRole">ECE Live-Chat Agent Performance Cockpit • Wyze Support Division</p>
             </div>
           </div>
-          <button type="button" class="btn btn-primary" id="refreshAiBtn">Generate Fresh AI Assessment</button>
         </div>
 
-        <div class="pa-grade-banner" id="paGradeBanner">
-          <span class="pa-grade-pill" id="paOverallGrade">Solid</span>
-          <span class="pa-grade-summary" id="paExecutiveSummary">Evaluating your practice sessions across the Wyze product catalog…</span>
+        <!-- Top KPI Ribbon -->
+        <div class="pa-kpi-grid">
+          <div class="pa-kpi-card">
+            <div class="pa-kpi-label">Typing Speed</div>
+            <div class="pa-kpi-val" id="paKpiWpm">—</div>
+            <div class="pa-kpi-sub" id="paKpiWpmSub">Target: ≥ 45 WPM</div>
+          </div>
+          <div class="pa-kpi-card">
+            <div class="pa-kpi-label">Avg Response Time</div>
+            <div class="pa-kpi-val" id="paKpiResp">—</div>
+            <div class="pa-kpi-sub" id="paKpiRespSub">Target: &lt; 60s</div>
+          </div>
+          <div class="pa-kpi-card">
+            <div class="pa-kpi-label">Resolution Rate</div>
+            <div class="pa-kpi-val" id="paKpiResRate">—</div>
+            <div class="pa-kpi-sub" id="paKpiResCount">0 completed</div>
+          </div>
+          <div class="pa-kpi-card">
+            <div class="pa-kpi-label">Chat Abandonment</div>
+            <div class="pa-kpi-val" id="paKpiAbandonRate">—</div>
+            <div class="pa-kpi-sub" id="paKpiAbandonCount">7-min breaches</div>
+          </div>
+          <div class="pa-kpi-card">
+            <div class="pa-kpi-label">Frustration Recovery</div>
+            <div class="pa-kpi-val" id="paKpiChurnRate">—</div>
+            <div class="pa-kpi-sub" id="paKpiChurnCount">De-escalation rate</div>
+          </div>
+          <div class="pa-kpi-card">
+            <div class="pa-kpi-label">Case File Docs</div>
+            <div class="pa-kpi-val" id="paKpiDocRate">—</div>
+            <div class="pa-kpi-sub">SOP data quality</div>
+          </div>
         </div>
 
-        <div class="pa-ai-columns">
-          <div class="pa-ai-col">
-            <h4>🌟 Core Strengths Demonstrated</h4>
-            <ul class="pa-bullet-list" id="paStrengthsList">
-              <li>Active listening and relevant responses to customer problem descriptions.</li>
-              <li>Accurate execution of troubleshooting steps across Wyze camera setups.</li>
-            </ul>
-          </div>
-          <div class="pa-ai-col">
-            <h4>⚠️ Key Areas Needing Improvement</h4>
-            <ul class="pa-bullet-list warning-list" id="paGrowthList">
-              <li>Keep response intervals under 60 seconds to eliminate customer wait anxiety.</li>
-              <li>Provide hold updates before 180 seconds elapse whenever searching documentation.</li>
-              <li>Ensure all case file notes (Name, Email, Product, Recap, Next Steps) are documented.</li>
-            </ul>
+        <!-- Sub-Tabs Navigation -->
+        <div class="pa-tabs" role="tablist">
+          <button type="button" class="pa-tab active" id="paTabAi" role="tab" aria-selected="true">🌟 AI Coaching Insights</button>
+          <button type="button" class="pa-tab" id="paTabSpeed" role="tab" aria-selected="false">⚡ Speed &amp; Latency</button>
+          <button type="button" class="pa-tab" id="paTabRes" role="tab" aria-selected="false">🎯 Resolutions &amp; Abandonments</button>
+          <button type="button" class="pa-tab" id="paTabChurn" role="tab" aria-selected="false">🛡️ Frustration &amp; Churn</button>
+          <button type="button" class="pa-tab" id="paTabTranscripts" role="tab" aria-selected="false">📜 Practice Transcripts</button>
+        </div>
+
+        <!-- SUB-TAB 1: AI COACHING INSIGHTS -->
+        <div class="pa-panel active" id="paPanelAi" role="tabpanel">
+          <div class="pa-ai-card">
+            <div class="pa-ai-header">
+              <div class="pa-ai-title">
+                <span class="ai-sparkle">✨</span>
+                <div>
+                  <h3>AI Performance &amp; QA Coaching Synthesis</h3>
+                  <p class="muted">Deep assessment of your customer interactions, SLA adherence, and troubleshooting accuracy.</p>
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary" id="refreshAiBtn">Generate Fresh AI Assessment</button>
+            </div>
+
+            <div class="pa-grade-banner" id="paGradeBanner">
+              <span class="pa-grade-pill" id="paOverallGrade">Solid</span>
+              <span class="pa-grade-summary" id="paExecutiveSummary">Evaluating practice sessions across the Wyze product catalog…</span>
+            </div>
+
+            <div class="pa-ai-columns">
+              <div class="pa-ai-col">
+                <h4>🌟 Core Strengths Demonstrated</h4>
+                <ul class="pa-bullet-list" id="paStrengthsList">
+                  <li>Active listening and relevant responses to customer problem descriptions.</li>
+                  <li>Accurate execution of troubleshooting steps across Wyze camera setups.</li>
+                </ul>
+              </div>
+              <div class="pa-ai-col">
+                <h4>⚠️ Key Areas Needing Improvement</h4>
+                <ul class="pa-bullet-list warning-list" id="paGrowthList">
+                  <li>Keep response intervals under 60 seconds to eliminate customer wait anxiety.</li>
+                  <li>Provide hold updates before 180 seconds elapse whenever searching documentation.</li>
+                  <li>Ensure all case file notes (Name, Email, Product, Recap, Next Steps) are documented.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="pa-ai-split">
+              <div class="pa-insight-box">
+                <h4>🛡️ Churn Prevention &amp; De-escalation Advice</h4>
+                <p id="paChurnAdvice">Acknowledge customer frustration immediately upon joining. Never make promises you cannot verify, and maintain proactive communication during diagnostic lookups.</p>
+              </div>
+              <div class="pa-insight-box">
+                <h4>⚡ Speed &amp; SLA Discipline</h4>
+                <p id="paSpeedAdvice">Aim for a steady pace of 45-60 WPM. Use concise, actionable prompts instead of lengthy paragraphs to keep the conversation flowing.</p>
+              </div>
+            </div>
+
+            <div class="pa-next-goal-card">
+              <div class="goal-label">🎯 Actionable Goal for Your Next Live Drill:</div>
+              <div class="goal-text" id="paNextGoal">Complete a full scenario with zero response gaps over 60 seconds and 100% case file documentation.</div>
+            </div>
           </div>
         </div>
 
-        <div class="pa-ai-split">
-          <div class="pa-insight-box">
-            <h4>🛡️ Churn Prevention & De-escalation Advice</h4>
-            <p id="paChurnAdvice">Acknowledge customer frustration immediately upon joining. Never make promises you cannot verify, and maintain proactive communication during diagnostic lookups.</p>
+        <!-- SUB-TAB 2: SPEED & RESPONSE TIME ANALYSIS -->
+        <div class="pa-panel" id="paPanelSpeed" role="tabpanel" hidden>
+          <div class="pa-metrics-row">
+            <div class="pa-metric-box">
+              <h3>Typing Speed Distribution (WPM)</h3>
+              <p class="muted">Live-chat queue benchmark: 45–65 WPM allows handling multiple chats efficiently.</p>
+              <div class="pa-dist-bars" id="paSpeedDistBars"></div>
+            </div>
+            <div class="pa-metric-box">
+              <h3>Customer Response Wait Time Latency</h3>
+              <p class="muted">Target: reply within 60 seconds. Messages taking over 120s trigger hold warnings.</p>
+              <div class="pa-dist-bars" id="paRespDistBars"></div>
+            </div>
           </div>
-          <div class="pa-insight-box">
-            <h4>⚡ Speed & SLA Discipline</h4>
-            <p id="paSpeedAdvice">Aim for a steady pace of 45-60 WPM. Use concise, actionable prompts instead of lengthy paragraphs to keep the conversation flowing.</p>
+
+          <div class="pa-card">
+            <h3>WPM Progression Across Recent Drills</h3>
+            <div class="pa-table-wrap">
+              <table class="pa-data-table" id="paWpmTable">
+                <thead>
+                  <tr>
+                    <th>Ticket ID</th>
+                    <th>Date</th>
+                    <th>Average WPM</th>
+                    <th>Speed Tier</th>
+                    <th>Outcome</th>
+                  </tr>
+                </thead>
+                <tbody id="paWpmTableBody">
+                  <tr><td colspan="5" class="muted text-center">No timed practice replies recorded yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        <div class="pa-next-goal-card">
-          <div class="goal-label">🎯 Actionable Goal for Your Next Live Drill:</div>
-          <div class="goal-text" id="paNextGoal">Complete a full scenario with zero response gaps over 60 seconds and 100% case file documentation.</div>
+        <!-- SUB-TAB 3: RESOLUTIONS & ABANDONMENT BREAKDOWN -->
+        <div class="pa-panel" id="paPanelRes" role="tabpanel" hidden>
+          <div class="pa-metrics-row">
+            <div class="pa-metric-box">
+              <h3>7-Minute Abandonment Analysis</h3>
+              <p class="muted">Customers leave and disconnect if unacknowledged for 7 continuous minutes.</p>
+              <div id="paAbandonmentAnalysisContent"></div>
+            </div>
+            <div class="pa-metric-box">
+              <h3>Resolution by Wyze Category</h3>
+              <p class="muted">Your success rate and WPM across different device families.</p>
+              <div class="pa-category-list" id="paCategoryList"></div>
+            </div>
+          </div>
+
+          <div class="pa-card">
+            <h3>Abandoned Chat Log (Inactivity Breaches)</h3>
+            <div id="paAbandonedTableWrap">
+              <table class="pa-data-table" id="paAbandonedTable">
+                <thead>
+                  <tr>
+                    <th>Ticket</th>
+                    <th>Product Category</th>
+                    <th>Idle Duration</th>
+                    <th>Customer Departure Reason</th>
+                  </tr>
+                </thead>
+                <tbody id="paAbandonedTableBody">
+                  <tr><td colspan="4" class="muted text-center">No chat abandonments recorded. Excellent hold management!</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-TAB 4: CUSTOMER FRUSTRATION & CHURN RECOVERY -->
+        <div class="pa-panel" id="paPanelChurn" role="tabpanel" hidden>
+          <div class="pa-metrics-row">
+            <div class="pa-metric-box">
+              <h3>De-escalation &amp; Churn Mitigation</h3>
+              <div class="pa-stat-highlight" id="paChurnStatHighlight">
+                <span class="stat-number" id="paChurnPercent">100%</span>
+                <span class="stat-desc" id="paChurnDesc">of frustrated or upset customers were successfully guided to resolution.</span>
+              </div>
+              <p class="muted" style="margin-top:10px;">High frustration requires immediate empathy acknowledgment before requesting account verification.</p>
+            </div>
+            <div class="pa-metric-box">
+              <h3>Wyze Customer Frustration Recovery Playbook</h3>
+              <ul class="pa-playbook-list">
+                <li><strong>Empathy First:</strong> "I completely understand how frustrating it is when your camera drops connection. Let's get this sorted out right now."</li>
+                <li><strong>Set Expectations:</strong> "I am looking up your subscription right now—this will take about 1 minute."</li>
+                <li><strong>Proactive Updates:</strong> If a diagnosis takes over 2 minutes, send a quick update so the customer knows you are actively working.</li>
+                <li><strong>Never Ghost:</strong> Never leave a customer idle past 3 minutes without a check-in. At 7 minutes, the customer leaves and disputes charges.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-TAB 5: MY SESSION TRANSCRIPTS -->
+        <div class="pa-panel" id="paPanelTranscripts" role="tabpanel" hidden>
+          <div class="pa-transcripts-layout">
+            <div class="pa-session-selector">
+              <div class="pa-filter-bar">
+                <button type="button" class="pa-filter-btn active" data-filter="all">All</button>
+                <button type="button" class="pa-filter-btn" data-filter="resolved">Resolved</button>
+                <button type="button" class="pa-filter-btn" data-filter="escalated">Escalated</button>
+                <button type="button" class="pa-filter-btn" data-filter="abandoned">Abandoned</button>
+              </div>
+              <div class="pa-sessions-list" id="paSessionsList"></div>
+            </div>
+            <div class="pa-transcript-view" id="paTranscriptView">
+              <div class="empty-state" style="padding:40px 20px;">
+                <p>Select a session on the left to inspect the complete conversation transcript, typing speed, and case notes.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-
-    <!-- SUB-TAB 2: SPEED & RESPONSE TIME ANALYSIS -->
-    <div class="pa-panel" id="paPanelSpeed" role="tabpanel" hidden>
-      <div class="pa-metrics-row">
-        <div class="pa-metric-box">
-          <h3>Typing Speed Distribution (WPM)</h3>
-          <p class="muted">Live-chat queue benchmark: 45–65 WPM allows handling multiple chats efficiently.</p>
-          <div class="pa-dist-bars" id="paSpeedDistBars"></div>
-        </div>
-        <div class="pa-metric-box">
-          <h3>Customer Response Wait Time Latency</h3>
-          <p class="muted">Target: reply within 60 seconds. Messages taking over 120s trigger hold warnings.</p>
-          <div class="pa-dist-bars" id="paRespDistBars"></div>
-        </div>
-      </div>
-
-      <div class="pa-card">
-        <h3>WPM Progression Across Recent Drills</h3>
-        <div class="pa-table-wrap">
-          <table class="pa-data-table" id="paWpmTable">
-            <thead>
-              <tr>
-                <th>Ticket ID</th>
-                <th>Date</th>
-                <th>Average WPM</th>
-                <th>Speed Tier</th>
-                <th>Outcome</th>
-              </tr>
-            </thead>
-            <tbody id="paWpmTableBody">
-              <tr><td colspan="5" class="muted text-center">No timed practice replies recorded yet.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- SUB-TAB 3: RESOLUTIONS & ABANDONMENT BREAKDOWN -->
-    <div class="pa-panel" id="paPanelRes" role="tabpanel" hidden>
-      <div class="pa-metrics-row">
-        <div class="pa-metric-box">
-          <h3>7-Minute Abandonment Analysis</h3>
-          <p class="muted">Customers leave and disconnect if unacknowledged for 7 continuous minutes.</p>
-          <div id="paAbandonmentAnalysisContent"></div>
-        </div>
-        <div class="pa-metric-box">
-          <h3>Resolution by Wyze Category</h3>
-          <p class="muted">Your success rate and WPM across different device families.</p>
-          <div class="pa-category-list" id="paCategoryList"></div>
-        </div>
-      </div>
-
-      <div class="pa-card">
-        <h3>Abandoned Chat Log (Inactivity Breaches)</h3>
-        <div id="paAbandonedTableWrap">
-          <table class="pa-data-table" id="paAbandonedTable">
-            <thead>
-              <tr>
-                <th>Ticket</th>
-                <th>Product Category</th>
-                <th>Idle Duration</th>
-                <th>Customer Departure Reason</th>
-              </tr>
-            </thead>
-            <tbody id="paAbandonedTableBody">
-              <tr><td colspan="4" class="muted text-center">No chat abandonments recorded. Excellent hold management!</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- SUB-TAB 4: CUSTOMER FRUSTRATION & CHURN RECOVERY -->
-    <div class="pa-panel" id="paPanelChurn" role="tabpanel" hidden>
-      <div class="pa-metrics-row">
-        <div class="pa-metric-box">
-          <h3>De-escalation & Churn Mitigation</h3>
-          <div class="pa-stat-highlight" id="paChurnStatHighlight">
-            <span class="stat-number" id="paChurnPercent">100%</span>
-            <span class="stat-desc" id="paChurnDesc">of frustrated or upset customers were successfully guided to resolution.</span>
-          </div>
-          <p class="muted" style="margin-top:10px;">High frustration requires immediate empathy acknowledgment before requesting account verification.</p>
-        </div>
-        <div class="pa-metric-box">
-          <h3>Wyze Customer Frustration Recovery Playbook</h3>
-          <ul class="pa-playbook-list">
-            <li><strong>Empathy First:</strong> "I completely understand how frustrating it is when your camera drops connection. Let's get this sorted out right now."</li>
-            <li><strong>Set Expectations:</strong> "I am looking up your subscription right now—this will take about 1 minute."</li>
-            <li><strong>Proactive Updates:</strong> If a diagnosis takes over 2 minutes, send a quick update so the customer knows you are actively working.</li>
-            <li><strong>Never Ghost:</strong> Never leave a customer idle past 3 minutes without a check-in. At 7 minutes, the customer leaves and disputes charges.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <!-- SUB-TAB 5: MY SESSION TRANSCRIPTS -->
-    <div class="pa-panel" id="paPanelTranscripts" role="tabpanel" hidden>
-      <div class="pa-transcripts-layout">
-        <div class="pa-session-selector">
-          <div class="pa-filter-bar">
-            <button type="button" class="pa-filter-btn active" data-filter="all">All</button>
-            <button type="button" class="pa-filter-btn" data-filter="resolved">Resolved</button>
-            <button type="button" class="pa-filter-btn" data-filter="escalated">Escalated</button>
-            <button type="button" class="pa-filter-btn" data-filter="abandoned">Abandoned</button>
-          </div>
-          <div class="pa-sessions-list" id="paSessionsList"></div>
-        </div>
-        <div class="pa-transcript-view" id="paTranscriptView">
-          <div class="empty-state" style="padding:40px 20px;">
-            <p>Select a session on the left to inspect the complete conversation transcript, typing speed, and case notes.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+  </div> <!-- closes .cockpit-container -->
+</div> <!-- closes #appRoot -->
 
 <!-- First-login walkthrough -->
 <div class="modal" id="welcomeModal" hidden>
@@ -709,85 +814,6 @@
   </div>
 </div>
 
-<!-- ========================================================================
-     LEADERSHIP ADMIN CONSOLE MODAL
-     ======================================================================== -->
-<div class="modal" id="adminConsoleModal" hidden>
-  <div class="modal-content admin-modal-content" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
-    <div class="admin-modal-header">
-      <div>
-        <h2 id="adminModalTitle">🛡️ Leadership Admin — Trainee Management &amp; Telemetry</h2>
-        <p class="muted">Search trainee performance, manage credentials, trigger password resets, deactivate accounts, and view drill-down analytics.</p>
-      </div>
-      <button type="button" class="icon-btn" id="closeAdminConsole" aria-label="Close Admin Console">&times;</button>
-    </div>
-
-    <!-- Passcode gate if leadership access is not yet unlocked -->
-    <div class="admin-passcode-gate" id="adminPasscodeGate">
-      <div class="admin-gate-card">
-        <h3>🔒 Leadership Verification Required</h3>
-        <p class="muted">Enter the ECE Trainer / Leadership passcode to manage trainee accounts, trigger credential resets, and monitor team telemetry.</p>
-        <div class="admin-gate-input-row">
-          <input type="password" id="adminGatePasscode" placeholder="Enter leadership passcode" class="input" autocomplete="current-password"/>
-          <button type="button" class="btn btn-primary" id="adminGateUnlockBtn">Unlock Admin Console</button>
-        </div>
-        <div class="status-msg" id="adminGateStatus"></div>
-      </div>
-    </div>
-
-    <!-- Authenticated Admin View -->
-    <div class="admin-dashboard-view" id="adminDashboardView" hidden>
-      <div class="admin-toolbar">
-        <div class="admin-search-wrap">
-          <input type="text" id="adminSearchInput" class="input search-input" placeholder="🔍 Search trainees by name or email..."/>
-          <select id="adminStatusFilter" class="tb-select">
-            <option value="all">Status: All Trainees</option>
-            <option value="active">Active Only</option>
-            <option value="deactivated">Deactivated Only</option>
-          </select>
-        </div>
-        <div class="admin-view-toggle">
-          <button type="button" class="view-btn active" id="adminViewTableBtn" title="Table View">📋 Table View</button>
-          <button type="button" class="view-btn" id="adminViewCardsBtn" title="List/Card View">🗂️ Card View</button>
-          <button type="button" class="btn btn-primary btn-sm" id="adminInviteBtn">+ Invite New Trainee</button>
-        </div>
-      </div>
-
-      <!-- Quick Metrics Summary Bar -->
-      <div class="admin-quick-summary" id="adminQuickSummary">
-        <div class="summary-chip"><span class="chip-val" id="adminTotalTraineesCount">0</span> Trainees</div>
-        <div class="summary-chip"><span class="chip-val text-teal" id="adminActiveCount">0</span> Active</div>
-        <div class="summary-chip"><span class="chip-val" id="adminAvgResRate">0%</span> Avg Resolution Rate</div>
-        <div class="summary-chip"><span class="chip-val" id="adminAvgWpm">0 WPM</span> Avg Speed</div>
-      </div>
-
-      <!-- Dynamic Table View -->
-      <div class="admin-table-wrap" id="adminTableView">
-        <table class="admin-trainees-table">
-          <thead>
-            <tr>
-              <th>Trainee</th>
-              <th>Status</th>
-              <th>Last Active / Ticket</th>
-              <th>Total Drills</th>
-              <th>Resolution Rate</th>
-              <th>Avg WPM</th>
-              <th>Frustration Recovery</th>
-              <th>Case Docs</th>
-              <th style="text-align:right;">Leadership Actions</th>
-            </tr>
-          </thead>
-          <tbody id="adminTraineesTableBody">
-            <tr><td colspan="9" class="muted text-center py-4">Loading trainees...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Dynamic Cards/List View -->
-      <div class="admin-cards-grid" id="adminCardsView" hidden></div>
-    </div>
-  </div>
-</div>
 
 <!-- Modal: Invite / Register Trainee -->
 <div class="modal" id="adminInviteModal" hidden>

@@ -4,6 +4,7 @@ import {
   adminListTrainees,
   adminToggleAccountStatus,
   adminTriggerReset,
+  saveResetCodeForEmail,
   adminCreateTrainee,
   AdminTraineeSummary
 } from '@/lib/db';
@@ -72,22 +73,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized leadership access.' }, { status: 401 });
     }
 
-    const { action, userId, email, name, tempPassword, active } = body;
+    const { action, userId, email, name, tempPassword, active, isActive, identifier } = body;
+    const normalizedAction = String(action || '').toLowerCase().replace(/_/g, '-');
+    const resolvedIdentifier = identifier || userId || email;
+    const resolvedActive = active !== undefined ? !!active : !!isActive;
 
-    if (action === 'toggle-status') {
-      if (!userId) {
+    if (normalizedAction === 'toggle-status') {
+      const targetId = userId || identifier || email;
+      if (!targetId) {
         return NextResponse.json({ error: 'Missing userId.' }, { status: 400 });
       }
-      const res = adminToggleAccountStatus(userId, !!active);
+      const res = adminToggleAccountStatus(targetId, resolvedActive);
+      const supabase = getSupabase();
+      if (supabase) {
+        try {
+          await supabase.from('trainees').update({ is_active: resolvedActive }).or(`id.eq.${targetId},email.eq.${targetId}`);
+        } catch (sErr) {
+          console.warn('[Toggle Status] Supabase update non-fatal:', sErr);
+        }
+      }
       return NextResponse.json(res);
     }
 
-    if (action === 'trigger-reset') {
-      const identifier = userId || email;
-      if (!identifier) {
+    if (normalizedAction === 'trigger-reset') {
+      if (!resolvedIdentifier) {
         return NextResponse.json({ error: 'Missing trainee identifier.' }, { status: 400 });
       }
-      const res = adminTriggerReset(identifier);
+      let res = adminTriggerReset(resolvedIdentifier);
+      if (!res.ok) {
+        const supabase = getSupabase();
+        if (supabase) {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedIdentifier);
+          let query = supabase.from('trainees').select('id, email, name');
+          if (isUuid) {
+            query = query.eq('id', resolvedIdentifier);
+          } else {
+            query = query.eq('email', resolvedIdentifier.toLowerCase().trim());
+          }
+          const { data: trainee } = await query.maybeSingle();
+          if (trainee && trainee.email) {
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = Date.now() + 60 * 60 * 1000;
+            saveResetCodeForEmail(trainee.email, code, expiresAt);
+            return NextResponse.json({
+              ok: true,
+              code,
+              email: trainee.email,
+              name: trainee.name || trainee.email,
+              expiresAt,
+              status: 200
+            });
+          }
+        }
+      }
       return NextResponse.json(res, { status: res.status });
     }
 

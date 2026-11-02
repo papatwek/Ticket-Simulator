@@ -983,6 +983,24 @@ export function adminTriggerReset(userIdOrEmail: string): { ok: boolean; code?: 
   return { ok: true, code, email: user.email, name: user.name, expiresAt, status: 200 };
 }
 
+export function saveResetCodeForEmail(email: string, code: string, expiresAt: number): void {
+  const normalizedEmail = email.trim().toLowerCase();
+  const db = initDb();
+  if (db) {
+    try {
+      const resetStmt = db.prepare(`
+        INSERT INTO password_resets (email, code, expires_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(email) DO UPDATE SET code = excluded.code, expires_at = excluded.expires_at
+      `);
+      resetStmt.run(normalizedEmail, code, expiresAt);
+    } catch (err) {
+      handleSqliteError(err);
+    }
+  }
+  g.__memStore!.passwordResets.set(normalizedEmail, { code, expires_at: expiresAt });
+}
+
 export function adminCreateTrainee(email: string, name: string, tempPassword?: string, avatarId?: string): { ok: boolean; user?: UserRecord; tempPassword?: string; error?: string; status: number } {
   const pw = tempPassword || ('Wyze' + Math.floor(1000 + Math.random() * 9000) + '!');
   try {

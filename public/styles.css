@@ -3287,26 +3287,206 @@ select.tb-select:focus {
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
+/* Dedicated Full-Page Cockpit Views */
+.cockpit-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  overflow-y: auto;
+  min-height: calc(100vh - 0px);
+  position: relative;
+  z-index: 1;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-title-group h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.page-title-group p {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-s);
+  padding: 7px 13px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-nav-btn:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.back-nav-btn svg {
+  stroke: currentColor;
+}
+
+/* Admin Dashboard & Trainee Analytics Inside Page */
+.admin-page-content,
+.analytics-page-content {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.admin-quick-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
 .summary-chip {
-  background: var(--panel-subtle);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 9999px;
   padding: 6px 16px;
   font-size: 12.5px;
   color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
 
 .summary-chip .chip-val {
   font-weight: 800;
-  margin-right: 4px;
+  margin-right: 5px;
 }
 
-.admin-table-wrap {
+.text-teal { color: var(--accent) !important; }
+.text-blue { color: var(--blue) !important; }
+.text-amber { color: var(--amber) !important; }
+.text-emerald { color: #10B981 !important; }
+.text-danger { color: var(--coral) !important; }
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 600px;
+  position: relative;
+}
+
+.search-input {
+  flex: 1;
+  padding: 9px 12px 9px 36px;
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius-s);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.admin-search-wrap .search-icon {
+  position: absolute;
+  left: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.tb-select {
+  padding: 9px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.admin-view-toggle {
+  display: inline-flex;
+  background: var(--panel-subtle);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  padding: 3px;
+  gap: 3px;
+}
+
+.view-btn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-btn:hover {
+  color: var(--text);
+}
+
+.view-btn.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Designated Admin Table View */
+.admin-table-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   overflow-x: auto;
   background: var(--panel);
+  box-shadow: var(--card-shadow);
 }
 
 .admin-trainees-table {
@@ -3314,21 +3494,23 @@ select.tb-select:focus {
   border-collapse: collapse;
   font-size: 13px;
   text-align: left;
+  table-layout: auto;
 }
 
 .admin-trainees-table th {
   background: var(--panel-subtle);
-  padding: 12px 14px;
+  padding: 13px 16px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--muted);
   border-bottom: 1px solid var(--line);
+  white-space: nowrap;
 }
 
 .admin-trainees-table td {
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--line);
   color: var(--text);
   vertical-align: middle;
@@ -3342,33 +3524,212 @@ select.tb-select:focus {
   background: var(--panel-subtle);
 }
 
+/* Strictly Constrained Profile Avatar */
+.trainee-cell,
 .trainee-identity-cell {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.trainee-name-bold {
-  font-weight: 700;
+.trainee-avatar-box {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.trainee-avatar {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  display: block !important;
+}
+
+.clickable-trainee {
   color: var(--text);
+  cursor: pointer;
+  transition: color 0.15s ease;
 }
 
-.trainee-email-sub {
+.clickable-trainee:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.ticket-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ticket-code {
+  font-family: var(--mono);
   font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.res-rate-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.rate-high {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+}
+
+.rate-mid {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--blue);
+}
+
+.rate-low {
+  background: rgba(100, 116, 139, 0.12);
   color: var(--muted);
 }
 
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.badge-active {
+  background: rgba(0, 163, 150, 0.15);
+  color: var(--accent);
+}
+
+.badge-inactive {
+  background: rgba(220, 38, 38, 0.14);
+  color: var(--coral);
+}
+
+/* Theme-Aware Action Buttons */
 .admin-actions-cell {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
+  flex-wrap: nowrap;
 }
 
 .btn-xs {
-  padding: 4px 8px;
+  padding: 5px 10px;
   font-size: 11.5px;
-  border-radius: 4px;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-primary-ghost {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.btn-primary-ghost:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn-danger-ghost {
+  background: var(--coral-soft);
+  color: var(--coral);
+  border: 1px solid var(--coral);
+}
+
+.btn-danger-ghost:hover {
+  background: var(--coral);
+  color: #ffffff;
+}
+
+.btn-success-ghost {
+  background: rgba(16, 185, 129, 0.14);
+  color: #10B981;
+  border: 1px solid #10B981;
+}
+
+.btn-success-ghost:hover {
+  background: #10B981;
+  color: #ffffff;
+}
+
+/* Theme contrast rules */
+html[data-theme="dark"] .admin-trainees-table {
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] .summary-chip {
+  background: #141C27;
+  border-color: #222D3D;
+}
+
+html[data-theme="dark"] .btn-danger-ghost {
+  background: rgba(239, 68, 68, 0.18);
+  color: #F87171;
+  border-color: #EF4444;
+}
+
+html[data-theme="dark"] .btn-danger-ghost:hover {
+  background: #EF4444;
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .btn-success-ghost {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34D399;
+  border-color: #10B981;
+}
+
+html[data-theme="dark"] .btn-success-ghost:hover {
+  background: #10B981;
+  color: #ffffff;
+}
+
+html[data-theme="warm"] .summary-chip {
+  background: #FBFCFA;
+  border-color: #D7DAD1;
+}
+
+html[data-theme="warm"] .btn-danger-ghost {
+  background: rgba(198, 85, 63, 0.15);
+  color: #C6553F;
+  border-color: #C6553F;
+}
+
+html[data-theme="warm"] .btn-danger-ghost:hover {
+  background: #C6553F;
+  color: #ffffff;
+}
+
+html[data-theme="warm"] .btn-success-ghost {
+  background: rgba(62, 133, 119, 0.15);
+  color: #3E8577;
+  border-color: #3E8577;
+}
+
+html[data-theme="warm"] .btn-success-ghost:hover {
+  background: #3E8577;
+  color: #ffffff;
 }
 
 /* Cards View */
@@ -3381,18 +3742,47 @@ select.tb-select:focus {
 .admin-trainee-card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: var(--radius-m);
-  padding: 16px;
+  border-radius: var(--radius);
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  gap: 14px;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-trainee-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
 
 .admin-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-card-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-avatar-wrap {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+.card-avatar-wrap svg {
+  width: 40px !important;
+  height: 40px !important;
+  display: block;
 }
 
 .admin-card-metrics {
@@ -3401,8 +3791,26 @@ select.tb-select:focus {
   gap: 8px;
   background: var(--panel-subtle);
   border-radius: var(--radius-s);
-  padding: 10px;
+  padding: 12px;
   font-size: 12px;
+}
+
+.card-metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-metric-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.card-metric-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .admin-card-actions {
@@ -3411,6 +3819,8 @@ select.tb-select:focus {
   justify-content: flex-end;
   gap: 8px;
   margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
 }
 
 /* Modal for Trainee Invite */

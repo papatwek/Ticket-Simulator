@@ -2102,26 +2102,90 @@
     }
   }
 
-  /* ---------- Trainee Performance & Analytics Cockpit ---------- */
-  async function loadTraineeAnalytics(){
-    if(!loginProfile) return;
-    try {
-      $('paAgentName').textContent = loginProfile.name;
-      $('paAgentEmail').textContent = loginProfile.email;
-      $('paAvatarWrap').innerHTML = avatarMarkup(loginProfile.avatarId || 'pip', 'pa-avatar-art');
+  /* ==========================================================================
+     PAGE NAVIGATION ROUTER (Cockpit vs Leadership Admin vs Trainee Telemetry)
+     ========================================================================== */
+  var currentAppView = 'cockpit'; // 'cockpit' | 'admin' | 'analytics'
+  var activeAnalyticsTargetId = null;
 
-      var res = await fetch('/api/agent/analytics?user=' + encodeURIComponent(loginProfile.id));
+  function navigateTo(view, params){
+    currentAppView = view;
+    var cockpitMain = document.querySelector('.cockpit-main');
+    var adminPage = $('leadershipAdminPage');
+    var analyticsPage = $('traineeAnalyticsPage');
+
+    if(cockpitMain) cockpitMain.hidden = (view !== 'cockpit');
+    if(adminPage) adminPage.hidden = (view !== 'admin');
+    if(analyticsPage) analyticsPage.hidden = (view !== 'analytics');
+
+    // Scroll to top on page navigation
+    if(adminPage && view === 'admin') adminPage.scrollTop = 0;
+    if(analyticsPage && view === 'analytics') analyticsPage.scrollTop = 0;
+    if(cockpitMain && view === 'cockpit') cockpitMain.scrollTop = 0;
+
+    if(view === 'admin'){
+      if(trainerAccess){
+        if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = true;
+        if($('adminDashboardView')) $('adminDashboardView').hidden = false;
+        loadAdminTrainees();
+      } else {
+        if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = false;
+        if($('adminDashboardView')) $('adminDashboardView').hidden = true;
+      }
+    } else if(view === 'analytics'){
+      var targetId = (params && params.traineeId) || (loginProfile && loginProfile.id);
+      var fromAdmin = (params && params.fromAdmin) || false;
+      activeAnalyticsTargetId = targetId;
+
+      var backToAdmin = $('analyticsBackToAdminBtn');
+      var backToCockpit = $('analyticsBackToCockpitBtn');
+      if(backToAdmin) backToAdmin.style.display = fromAdmin ? 'inline-flex' : 'none';
+      if(backToCockpit) backToCockpit.style.display = 'inline-flex';
+
+      loadTraineeAnalytics(targetId, fromAdmin);
+    }
+  }
+
+  /* ==========================================================================
+     TRAINEE PERFORMANCE & TELEMETRY COCKPIT (Dedicated Full-Page View)
+     ========================================================================== */
+  async function loadTraineeAnalytics(targetId, isDrillDown){
+    var idToFetch = targetId || (loginProfile ? loginProfile.id : null);
+    if(!idToFetch) return;
+
+    var isSelf = loginProfile && (loginProfile.id === idToFetch || loginProfile.email === idToFetch);
+
+    try {
+      var res = await fetch('/api/agent/analytics?user=' + encodeURIComponent(idToFetch));
       if(!res.ok) return;
       var data = await res.json();
       var analytics = data.analytics || {};
+      var kpis = analytics.kpis || {};
 
-      renderAnalyticsKpis(analytics.kpis || {});
+      var displayName = (isSelf && loginProfile) ? loginProfile.name : (data.traineeName || idToFetch);
+      var displayEmail = (isSelf && loginProfile) ? loginProfile.email : (data.traineeEmail || idToFetch);
+      var avatarId = (isSelf && loginProfile) ? (loginProfile.avatarId || 'pip') : 'pip';
+
+      if($('paAgentName')) $('paAgentName').textContent = displayName;
+      if($('paAgentEmail')) $('paAgentEmail').textContent = displayEmail;
+      if($('paAvatarWrap')) $('paAvatarWrap').innerHTML = avatarMarkup(avatarId, 'pa-avatar-art');
+
+      if(isDrillDown){
+        if($('paPageTitle')) $('paPageTitle').textContent = '🛡️ Leadership Telemetry Drill-Down: ' + displayName;
+        if($('paPageSubtitle')) $('paPageSubtitle').textContent = 'Supervisory inspection of SLA adherence, typing speed distribution, resolution rates, and case notes.';
+        if($('paSubtitleRole')) $('paSubtitleRole').textContent = 'ECE Live-Chat Agent Record • ID: ' + idToFetch;
+      } else {
+        if($('paPageTitle')) $('paPageTitle').textContent = '📊 Trainee Performance & Telemetry Cockpit';
+        if($('paPageSubtitle')) $('paPageSubtitle').textContent = 'Complete breakdown of your response speed, SLA adherence, resolution rates, and AI coaching.';
+        if($('paSubtitleRole')) $('paSubtitleRole').textContent = 'ECE Live-Chat Agent Performance Cockpit • Wyze Support Division';
+      }
+
+      renderAnalyticsKpis(kpis);
       renderSpeedDistribution(analytics.speedDistribution || {});
       renderResponseDistribution(analytics.responseTimeDistribution || {});
       renderCategoryBreakdown(analytics.categoryBreakdown || []);
       renderWpmChart(analytics.wpmHistory || []);
       renderAbandonedList(analytics.abandonedSessions || []);
-      renderResolvedList(analytics.resolvedSessions || []);
       renderTranscriptsList(analytics.recentSessions || []);
     } catch(err){
       console.error('Failed to load trainee analytics:', err);
@@ -2129,226 +2193,427 @@
   }
 
   function renderAnalyticsKpis(k){
-    $('kpiTotalDrills').textContent = k.totalSessions || 0;
-    $('kpiResolvedRate').textContent = (k.resolvedRate || 0) + '%';
-    $('kpiAvgWpm').textContent = k.avgWpm ? (k.avgWpm + ' WPM') : '—';
-    $('kpiAvgResponse').textContent = k.avgResponseTimeSec != null ? (k.avgResponseTimeSec + 's') : '—';
-    $('kpiAbandonmentRate').textContent = (k.abandonmentRate || 0) + '%';
-    $('kpiFrustrationRate').textContent = (k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100) + '%';
+    if($('paKpiWpm')) $('paKpiWpm').textContent = k.avgWpm ? (k.avgWpm + ' WPM') : '—';
+    if($('paKpiResp')) $('paKpiResp').textContent = k.avgResponseTimeSec != null ? (k.avgResponseTimeSec + 's') : '—';
+    if($('paKpiResRate')) $('paKpiResRate').textContent = (k.resolvedRate || 0) + '%';
+    if($('paKpiResCount')) $('paKpiResCount').textContent = (k.resolvedSessions || 0) + ' / ' + (k.totalSessions || 0) + ' drills';
+    if($('paKpiAbandonRate')) $('paKpiAbandonRate').textContent = (k.abandonmentRate || 0) + '%';
+    if($('paKpiAbandonCount')) $('paKpiAbandonCount').textContent = (k.abandonedSessions || 0) + ' breaches';
+    if($('paKpiChurnRate')) $('paKpiChurnRate').textContent = (k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100) + '%';
+    if($('paKpiDocRate')) $('paKpiDocRate').textContent = (k.caseDocRate || 0) + '%';
+
+    if($('paChurnPercent')) $('paChurnPercent').textContent = (k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100) + '%';
   }
 
   function renderSpeedDistribution(s){
+    var wrap = $('paSpeedDistBars');
+    if(!wrap) return;
+
     var total = (s.fast || 0) + (s.standard || 0) + (s.slow || 0) || 1;
     var fastPct = Math.round(((s.fast || 0) / total) * 100);
     var stdPct = Math.round(((s.standard || 0) / total) * 100);
     var slowPct = Math.round(((s.slow || 0) / total) * 100);
 
-    $('barFast').style.width = fastPct + '%';
-    $('barStd').style.width = stdPct + '%';
-    $('barSlow').style.width = slowPct + '%';
-
-    $('cntFast').textContent = (s.fast || 0) + ' (' + fastPct + '%)';
-    $('cntStd').textContent = (s.standard || 0) + ' (' + stdPct + '%)';
-    $('cntSlow').textContent = (s.slow || 0) + ' (' + slowPct + '%)';
+    wrap.innerHTML = '<div class="pa-dist-row">' +
+      '<div class="pa-dist-label"><span>🚀 Fast (≥ 60 WPM)</span><span>' + (s.fast || 0) + ' (' + fastPct + '%)</span></div>' +
+      '<div class="pa-dist-track"><div class="pa-dist-fill" style="width:' + fastPct + '%; background: var(--accent);"></div></div>' +
+    '</div>' +
+    '<div class="pa-dist-row">' +
+      '<div class="pa-dist-label"><span>🎯 Benchmark (45–59 WPM)</span><span>' + (s.standard || 0) + ' (' + stdPct + '%)</span></div>' +
+      '<div class="pa-dist-track"><div class="pa-dist-fill" style="width:' + stdPct + '%; background: var(--blue);"></div></div>' +
+    '</div>' +
+    '<div class="pa-dist-row">' +
+      '<div class="pa-dist-label"><span>🐢 Developing (&lt; 45 WPM)</span><span>' + (s.slow || 0) + ' (' + slowPct + '%)</span></div>' +
+      '<div class="pa-dist-track"><div class="pa-dist-fill" style="width:' + slowPct + '%; background: var(--amber);"></div></div>' +
+    '</div>';
   }
 
   function renderResponseDistribution(r){
+    var wrap = $('paRespDistBars');
+    if(!wrap) return;
+
     var total = (r.under30s || 0) + (r.s30to60 || 0) + (r.s60to120 || 0) + (r.over120s || 0) || 1;
     var u30 = Math.round(((r.under30s || 0) / total) * 100);
     var s60 = Math.round(((r.s30to60 || 0) / total) * 100);
     var s120 = Math.round(((r.s60to120 || 0) / total) * 100);
     var o120 = Math.round(((r.over120s || 0) / total) * 100);
 
-    $('barU30').style.width = u30 + '%';
-    $('barS60').style.width = s60 + '%';
-    $('barS120').style.width = s120 + '%';
-    $('barO120').style.width = o120 + '%';
-
-    $('cntU30').textContent = (r.under30s || 0) + ' (' + u30 + '%)';
-    $('cntS60').textContent = (r.s30to60 || 0) + ' (' + s60 + '%)';
-    $('cntS120').textContent = (r.s60to120 || 0) + ' (' + s120 + '%)';
-    $('cntO120').textContent = (r.over120s || 0) + ' (' + o120 + '%)';
+    wrap.innerHTML = '<div class="pa-dist-row">' +
+      '<div class="pa-dist-label"><span>⚡ Instant (&lt; 30s)</span><span>' + (r.under30s || 0) + ' (' + u30 + '%)</span></div>' +
+      '<div class="pa-dist-track"><div class="pa-dist-fill" style="width:' + u30 + '%; background: var(--accent);"></div></div>' +
+    '</div>' +
+    '<div class="pa-dist-row">' +
+      '<div class="pa-dist-label"><span>⏱️ Standard (30–60s)</span><span>' + (r.s30to60 || 0) + ' (' + s60 + '%)</span></div>' +
+      '<div class="pa-dist-track"><div class="pa-dist-fill" style="width:' + s60 + '%; background: var(--blue);"></div></div>' +
+    '</div>' +
+    '<div class="pa-dist-row">' +
+      '<div class="pa-dist-label"><span>⚠️ Extended (60–120s)</span><span>' + (r.s60to120 || 0) + ' (' + s120 + '%)</span></div>' +
+      '<div class="pa-dist-track"><div class="pa-dist-fill" style="width:' + s120 + '%; background: var(--amber);"></div></div>' +
+    '</div>' +
+    '<div class="pa-dist-row">' +
+      '<div class="pa-dist-label"><span>🚨 SLA Breach (&gt; 120s)</span><span>' + (r.over120s || 0) + ' (' + o120 + '%)</span></div>' +
+      '<div class="pa-dist-track"><div class="pa-dist-fill" style="width:' + o120 + '%; background: var(--coral);"></div></div>' +
+    '</div>';
   }
 
   function renderCategoryBreakdown(categories){
-    var wrap = $('categoryBreakdownWrap');
+    var wrap = $('paCategoryList');
     if(!wrap) return;
-    if(categories.length === 0){
-      wrap.innerHTML = '<div class="muted text-center" style="padding: 20px;">No scenario data recorded yet.</div>';
+    if(!categories || categories.length === 0){
+      wrap.innerHTML = '<div class="muted text-center" style="padding: 20px;">No category drills logged yet.</div>';
       return;
     }
     wrap.innerHTML = categories.map(function(c){
-      var resRate = Math.round((c.resolved / (c.total || 1)) * 100);
+      var resRate = Math.round(((c.resolved || 0) / (c.total || 1)) * 100);
       return '<div class="cat-stat-card">' +
         '<div class="cat-stat-header"><strong>' + escapeHtml(c.category) + '</strong><span>' + c.total + ' drills</span></div>' +
         '<div class="cat-stat-meta">' +
           '<span>Resolution: <b>' + resRate + '%</b></span>' +
-          '<span>Abandoned: <b>' + c.abandoned + '</b></span>' +
-          '<span>Avg Speed: <b>' + (c.avgWpm ? c.avgWpm + ' WPM' : '—') + '</b></span>' +
+          '<span>Breaches: <b>' + (c.abandoned || 0) + '</b></span>' +
+          '<span>Speed: <b>' + (c.avgWpm ? c.avgWpm + ' WPM' : '—') + '</b></span>' +
         '</div></div>';
     }).join('');
   }
 
   function renderWpmChart(history){
-    var chart = $('wpmSparkline');
-    if(!chart) return;
-    if(history.length === 0){
-      chart.innerHTML = '<div class="muted text-center" style="padding: 20px;">Complete timed chats to see your speed trajectory.</div>';
+    var tbody = $('paWpmTableBody');
+    if(!tbody) return;
+    if(!history || history.length === 0){
+      tbody.innerHTML = '<tr><td colspan="5" class="muted text-center" style="padding:20px;">No timed practice replies recorded yet.</td></tr>';
       return;
     }
-    var maxWpm = Math.max.apply(null, history.map(function(h){ return h.wpm; }).concat([80]));
-    chart.innerHTML = history.slice(0, 15).reverse().map(function(h){
-      var hPct = Math.round((h.wpm / maxWpm) * 100);
-      return '<div class="spark-col" title="' + h.ticketId + ': ' + h.wpm + ' WPM">' +
-        '<div class="spark-bar" style="height:' + hPct + '%"></div>' +
-        '<span class="spark-lbl">' + h.wpm + '</span></div>';
+    tbody.innerHTML = history.slice(0, 20).map(function(h){
+      var tier = h.wpm >= 60 ? 'Fast' : (h.wpm >= 45 ? 'Benchmark' : 'Developing');
+      var tierClass = h.wpm >= 60 ? 'rate-high' : (h.wpm >= 45 ? 'rate-mid' : 'rate-low');
+      return '<tr>' +
+        '<td><code>' + escapeHtml(h.ticketId) + '</code></td>' +
+        '<td>' + fmtTime(h.date) + '</td>' +
+        '<td><b>' + h.wpm + ' WPM</b></td>' +
+        '<td><span class="rate-pill ' + tierClass + '">' + tier + '</span></td>' +
+        '<td>' + (h.resolved ? '<span class="status-badge badge-active">Resolved</span>' : '<span class="status-badge">In Progress</span>') + '</td>' +
+      '</tr>';
     }).join('');
   }
 
   function renderAbandonedList(abandoned){
-    var list = $('abandonedChatList');
-    if(!list) return;
-    if(abandoned.length === 0){
-      list.innerHTML = '<div class="success-callout">🎉 Zero abandoned chats! Outstanding responsiveness and customer engagement.</div>';
+    var tbody = $('paAbandonedTableBody');
+    if(!tbody) return;
+    if(!abandoned || abandoned.length === 0){
+      tbody.innerHTML = '<tr><td colspan="4" class="muted text-center" style="padding:24px;">🎉 Zero chat abandonments recorded. Excellent hold management!</td></tr>';
       return;
     }
-    list.innerHTML = abandoned.map(function(a){
-      return '<div class="drill-session-item border-abandoned">' +
-        '<div class="ds-head"><strong>' + a.ticketId + '</strong> · ' + escapeHtml(a.category) + ' · <span class="text-danger">' + fmtTime(a.date) + '</span></div>' +
-        '<div class="ds-body">Customer outburst: <em>"' + escapeHtml(a.text) + '"</em></div>' +
-        '<div class="ds-foot">Inactive idle duration: <b>' + a.idleSec + ' seconds</b> (> 7 min threshold)</div>' +
-        '</div>';
-    }).join('');
-  }
-
-  function renderResolvedList(resolved){
-    var list = $('resolvedChatList');
-    if(!list) return;
-    if(resolved.length === 0){
-      list.innerHTML = '<div class="muted text-center" style="padding: 20px;">No resolved conversations logged yet.</div>';
-      return;
-    }
-    list.innerHTML = resolved.map(function(r){
-      return '<div class="drill-session-item border-resolved">' +
-        '<div class="ds-head"><strong>' + r.ticketId + '</strong> · ' + escapeHtml(r.category) + ' · <span class="text-success">' + fmtTime(r.date) + '</span></div>' +
-        '<div class="ds-foot">Handled in <b>' + r.durationMin + ' min</b>' + (r.wpm ? ' · Session Speed: <b>' + r.wpm + ' WPM</b>' : '') + '</div>' +
-        '</div>';
+    tbody.innerHTML = abandoned.map(function(a){
+      return '<tr>' +
+        '<td><code>' + escapeHtml(a.ticketId) + '</code></td>' +
+        '<td>' + escapeHtml(a.category || 'General Wyze Device') + '</td>' +
+        '<td><span class="text-danger font-bold">' + (a.idleSec || 420) + 's</span></td>' +
+        '<td><em>"' + escapeHtml(a.text || 'Customer abandoned due to inactivity past 7 minutes.') + '"</em></td>' +
+      '</tr>';
     }).join('');
   }
 
   function renderTranscriptsList(sessions){
-    var list = $('transcriptsList');
+    var list = $('paSessionsList');
+    var view = $('paTranscriptView');
     if(!list) return;
-    if(sessions.length === 0){
-      list.innerHTML = '<div class="muted text-center" style="padding: 20px;">No session transcripts recorded yet.</div>';
+    if(!sessions || sessions.length === 0){
+      list.innerHTML = '<div class="muted text-center" style="padding: 24px;">No session transcripts recorded yet.</div>';
+      if(view) view.innerHTML = '<div class="empty-state" style="padding:40px 20px;"><p>No sessions recorded yet. Start practicing in the simulator!</p></div>';
       return;
     }
-    list.innerHTML = sessions.map(function(s){
-      return '<div class="transcript-row">' +
-        '<div><strong>' + escapeHtml(s.ticketId || s.id) + '</strong> · ' + escapeHtml(s.customerName) + ' (' + escapeHtml(s.product) + ')' +
-        '<div class="muted">' + escapeHtml(s.category) + ' · ' + fmtTime(s.createdAt) + '</div></div>' +
-        '<div class="transcript-actions">' +
-          '<span class="zd-badge zd-badge-' + (s.status||'open').toLowerCase() + '">' + s.status + '</span>' +
-        '</div></div>';
+
+    list.innerHTML = sessions.map(function(s, idx){
+      var isResolved = (s.status === 'SOLVED' || s.status === 'RESOLVED');
+      var badgeClass = isResolved ? 'zd-badge-solved' : (s.status === 'PENDING' ? 'zd-badge-pending' : 'zd-badge-open');
+      return '<div class="transcript-row ' + (idx === 0 ? 'active' : '') + '" data-idx="' + idx + '">' +
+        '<div><strong>' + escapeHtml(s.ticketId || s.id || 'WZ-DRILL') + '</strong> · ' + escapeHtml(s.customerName || 'Customer') +
+        '<div class="muted">' + escapeHtml(s.category || 'Wyze Product') + ' · ' + fmtTime(s.createdAt) + '</div></div>' +
+        '<span class="zd-badge ' + badgeClass + '">' + (s.status || 'OPEN') + '</span>' +
+      '</div>';
     }).join('');
+
+    function showSessionDetail(s){
+      if(!view) return;
+      var msgs = s.messages || [];
+      var messagesHtml = msgs.length > 0 ? msgs.map(function(m){
+        var isAgent = m.role === 'trainee' || m.role === 'agent' || m.role === 'assistant';
+        return '<div class="pa-transcript-msg ' + (isAgent ? 'msg-agent' : 'msg-cust') + '">' +
+          '<div class="msg-sender"><strong>' + (isAgent ? 'ECE Trainee Agent' : escapeHtml(s.customerName || 'Customer')) + '</strong> · ' + fmtTime(m.timestamp || m.created_at || s.createdAt) + '</div>' +
+          '<div class="msg-text">' + escapeHtml(m.content || m.text || '') + '</div>' +
+        '</div>';
+      }).join('') : '<div class="muted" style="padding:16px;">No recorded dialogue messages in this session.</div>';
+
+      var notes = s.notes || {};
+      view.innerHTML = '<div class="pa-transcript-detail">' +
+        '<div class="detail-header">' +
+          '<div><h3>' + escapeHtml(s.ticketId || 'WZ-SESSION') + ' — ' + escapeHtml(s.customerName || 'Customer') + '</h3>' +
+          '<div class="muted">Product: <b>' + escapeHtml(s.product || s.category || 'Wyze Device') + '</b> · Issue: ' + escapeHtml(s.issue || 'Support Request') + '</div></div>' +
+          '<span class="zd-badge ' + (s.status === 'SOLVED' || s.status === 'RESOLVED' ? 'zd-badge-solved' : 'zd-badge-open') + '">' + (s.status || 'OPEN') + '</span>' +
+        '</div>' +
+        '<div class="detail-notes-card">' +
+          '<h4>📋 Case Documentation Logged:</h4>' +
+          '<div class="notes-grid">' +
+            '<div><span class="muted">Customer:</span> ' + escapeHtml(notes.customerName || '—') + '</div>' +
+            '<div><span class="muted">Email:</span> ' + escapeHtml(notes.email || '—') + '</div>' +
+            '<div><span class="muted">Product:</span> ' + escapeHtml(notes.product || '—') + '</div>' +
+            '<div><span class="muted">Serial/MAC:</span> ' + escapeHtml(notes.serialNumber || '—') + '</div>' +
+          '</div>' +
+          '<div style="margin-top:8px;"><span class="muted">Resolution Recap:</span> ' + escapeHtml(notes.resolutionRecap || '—') + '</div>' +
+        '</div>' +
+        '<div class="detail-chat-stream">' +
+          '<h4>💬 Complete Dialogue Stream:</h4>' +
+          messagesHtml +
+        '</div>' +
+      '</div>';
+    }
+
+    if(sessions.length > 0){
+      showSessionDetail(sessions[0]);
+    }
+
+    list.querySelectorAll('.transcript-row').forEach(function(row){
+      row.addEventListener('click', function(){
+        list.querySelectorAll('.transcript-row').forEach(function(r){ r.classList.remove('active'); });
+        row.classList.add('active');
+        var idx = parseInt(row.getAttribute('data-idx'), 10);
+        if(sessions[idx]) showSessionDetail(sessions[idx]);
+      });
+    });
   }
 
   async function triggerAiInsights(){
-    var aiBox = $('aiInsightsContent');
-    var aiSpinner = $('aiInsightsSpinner');
-    aiBox.textContent = '';
-    aiSpinner.hidden = false;
+    var targetId = activeAnalyticsTargetId || (loginProfile ? loginProfile.id : null);
+    if(!targetId) return;
+
+    var banner = $('paGradeBanner');
+    var origSummary = $('paExecutiveSummary') ? $('paExecutiveSummary').textContent : '';
+    if($('paExecutiveSummary')) $('paExecutiveSummary').textContent = 'Analyzing drill performance against Wyze SOP guidelines…';
 
     try {
-      var res = await fetch('/api/agent/analytics?user=' + encodeURIComponent(loginProfile.id));
+      var res = await fetch('/api/agent/analytics?user=' + encodeURIComponent(targetId));
       var data = await res.json();
       var k = (data.analytics && data.analytics.kpis) || {};
 
       var prompt = [
-        "You are an Elite Contact Center QA Director analyzing a trainee agent's metric report for Wyze Support:",
+        "You are an Elite Wyze Contact Center QA Coach analyzing a trainee's drill metrics:",
         "- Total Drills: " + (k.totalSessions || 0),
         "- Resolution Rate: " + (k.resolvedRate || 0) + "%",
         "- Abandonment Rate: " + (k.abandonmentRate || 0) + "%",
-        "- Average Typing Speed: " + (k.avgWpm || 0) + " WPM",
-        "- Average Response Time: " + (k.avgResponseTimeSec || 0) + "s",
-        "- Frustration Recovery Rate: " + (k.frustrationRecoveryRate || 100) + "%",
-        "Generate a structured, actionable coaching analysis in under 180 words with 3 distinct bullets:",
-        "1. Core Superpower",
-        "2. High-Impact Blindspot",
-        "3. Concrete Action Drill for next shift"
+        "- Average Typing Speed: " + (k.avgWpm || 0) + " WPM (Floor target: >= 45 WPM)",
+        "- Average Response Latency: " + (k.avgResponseTimeSec || 0) + "s (Target: < 60s)",
+        "- Frustration Recovery: " + (k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100) + "%",
+        "- Case Documentation Rate: " + (k.caseDocRate || 0) + "%",
+        "Generate a structured JSON output with these keys only:",
+        '{ "grade": "Solid | Developing | Needs Work | Excellent", "summary": "1 sentence executive assessment", "strengths": ["bullet 1", "bullet 2"], "improvements": ["bullet 1", "bullet 2"], "churnAdvice": "1 sentence", "speedAdvice": "1 sentence", "nextGoal": "1 specific drill goal" }'
       ].join('\n');
 
       var raw = await runModel([{ role: 'user', content: prompt }]);
-      aiSpinner.hidden = true;
-      aiBox.textContent = raw;
+      try {
+        var clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+        var parsed = JSON.parse(clean);
+        if($('paOverallGrade')) $('paOverallGrade').textContent = parsed.grade || 'Solid';
+        if($('paExecutiveSummary')) $('paExecutiveSummary').textContent = parsed.summary || 'Strong technical command with consistent SOP adherence.';
+        if($('paStrengthsList') && parsed.strengths){
+          $('paStrengthsList').innerHTML = parsed.strengths.map(function(s){ return '<li>' + escapeHtml(s) + '</li>'; }).join('');
+        }
+        if($('paGrowthList') && parsed.improvements){
+          $('paGrowthList').innerHTML = parsed.improvements.map(function(i){ return '<li>' + escapeHtml(i) + '</li>'; }).join('');
+        }
+        if($('paChurnAdvice') && parsed.churnAdvice) $('paChurnAdvice').textContent = parsed.churnAdvice;
+        if($('paSpeedAdvice') && parsed.speedAdvice) $('paSpeedAdvice').textContent = parsed.speedAdvice;
+        if($('paNextGoal') && parsed.nextGoal) $('paNextGoal').textContent = parsed.nextGoal;
+      } catch(parseErr){
+        if($('paExecutiveSummary')) $('paExecutiveSummary').textContent = raw;
+      }
     } catch(e){
-      aiSpinner.hidden = true;
-      aiBox.textContent = "Insights temporarily offline. Continue your practice drills!";
+      if($('paExecutiveSummary')) $('paExecutiveSummary').textContent = origSummary || "Coaching synthesis temporarily unavailable.";
     }
   }
 
-  /* ---------- Leadership Admin Console ---------- */
+  /* ==========================================================================
+     LEADERSHIP ADMIN CONSOLE (Dedicated Full-Page View)
+     ========================================================================== */
+  var allAdminTrainees = [];
+  var adminCurrentView = 'table'; // 'table' | 'cards'
+
   async function loadAdminTrainees(){
-    var body = $('adminTraineesTableBody') || $('adminTraineeTableBody');
-    if(!body) return;
-    body.innerHTML = '<tr><td colspan="8" class="text-center muted" style="padding: 24px;">Loading trainee records from database…</td></tr>';
+    var body = $('adminTraineesTableBody');
+    var cardsWrap = $('adminCardsView');
+    if(body) body.innerHTML = '<tr><td colspan="9" class="text-center muted py-4">Loading trainee records from database…</td></tr>';
+    if(cardsWrap) cardsWrap.innerHTML = '<div class="muted text-center py-4">Loading trainee records…</div>';
+
     try {
       var res = await fetch('/api/admin/trainees?key=' + encodeURIComponent(TRAINER_PASSCODE));
       if(!res.ok){
-        body.innerHTML = '<tr><td colspan="8" class="text-center text-danger" style="padding: 24px;">Access denied or database error.</td></tr>';
+        if(body) body.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Access denied or database error.</td></tr>';
         return;
       }
       var data = await res.json();
-      var trainees = data.trainees || [];
-      renderAdminTraineesTable(trainees);
+      allAdminTrainees = data.trainees || [];
+
+      // Update Quick Metrics Summary Bar
+      var total = allAdminTrainees.length;
+      var activeCount = allAdminTrainees.filter(function(t){ return t.isActive; }).length;
+      var avgRes = total > 0 ? Math.round(allAdminTrainees.reduce(function(acc, t){ return acc + (t.resolvedRate || 0); }, 0) / total) : 0;
+      var wpmTrainees = allAdminTrainees.filter(function(t){ return t.avgWpm > 0; });
+      var avgWpm = wpmTrainees.length > 0 ? Math.round(wpmTrainees.reduce(function(acc, t){ return acc + t.avgWpm; }, 0) / wpmTrainees.length) : 0;
+
+      if($('adminTotalTraineesCount')) $('adminTotalTraineesCount').textContent = total;
+      if($('adminActiveCount')) $('adminActiveCount').textContent = activeCount;
+      if($('adminAvgResRate')) $('adminAvgResRate').textContent = avgRes + '%';
+      if($('adminAvgWpm')) $('adminAvgWpm').textContent = avgWpm + ' WPM';
+
+      applyAdminFilters();
     } catch(err){
-      body.innerHTML = '<tr><td colspan="8" class="text-center text-danger" style="padding: 24px;">Failed to load trainees.</td></tr>';
+      if(body) body.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Failed to load trainees.</td></tr>';
     }
   }
 
+  function applyAdminFilters(){
+    var q = ($('adminSearchInput') ? $('adminSearchInput').value : '').trim().toLowerCase();
+    var status = ($('adminStatusFilter') ? $('adminStatusFilter').value : 'all').toLowerCase();
+
+    var filtered = allAdminTrainees.filter(function(t){
+      var matchQ = !q || (t.name && t.name.toLowerCase().includes(q)) || (t.email && t.email.toLowerCase().includes(q));
+      var matchStatus = true;
+      if(status === 'active') matchStatus = !!t.isActive;
+      if(status === 'deactivated') matchStatus = !t.isActive;
+      return matchQ && matchStatus;
+    });
+
+    renderAdminTraineesTable(filtered);
+    renderAdminTraineesCards(filtered);
+  }
+
+  function setAdminView(mode){
+    adminCurrentView = mode;
+    var tblBtn = $('adminViewTableBtn');
+    var crdBtn = $('adminViewCardsBtn');
+    var tblWrap = $('adminTableView');
+    var crdWrap = $('adminCardsView');
+
+    if(tblBtn) tblBtn.classList.toggle('active', mode === 'table');
+    if(crdBtn) crdBtn.classList.toggle('active', mode === 'cards');
+    if(tblWrap) tblWrap.hidden = (mode !== 'table');
+    if(crdWrap) crdWrap.hidden = (mode !== 'cards');
+  }
+
   function renderAdminTraineesTable(trainees){
-    var body = $('adminTraineesTableBody') || $('adminTraineeTableBody');
+    var body = $('adminTraineesTableBody');
     if(!body) return;
+
     if(trainees.length === 0){
-      body.innerHTML = '<tr><td colspan="8" class="text-center muted" style="padding: 24px;">No trainee accounts registered yet. Use "Invite Trainee" above.</td></tr>';
+      body.innerHTML = '<tr><td colspan="9" class="text-center muted py-4">No trainee accounts match your search query.</td></tr>';
       return;
     }
+
     body.innerHTML = trainees.map(function(t){
+      var resRate = t.resolvedRate || 0;
+      var resPillClass = resRate >= 70 ? 'rate-high' : (resRate >= 40 ? 'rate-mid' : 'rate-low');
+      var frustRate = t.frustrationRate != null ? t.frustrationRate : 100;
+      var docRate = t.caseDocRate != null ? t.caseDocRate : (t.totalDrills > 0 ? 100 : 0);
+
       return '<tr>' +
-        '<td><div class="trainee-cell">' + avatarMarkup(t.avatarId || 'pip', 'trainee-avatar') +
-          '<div><strong class="clickable-trainee" data-id="' + t.id + '">' + escapeHtml(t.name) + '</strong>' +
-          '<div class="muted">' + escapeHtml(t.email) + '</div></div></div></td>' +
+        '<td>' +
+          '<div class="trainee-cell">' +
+            '<div class="trainee-avatar-box">' +
+              avatarMarkup(t.avatarId || 'pip', 'trainee-avatar') +
+            '</div>' +
+            '<div class="trainee-info">' +
+              '<strong class="clickable-trainee" data-id="' + escapeHtml(t.id) + '" title="View complete telemetry drill-down">' + escapeHtml(t.name) + '</strong>' +
+              '<div class="muted trainee-email">' + escapeHtml(t.email) + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</td>' +
         '<td>' + (t.isActive ? '<span class="status-badge badge-active">Active</span>' : '<span class="status-badge badge-inactive">Deactivated</span>') + '</td>' +
-        '<td><b>' + t.totalDrills + '</b></td>' +
-        '<td>' + t.resolvedRate + '%</td>' +
-        '<td>' + (t.avgWpm ? t.avgWpm + ' WPM' : '—') + '</td>' +
-        '<td>' + (t.abandonedCount > 0 ? '<span class="text-danger font-bold">' + t.abandonedCount + '</span>' : '0') + '</td>' +
-        '<td>' + (t.lastTicketId ? '<code>' + t.lastTicketId + '</code>' : '—') + '</td>' +
-        '<td><div class="admin-actions-cell">' +
-          '<button type="button" class="btn btn-xs btn-ghost btn-drill" data-id="' + t.id + '" title="View complete performance drill-down">Drill-Down</button>' +
-          '<button type="button" class="btn btn-xs btn-ghost btn-reset" data-id="' + t.id + '" title="Trigger password reset verification code">Reset PW</button>' +
-          '<button type="button" class="btn btn-xs ' + (t.isActive ? 'btn-danger-ghost' : 'btn-success-ghost') + ' btn-toggle" data-id="' + t.id + '" data-active="' + (t.isActive ? '1' : '0') + '">' +
-          (t.isActive ? 'Deactivate' : 'Activate') + '</button>' +
-        '</div></td>' +
+        '<td>' +
+          '<div>' +
+            '<div>' + (t.lastActive ? fmtTime(t.lastActive) : 'Never') + '</div>' +
+            '<div class="muted">' + (t.lastTicketId ? '<code>' + escapeHtml(t.lastTicketId) + '</code>' : 'No drills') + '</div>' +
+          '</div>' +
+        '</td>' +
+        '<td style="text-align:center;"><b>' + (t.totalDrills || 0) + '</b></td>' +
+        '<td style="text-align:center;"><span class="rate-pill ' + resPillClass + '">' + resRate + '%</span></td>' +
+        '<td style="text-align:center;"><b>' + (t.avgWpm ? t.avgWpm + ' WPM' : '—') + '</b></td>' +
+        '<td style="text-align:center;"><span class="rate-pill rate-high">' + frustRate + '%</span></td>' +
+        '<td style="text-align:center;"><span class="rate-pill ' + (docRate >= 70 ? 'rate-high' : 'rate-mid') + '">' + docRate + '%</span></td>' +
+        '<td style="text-align:right;">' +
+          '<div class="admin-actions-cell">' +
+            '<button type="button" class="btn btn-xs btn-primary-ghost btn-drill" data-id="' + escapeHtml(t.id) + '" title="Drill down to full performance dashboard">Drill-Down</button>' +
+            '<button type="button" class="btn btn-xs btn-primary-ghost btn-reset" data-id="' + escapeHtml(t.id) + '" data-name="' + escapeHtml(t.name) + '" data-email="' + escapeHtml(t.email) + '" title="Trigger password reset code">Reset PW</button>' +
+            '<button type="button" class="btn btn-xs ' + (t.isActive ? 'btn-danger-ghost' : 'btn-success-ghost') + ' btn-toggle" data-id="' + escapeHtml(t.id) + '" data-active="' + (t.isActive ? '1' : '0') + '">' +
+            (t.isActive ? 'Deactivate' : 'Activate') + '</button>' +
+          '</div>' +
+        '</td>' +
       '</tr>';
     }).join('');
 
-    // Attach row events
-    body.querySelectorAll('.clickable-trainee, .btn-drill').forEach(function(el){
+    attachAdminRowHandlers(body);
+  }
+
+  function renderAdminTraineesCards(trainees){
+    var grid = $('adminCardsView');
+    if(!grid) return;
+
+    if(trainees.length === 0){
+      grid.innerHTML = '<div class="muted text-center py-4" style="grid-column: 1 / -1;">No trainee accounts match your search query.</div>';
+      return;
+    }
+
+    grid.innerHTML = trainees.map(function(t){
+      var resRate = t.resolvedRate || 0;
+      var resPillClass = resRate >= 70 ? 'rate-high' : (resRate >= 40 ? 'rate-mid' : 'rate-low');
+
+      return '<div class="admin-trainee-card">' +
+        '<div class="atc-header">' +
+          '<div class="trainee-cell">' +
+            '<div class="trainee-avatar-box">' +
+              avatarMarkup(t.avatarId || 'pip', 'trainee-avatar') +
+            '</div>' +
+            '<div class="trainee-info">' +
+              '<strong class="clickable-trainee" data-id="' + escapeHtml(t.id) + '">' + escapeHtml(t.name) + '</strong>' +
+              '<div class="muted trainee-email">' + escapeHtml(t.email) + '</div>' +
+            '</div>' +
+          '</div>' +
+          (t.isActive ? '<span class="status-badge badge-active">Active</span>' : '<span class="status-badge badge-inactive">Deactivated</span>') +
+        '</div>' +
+        '<div class="atc-metrics">' +
+          '<div class="atc-metric-item"><div class="atc-m-lbl">Total Drills</div><div class="atc-m-val">' + (t.totalDrills || 0) + '</div></div>' +
+          '<div class="atc-metric-item"><div class="atc-m-lbl">Resolution</div><div class="atc-m-val"><span class="rate-pill ' + resPillClass + '">' + resRate + '%</span></div></div>' +
+          '<div class="atc-metric-item"><div class="atc-m-lbl">Avg Speed</div><div class="atc-m-val">' + (t.avgWpm ? t.avgWpm + ' WPM' : '—') + '</div></div>' +
+          '<div class="atc-metric-item"><div class="atc-m-lbl">Frustration Rec.</div><div class="atc-m-val">' + (t.frustrationRate != null ? t.frustrationRate : 100) + '%</div></div>' +
+        '</div>' +
+        '<div class="atc-footer">' +
+          '<div class="muted" style="font-size:11.5px;">Last Active: ' + (t.lastActive ? fmtTime(t.lastActive) : 'Never') + '</div>' +
+          '<div class="admin-actions-cell">' +
+            '<button type="button" class="btn btn-xs btn-primary-ghost btn-drill" data-id="' + escapeHtml(t.id) + '">Drill-Down</button>' +
+            '<button type="button" class="btn btn-xs btn-primary-ghost btn-reset" data-id="' + escapeHtml(t.id) + '">Reset PW</button>' +
+            '<button type="button" class="btn btn-xs ' + (t.isActive ? 'btn-danger-ghost' : 'btn-success-ghost') + ' btn-toggle" data-id="' + escapeHtml(t.id) + '" data-active="' + (t.isActive ? '1' : '0') + '">' +
+            (t.isActive ? 'Deactivate' : 'Activate') + '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    attachAdminRowHandlers(grid);
+  }
+
+  function attachAdminRowHandlers(container){
+    container.querySelectorAll('.clickable-trainee, .btn-drill').forEach(function(el){
       el.addEventListener('click', function(){
         var id = el.getAttribute('data-id');
         openAdminDrillDown(id);
       });
     });
 
-    body.querySelectorAll('.btn-reset').forEach(function(btn){
+    container.querySelectorAll('.btn-reset').forEach(function(btn){
       btn.addEventListener('click', function(){
         var id = btn.getAttribute('data-id');
         adminTriggerForgotPw(id);
       });
     });
 
-    body.querySelectorAll('.btn-toggle').forEach(function(btn){
+    container.querySelectorAll('.btn-toggle').forEach(function(btn){
       btn.addEventListener('click', function(){
         var id = btn.getAttribute('data-id');
         var cur = btn.getAttribute('data-active') === '1';
@@ -2357,29 +2622,8 @@
     });
   }
 
-  async function openAdminDrillDown(traineeId){
-    try {
-      var res = await fetch('/api/agent/analytics?user=' + encodeURIComponent(traineeId));
-      if(!res.ok) return;
-      var data = await res.json();
-      var analytics = data.analytics || {};
-
-      $('paAgentName').textContent = 'Trainee: ' + traineeId;
-      $('paAgentEmail').textContent = 'Supervisory Leadership Drill-Down View';
-      $('paAvatarWrap').innerHTML = avatarMarkup('pip', 'pa-avatar-art');
-
-      profileAnalyticsModal.hidden = false;
-      renderAnalyticsKpis(analytics.kpis || {});
-      renderSpeedDistribution(analytics.speedDistribution || {});
-      renderResponseDistribution(analytics.responseTimeDistribution || {});
-      renderCategoryBreakdown(analytics.categoryBreakdown || []);
-      renderWpmChart(analytics.wpmHistory || []);
-      renderAbandonedList(analytics.abandonedSessions || []);
-      renderResolvedList(analytics.resolvedSessions || []);
-      renderTranscriptsList(analytics.recentSessions || []);
-    } catch(e){
-      console.error('Error opening drill down:', e);
-    }
+  function openAdminDrillDown(traineeId){
+    navigateTo('analytics', { traineeId: traineeId, fromAdmin: true });
   }
 
   async function adminTriggerForgotPw(identifier){
@@ -2387,30 +2631,57 @@
       var res = await fetch('/api/admin/trainees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'trigger_reset', identifier: identifier })
+        body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'trigger-reset', identifier: identifier })
       });
       var data = await res.json();
       if(res.ok){
-        if(adminResetModal) adminResetModal.hidden = false;
-        var rTarget = $('adminResetBody') || $('adminResetContent');
+        var modal = $('adminResetModal');
+        if(modal) modal.hidden = false;
+        var rTarget = $('adminResetBody');
         if(rTarget){
-          rTarget.innerHTML = '<p>A password reset code was successfully dispatched for <b>' + escapeHtml(data.name || data.email) + '</b> (' + escapeHtml(data.email) + ').</p>' +
-            '<div class="admin-code-box">Verification Code: <code>' + data.code + '</code></div>' +
-            '<small class="muted">Expires in 60 minutes. Provide this code to the trainee to reset their password on the login screen.</small>';
+          rTarget.innerHTML = '<div class="admin-reset-result">' +
+            '<p style="margin:0 0 12px;font-size:13.5px;">A password reset verification code was successfully generated for <strong>' + escapeHtml(data.name || data.email) + '</strong> (' + escapeHtml(data.email) + ').</p>' +
+            '<div style="background:var(--panel-subtle);border:1px solid var(--line);border-radius:var(--radius-s);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
+              '<div><div class="muted" style="font-size:11px;text-transform:uppercase;font-weight:700;">6-Digit Verification Code:</div>' +
+              '<code id="adminGeneratedCode" style="font-size:22px;letter-spacing:4px;font-weight:800;color:var(--accent);">' + escapeHtml(data.code) + '</code></div>' +
+              '<button type="button" class="btn btn-sm btn-primary" id="copyResetCodeBtn">📋 Copy Code</button>' +
+            '</div>' +
+            '<p class="muted" style="margin-top:12px;font-size:12px;">Valid for 60 minutes. Provide this code to the trainee to reset their password on the login screen.</p>' +
+          '</div>';
+
+          var copyBtn = $('copyResetCodeBtn');
+          if(copyBtn){
+            copyBtn.addEventListener('click', function(){
+              if(navigator.clipboard && navigator.clipboard.writeText){
+                navigator.clipboard.writeText(data.code).then(function(){
+                  copyBtn.textContent = '✅ Copied!';
+                  setTimeout(function(){ copyBtn.textContent = '📋 Copy Code'; }, 2000);
+                });
+              }
+            });
+          }
         }
+      } else {
+        alert(data.error || 'Failed to trigger password reset.');
       }
-    } catch(e){}
+    } catch(e){
+      console.error('Error triggering password reset:', e);
+    }
   }
 
   async function adminToggleAccount(userId, newActive){
     try {
-      await fetch('/api/admin/trainees', {
+      var res = await fetch('/api/admin/trainees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'toggle_status', userId: userId, isActive: newActive })
+        body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'toggle-status', userId: userId, isActive: newActive })
       });
-      loadAdminTrainees();
-    } catch(e){}
+      if(res.ok){
+        loadAdminTrainees();
+      }
+    } catch(e){
+      console.error('Error toggling account status:', e);
+    }
   }
 
   /* ---------- Zendesk Views Modal ---------- */
@@ -3091,18 +3362,26 @@
       });
     });
 
-    // Trainee Analytics Cockpit Modal
+    // Trainee Analytics Cockpit Full-Page Navigation
     on(myAnalyticsBtn, 'click', function(){
-      if(profileAnalyticsModal) profileAnalyticsModal.hidden = false;
-      loadTraineeAnalytics();
+      navigateTo('analytics', { traineeId: loginProfile ? loginProfile.id : null, fromAdmin: false });
     });
     on(agentIdentity, 'click', function(){
-      if(profileAnalyticsModal) profileAnalyticsModal.hidden = false;
-      loadTraineeAnalytics();
+      navigateTo('analytics', { traineeId: loginProfile ? loginProfile.id : null, fromAdmin: false });
     });
-    on(closeProfileAnalytics, 'click', function(){ if(profileAnalyticsModal) profileAnalyticsModal.hidden = true; });
-    on(refreshAnalyticsBtn, 'click', loadTraineeAnalytics);
+    on('refreshAnalyticsBtn', 'click', function(){
+      var isDrill = $('analyticsBackToAdminBtn') && $('analyticsBackToAdminBtn').style.display !== 'none';
+      loadTraineeAnalytics(activeAnalyticsTargetId, isDrill);
+    });
     on('refreshAiBtn', 'click', triggerAiInsights);
+
+    // Analytics Back Navigation Buttons
+    on('analyticsBackToCockpitBtn', 'click', function(){
+      navigateTo('cockpit');
+    });
+    on('analyticsBackToAdminBtn', 'click', function(){
+      navigateTo('admin');
+    });
 
     // Analytics Sub-tabs
     var paTabs = [
@@ -3125,22 +3404,25 @@
       }
     });
 
-    // Leadership Admin Console Modal
+    // Leadership Admin Console Full-Page Navigation
     on(adminConsoleBtn, 'click', function(){
-      if(adminConsoleModal) adminConsoleModal.hidden = false;
-      if(trainerAccess){
-        if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = true;
-        if($('adminDashboardView')) $('adminDashboardView').hidden = false;
-        loadAdminTrainees();
-      } else {
-        if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = false;
-        if($('adminDashboardView')) $('adminDashboardView').hidden = true;
-      }
+      navigateTo('admin');
+    });
+    on('adminBackToCockpitBtn', 'click', function(){
+      navigateTo('cockpit');
     });
 
-    on(closeAdminConsole, 'click', function(){
-      if(adminConsoleModal) adminConsoleModal.hidden = true;
+    // Admin View Switcher (Table View vs Card View)
+    on('adminViewTableBtn', 'click', function(){
+      setAdminView('table');
     });
+    on('adminViewCardsBtn', 'click', function(){
+      setAdminView('cards');
+    });
+
+    // Admin Search and Status Filters
+    on('adminSearchInput', 'input', applyAdminFilters);
+    on('adminStatusFilter', 'change', applyAdminFilters);
 
     on('adminGateUnlockBtn', 'click', function(){
       var val = ($('adminGatePasscode') ? $('adminGatePasscode').value : '').trim().toLowerCase();
@@ -3158,24 +3440,16 @@
 
     // Admin Invite Trainee Modal
     on('adminInviteBtn', 'click', function(){
-      if(adminInviteModal) adminInviteModal.hidden = false;
+      var modal = $('adminInviteModal');
+      if(modal) modal.hidden = false;
       if($('adminInviteForm')) $('adminInviteForm').hidden = false;
       if($('inviteSuccessCard')) $('inviteSuccessCard').hidden = true;
       if($('inviteEmail')) $('inviteEmail').value = '';
       if($('inviteName')) $('inviteName').value = '';
       if($('inviteTempPassword')) $('inviteTempPassword').value = '';
     });
-    on('openInviteModalBtn', 'click', function(){
-      if(adminInviteModal) adminInviteModal.hidden = false;
-      if($('adminInviteForm')) $('adminInviteForm').hidden = false;
-      if($('inviteSuccessCard')) $('inviteSuccessCard').hidden = true;
-      if($('inviteEmail')) $('inviteEmail').value = '';
-      if($('inviteName')) $('inviteName').value = '';
-      if($('inviteTempPassword')) $('inviteTempPassword').value = '';
-    });
-
-    on(closeAdminInvite, 'click', function(){ if(adminInviteModal) adminInviteModal.hidden = true; });
-    on(cancelAdminInvite, 'click', function(){ if(adminInviteModal) adminInviteModal.hidden = true; });
+    on('closeAdminInvite', 'click', function(){ if($('adminInviteModal')) $('adminInviteModal').hidden = true; });
+    on('cancelAdminInvite', 'click', function(){ if($('adminInviteModal')) $('adminInviteModal').hidden = true; });
 
     on('adminInviteForm', 'submit', async function(ev){
       ev.preventDefault();
