@@ -651,16 +651,25 @@
   }
 
   /* ---------- Model Invocation ---------- */
+  /* ---------- Model Invocation ---------- */
   async function runModel(messages, opts){
     opts = opts || {};
+    var headers = { 'Content-Type': 'application/json' };
+    if(loginProfile && loginProfile.id) headers['x-trainee-id'] = loginProfile.id;
+    if(loginProfile && loginProfile.email) headers['x-trainee-email'] = loginProfile.email;
+    if(loginProfile && loginProfile.name) headers['x-trainee-name'] = encodeURIComponent(loginProfile.name);
+
     var response = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify({
         messages: messages,
         schema: opts.schema,
         sessionId: opts.sessionId,
-        mode: opts.mode || simMode
+        mode: opts.mode || simMode,
+        traineeId: loginProfile ? loginProfile.id : '',
+        traineeEmail: loginProfile ? loginProfile.email : '',
+        traineeName: loginProfile ? loginProfile.name : ''
       })
     });
     if(!response.ok){
@@ -697,6 +706,9 @@
         nextSteps: s.notes.fNextSteps,
         escalation: s.notes.fEscalation
       },
+      userId: loginProfile ? loginProfile.id : (s.userId || ''),
+      traineeId: loginProfile ? loginProfile.id : (s.traineeId || ''),
+      traineeEmail: loginProfile ? loginProfile.email : (s.traineeEmail || ''),
       traineeName: s.traineeName || (loginProfile ? loginProfile.name : ''),
       avatarId: s.avatarId || (loginProfile ? loginProfile.avatarId : 'pip'),
       lob: s.lob,
@@ -714,12 +726,15 @@
     var payload = JSON.stringify(serializeSession(s));
     var previous = serverSaveQueues[s.sessionId] || Promise.resolve();
     var next = previous.catch(function(){}).then(function(){
+      var headers = {
+        'Content-Type': 'application/json',
+        'x-trainee-id': loginProfile ? loginProfile.id : 'anon'
+      };
+      if(loginProfile && loginProfile.email) headers['x-trainee-email'] = loginProfile.email;
+      if(loginProfile && loginProfile.name) headers['x-trainee-name'] = encodeURIComponent(loginProfile.name);
       return fetch('/api/session', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-trainee-id': loginProfile ? loginProfile.id : 'anon'
-        },
+        headers: headers,
         body: payload
       });
     }).then(function(res){
@@ -1582,15 +1597,23 @@
       var followupInfo = null;
 
       try {
+        var chatHeaders = { 'Content-Type': 'application/json' };
+        if(loginProfile && loginProfile.id) chatHeaders['x-trainee-id'] = loginProfile.id;
+        if(loginProfile && loginProfile.email) chatHeaders['x-trainee-email'] = loginProfile.email;
+        if(loginProfile && loginProfile.name) chatHeaders['x-trainee-name'] = encodeURIComponent(loginProfile.name);
+
         var res = await fetch('/api/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: chatHeaders,
           body: JSON.stringify({
             contents: contents,
             persona: s.persona,
             turnNumber: turnNumber,
             mode: isEmail ? 'email' : 'chat',
-            sessionId: s.sessionId || ''
+            sessionId: s.sessionId || '',
+            traineeId: loginProfile ? loginProfile.id : '',
+            traineeEmail: loginProfile ? loginProfile.email : '',
+            traineeName: loginProfile ? loginProfile.name : ''
           }),
           signal: AbortSignal.timeout(5500)
         });

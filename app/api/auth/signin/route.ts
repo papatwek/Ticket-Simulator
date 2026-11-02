@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticateUser } from '@/lib/db';
+import { authenticateUser, createUser } from '@/lib/db';
 import { getSupabase } from '@/lib/supabase';
 
 export async function POST(req: Request) {
@@ -21,16 +21,19 @@ export async function POST(req: Request) {
           .from('trainees')
           .select('id, email, name, avatar, created_at')
           .eq('email', normalizedEmail)
-          .single();
+          .maybeSingle();
 
         if (!error && data) {
           const userObj = {
             id: data.id,
             email: data.email,
             name: data.name,
-            avatar: data.avatar || 'pip',
-            avatarId: data.avatar || 'pip',
+            avatar: data.avatar || 'alex',
+            avatarId: data.avatar || 'alex',
           };
+          try {
+            createUser(normalizedEmail, data.name, password || 'Wyze2026!', data.avatar || 'alex');
+          } catch {}
           return NextResponse.json({ success: true, user: userObj });
         }
       } catch (err) {

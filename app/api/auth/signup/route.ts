@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createUser } from '@/lib/db';
-import { getSupabase, toValidUuid } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import crypto from 'node:crypto';
 
 export async function POST(req: Request) {
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { email, name, password, avatarId, avatar } = body;
 
-    const chosenAvatar = avatar || avatarId || 'pip';
+    const chosenAvatar = avatar || avatarId || 'alex';
     const normalizedEmail = (email || '').trim().toLowerCase();
     const trimmedName = (name || '').trim();
 
@@ -16,6 +16,27 @@ export async function POST(req: Request) {
     const supabase = getSupabase();
     if (supabase) {
       try {
+        // Check if trainee already exists in Supabase
+        const { data: existing } = await supabase
+          .from('trainees')
+          .select('id, email, name, avatar, created_at')
+          .eq('email', normalizedEmail)
+          .maybeSingle();
+
+        if (existing) {
+          try { createUser(normalizedEmail, trimmedName, password || 'Wyze2026!', chosenAvatar); } catch {}
+          return NextResponse.json({
+            success: true,
+            user: {
+              id: existing.id,
+              email: existing.email,
+              name: existing.name || trimmedName,
+              avatar: existing.avatar || chosenAvatar,
+              avatarId: existing.avatar || chosenAvatar
+            }
+          });
+        }
+
         const traineeUuid = crypto.randomUUID();
         const { data, error } = await supabase
           .from('trainees')
@@ -29,7 +50,7 @@ export async function POST(req: Request) {
             }
           ])
           .select('id, email, name, avatar, created_at')
-          .single();
+          .maybeSingle();
 
         if (!error && data) {
           try { createUser(normalizedEmail, trimmedName, password || 'Wyze2026!', chosenAvatar); } catch {}
@@ -39,8 +60,8 @@ export async function POST(req: Request) {
               id: data.id,
               email: data.email,
               name: data.name,
-              avatar: data.avatar || 'pip',
-              avatarId: data.avatar || 'pip'
+              avatar: data.avatar || chosenAvatar,
+              avatarId: data.avatar || chosenAvatar
             }
           });
         } else if (error) {

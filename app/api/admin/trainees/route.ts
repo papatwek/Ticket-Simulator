@@ -4,8 +4,11 @@ import {
   adminListTrainees,
   adminToggleAccountStatus,
   adminTriggerReset,
-  adminCreateTrainee
+  adminCreateTrainee,
+  AdminTraineeSummary
 } from '@/lib/db';
+import { fetchAllTraineesFromSupabase, getSupabase } from '@/lib/supabase';
+import crypto from 'node:crypto';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -16,7 +19,43 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const trainees = adminListTrainees();
+    // 1. Fetch from Supabase trainees table
+    const supaTrainees = await fetchAllTraineesFromSupabase();
+
+    // 2. Fetch from local SQLite DB
+    const localTrainees = adminListTrainees();
+
+    // 3. Merge by email address
+    const mergedMap = new Map<string, AdminTraineeSummary>();
+
+    for (const t of localTrainees) {
+      if (t.email) {
+        mergedMap.set(t.email.toLowerCase(), t);
+      }
+    }
+
+    for (const t of supaTrainees) {
+      const emailKey = (t.email || '').toLowerCase();
+      const existing = mergedMap.get(emailKey);
+      if (!existing) {
+        mergedMap.set(emailKey, t);
+      } else {
+        mergedMap.set(emailKey, {
+          ...existing,
+          id: t.id || existing.id,
+          name: t.name || existing.name,
+          avatarId: t.avatarId || existing.avatarId,
+          totalDrills: Math.max(existing.totalDrills, t.totalDrills),
+          resolvedCount: Math.max(existing.resolvedCount, t.resolvedCount),
+          resolvedRate: t.totalDrills > 0 ? t.resolvedRate : existing.resolvedRate,
+          abandonedCount: Math.max(existing.abandonedCount, t.abandonedCount),
+          lastActiveAt: Math.max(existing.lastActiveAt || 0, t.lastActiveAt || 0) || null,
+          lastTicketId: t.lastTicketId || existing.lastTicketId,
+        });
+      }
+    }
+
+    const trainees = Array.from(mergedMap.values());
     return NextResponse.json({ ok: true, trainees });
   } catch (err: any) {
     console.error('Error listing trainees for admin:', err);
@@ -56,7 +95,28 @@ export async function POST(req: NextRequest) {
       if (!email || !name) {
         return NextResponse.json({ error: 'Email and full name are required.' }, { status: 400 });
       }
+
+      // 1. Create in local DB
       const res = adminCreateTrainee(email, name, tempPassword);
+
+      // 2. Also register in Supabase trainees table
+      const supabase = getSupabase();
+      if (supabase) {
+        try {
+          const normEmail = email.trim().toLowerCase();
+          const traineeUuid = crypto.randomUUID();
+          await supabase.from('trainees').upsert({
+            id: traineeUuid,
+            email: normEmail,
+            name: name.trim(),
+            avatar: 'alex',
+            created_at: new Date().toISOString()
+          }, { onConflict: 'email' });
+        } catch (sErr) {
+          console.warn('[Admin Invite] Supabase sync non-fatal:', sErr);
+        }
+      }
+
       return NextResponse.json(res, { status: res.status });
     }
 

@@ -1457,6 +1457,16 @@ export async function POST(req: Request) {
       body?.traineeId ||
       body?.userId;
 
+    const traineeEmail =
+      req.headers.get('x-trainee-email') ||
+      body?.traineeEmail ||
+      body?.email;
+
+    const rawTraineeName =
+      req.headers.get('x-trainee-name') ||
+      body?.traineeName;
+    const traineeName = rawTraineeName ? decodeURIComponent(rawTraineeName) : undefined;
+
     const scenarioType =
       persona?.issueCategory || 'general_support';
 
@@ -1465,29 +1475,41 @@ export async function POST(req: Request) {
       : 'OPEN';
 
     if (latestAgentMsg) {
-      syncSingleMessageToSupabase(
-        sessionId,
-        'agent',
-        latestAgentMsg,
-        {
-          traineeId: traineeHeaderId,
-          scenarioType,
-          status: sessionStatus
-        }
-      ).catch(() => {});
+      try {
+        await syncSingleMessageToSupabase(
+          sessionId,
+          'agent',
+          latestAgentMsg,
+          {
+            traineeId: traineeHeaderId,
+            traineeEmail,
+            traineeName,
+            scenarioType,
+            status: sessionStatus
+          }
+        );
+      } catch (agentSyncErr) {
+        console.warn('[Supabase Agent Message Sync] Handled defensively:', agentSyncErr);
+      }
     }
 
     if (botReply) {
-      syncSingleMessageToSupabase(
-        sessionId,
-        'customer',
-        botReply,
-        {
-          traineeId: traineeHeaderId,
-          scenarioType,
-          status: sessionStatus
-        }
-      ).catch(() => {});
+      try {
+        await syncSingleMessageToSupabase(
+          sessionId,
+          'customer',
+          botReply,
+          {
+            traineeId: traineeHeaderId,
+            traineeEmail,
+            traineeName,
+            scenarioType,
+            status: sessionStatus
+          }
+        );
+      } catch (custSyncErr) {
+        console.warn('[Supabase Customer Message Sync] Handled defensively:', custSyncErr);
+      }
     }
   }
 

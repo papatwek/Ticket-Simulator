@@ -58,7 +58,9 @@ export async function POST(req: Request) {
     if (body && (body.id || body.sessionId)) {
       const sessionId = body.id || body.sessionId;
       const userId = body.userId || body.traineeId || req.headers.get('x-trainee-id') || 'usr_default';
-      const username = body.traineeName || body.username || 'Trainee Agent';
+      const rawName = body.traineeName || body.username || req.headers.get('x-trainee-name') || 'Trainee Agent';
+      const username = rawName ? decodeURIComponent(rawName) : 'Trainee Agent';
+      const traineeEmail = body.traineeEmail || body.email || req.headers.get('x-trainee-email') || '';
 
       // 1. Save to SQLite database (with in-memory fallback)
       let saveResId = sessionId;
@@ -69,26 +71,32 @@ export async function POST(req: Request) {
         console.warn('[Session Save] Handled defensively:', dbErr);
       }
 
-      // 2. Sync to Supabase in background matching trainees, sessions, and messages tables
-      syncSessionToSupabase(body, userId, username).catch((sErr) => {
+      // 2. Await sync to Supabase matching trainees, sessions, and messages tables
+      try {
+        await syncSessionToSupabase(body, userId, username, traineeEmail);
+      } catch (sErr) {
         console.warn('[Supabase Sync] Handled defensively:', sErr);
-      });
+      }
 
       return NextResponse.json({ success: true, ok: true, id: saveResId });
     }
 
     // Otherwise handle new session initialisation request
-    const { traineeId, scenarioType } = body || {};
+    const { traineeId, scenarioType, traineeEmail, traineeName } = body || {};
     const generatedId = 'sess_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
     // Sync to Supabase
-    syncSessionToSupabase({
-      id: generatedId,
-      traineeId,
-      scenarioType: scenarioType || 'general_support',
-      status: 'active',
-      messages: []
-    }, traineeId).catch(() => {});
+    try {
+      await syncSessionToSupabase({
+        id: generatedId,
+        traineeId,
+        traineeEmail,
+        traineeName,
+        scenarioType: scenarioType || 'general_support',
+        status: 'OPEN',
+        messages: []
+      }, traineeId, traineeName, traineeEmail);
+    } catch {}
 
     return NextResponse.json({
       success: true,
@@ -96,7 +104,7 @@ export async function POST(req: Request) {
         id: generatedId,
         trainee_id: traineeId,
         scenario_type: scenarioType || 'general_support',
-        status: 'active'
+        status: 'OPEN'
       }
     });
   } catch (error: any) {
