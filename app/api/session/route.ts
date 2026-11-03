@@ -29,6 +29,14 @@ export async function GET(req: NextRequest) {
           status: supabaseData.session.status,
           scenario_type: supabaseData.session.scenario_type,
           createdAt: new Date(supabaseData.session.created_at).getTime(),
+          ticket_id: supabaseData.session.ticket_id || null,
+          product_name: supabaseData.session.product_name || null,
+          avg_wpm: supabaseData.session.avg_wpm ?? null,
+          notes: supabaseData.session.notes ?? {},
+          feedback: supabaseData.session.feedback || null,
+          abandoned: Boolean(supabaseData.session.abandoned),
+          lob: supabaseData.session.lob || 'wyze_support',
+          ended_at: supabaseData.session.ended_at || null,
           messages: supabaseData.messages,
           trainee: supabaseData.trainee
         }
@@ -104,7 +112,15 @@ export async function POST(req: Request) {
         id: generatedId,
         trainee_id: traineeId,
         scenario_type: scenarioType || 'general_support',
-        status: 'OPEN'
+        status: 'OPEN',
+        ticket_id: null,
+        product_name: null,
+        avg_wpm: null,
+        notes: {},
+        feedback: null,
+        abandoned: false,
+        lob: 'wyze_support',
+        ended_at: null
       }
     });
   } catch (error: any) {
