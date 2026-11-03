@@ -10,7 +10,9 @@ export function getSupabase(): SupabaseClient | null {
 
   _initAttempted = true;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // This module is used by server API routes. Prefer the service-role key for server-side persistence;
+  // never import this module into browser code or expose this key through NEXT_PUBLIC_.
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     return null;
@@ -27,6 +29,110 @@ export function getSupabase(): SupabaseClient | null {
   } catch (err) {
     console.warn('[Supabase] Failed to initialize client:', err);
     return null;
+  }
+}
+
+
+
+// Privileged client is deliberately separate from the legacy application client.
+// It must only be imported by server-side API routes and must never be exposed to the browser.
+let _adminClient: SupabaseClient | null = null;
+let _adminInitAttempted = false;
+
+export function getSupabaseAdmin(): SupabaseClient | null {
+  if (_adminClient) return _adminClient;
+  if (_adminInitAttempted) return null;
+  _adminInitAttempted = true;
+
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceRoleKey) {
+    console.warn('[Supabase Admin] Missing SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
+    return null;
+  }
+
+  try {
+    _adminClient = createClient(url, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { 'X-Client-Info': 'wyze-ece-server' } },
+    });
+    return _adminClient;
+  } catch (err) {
+    console.warn('[Supabase Admin] Failed to initialize privileged client:', err);
+    return null;
+  }
+}
+
+/**
+ * Retrieves a small set of approved knowledge cases for server-side simulation context.
+ * Hidden fields are returned only to the calling server route; never serialize this result
+ * directly to the trainee-facing response.
+ */
+export async function searchApprovedKnowledgeCases(input: {
+  productFamily: string;
+  productModel?: string;
+  issueCategory?: string;
+  traineeMessage?: string;
+  limit?: number;
+}): Promise<Array<{
+  title: string;
+  product_family: string;
+  product_model: string | null;
+  issue_category: string;
+  symptoms: string[];
+  hidden_root_cause: string;
+  resolution_steps: string[];
+  diagnostic_questions: string[];
+  expected_led_behavior: string | null;
+}>> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const family = String(input.productFamily || '').trim();
+  if (!family) return [];
+
+  const terms = [
+    input.productModel,
+    input.issueCategory,
+    input.traineeMessage,
+  ].filter(Boolean).join(' ').replace(/[^\p{L}\p{N}\s'-]/gu, ' ').trim();
+
+  try {
+    let query = supabase
+      .from('knowledge_cases')
+      .select('title, product_family, product_model, issue_category, symptoms, hidden_root_cause, resolution_steps, diagnostic_questions, expected_led_behavior')
+      .eq('qa_status', 'approved')
+      .eq('product_family', family)
+      .limit(Math.min(Math.max(input.limit || 3, 1), 5));
+
+    if (terms.length >= 3) {
+      query = query.textSearch('fts', terms, { type: 'websearch', config: 'english' });
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn('[Knowledge Cases] Full-text retrieval warning; trying approved product-family cases:', error.message);
+    }
+    if (data && data.length > 0) return data as any;
+
+    // A narrow family-only fallback avoids silently losing approved guidance when
+    // the trainee's wording does not match the indexed terms.
+    const fallback = await supabase
+      .from('knowledge_cases')
+      .select('title, product_family, product_model, issue_category, symptoms, hidden_root_cause, resolution_steps, diagnostic_questions, expected_led_behavior')
+      .eq('qa_status', 'approved')
+      .eq('product_family', family)
+      .limit(Math.min(Math.max(input.limit || 3, 1), 5));
+
+    if (fallback.error) {
+      console.warn('[Knowledge Cases] Product-family fallback failed:', fallback.error.message);
+      return [];
+    }
+    return (fallback.data || []) as any;
+  } catch (err) {
+    console.warn('[Knowledge Cases] Retrieval handled defensively:', err);
+    return [];
   }
 }
 
@@ -276,7 +382,52 @@ export async function syncSessionToSupabase(
       resolvedEmail
     );
 
-    // 2. Upsert each message into the `messages` table
+    // 2. Persist optional telemetry. Only supplied values are updated, so partial
+    // session snapshots cannot erase previously saved telemetry.
+    const telemetryUpdate: Record<string, any> = {};
+    const ticketId = session.ticket_id ?? session.ticketId;
+    const productName = session.product_name ?? session.productName ?? session.product;
+    const avgWpmRaw = session.avg_wpm ?? session.avgWpm;
+    const notesRaw = session.notes;
+    const feedback = session.feedback ?? session.coaching_feedback ?? session.coachingFeedback;
+    const abandoned = session.abandoned ?? (status === 'ABANDONED' || session.endedReason === 'inactivity');
+    const lob = session.lob ?? session.lineOfBusiness;
+    const endedAt = session.ended_at ?? session.endedAt;
+
+    if (ticketId !== undefined && ticketId !== null) telemetryUpdate.ticket_id = String(ticketId);
+    if (productName !== undefined && productName !== null) telemetryUpdate.product_name = String(productName);
+    if (avgWpmRaw !== undefined && avgWpmRaw !== null && Number.isFinite(Number(avgWpmRaw))) {
+      telemetryUpdate.avg_wpm = Number(avgWpmRaw);
+    }
+    if (notesRaw !== undefined && notesRaw !== null) {
+      if (typeof notesRaw === 'string') {
+        try { telemetryUpdate.notes = JSON.parse(notesRaw); }
+        catch { telemetryUpdate.notes = { text: notesRaw }; }
+      } else {
+        telemetryUpdate.notes = notesRaw;
+      }
+    }
+    if (feedback !== undefined && feedback !== null) telemetryUpdate.feedback = String(feedback);
+    if (abandoned !== undefined && abandoned !== null) telemetryUpdate.abandoned = Boolean(abandoned);
+    if (lob !== undefined && lob !== null) telemetryUpdate.lob = String(lob);
+    if (endedAt !== undefined && endedAt !== null) {
+      const parsedEndedAt = new Date(endedAt);
+      if (!Number.isNaN(parsedEndedAt.getTime())) telemetryUpdate.ended_at = parsedEndedAt.toISOString();
+    } else if (['RESOLVED', 'SOLVED', 'COMPLETED', 'ABANDONED', 'CLOSED'].includes(status)) {
+      telemetryUpdate.ended_at = new Date().toISOString();
+    }
+
+    if (Object.keys(telemetryUpdate).length > 0) {
+      const { error: telemetryError } = await supabase
+        .from('sessions')
+        .update(telemetryUpdate)
+        .eq('id', sessionUuid);
+      if (telemetryError) {
+        console.warn('[Supabase] Session telemetry update warning:', telemetryError.message);
+      }
+    }
+
+    // 3. Upsert each message into the `messages` table
     if (Array.isArray(session.messages) && session.messages.length > 0) {
       const messageRows = session.messages
         .filter((m: any) => m && (m.text || m.content))
@@ -320,7 +471,7 @@ export async function fetchSessionWithMessagesFromSupabase(sessionId: string) {
   try {
     const { data: sessionData, error: sErr } = await supabase
       .from('sessions')
-      .select('id, trainee_id, scenario_type, status, created_at')
+      .select('id, trainee_id, scenario_type, status, created_at, ticket_id, product_name, avg_wpm, notes, feedback, abandoned, lob, ended_at')
       .eq('id', sessionUuid)
       .maybeSingle();
 
