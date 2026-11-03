@@ -5,7 +5,7 @@ import {
   SYNTHETIC_PERSONAS,
   CustomerPersona
 } from '@/lib/personas';
-import { syncSingleMessageToSupabase } from '@/lib/supabase';
+import { syncSingleMessageToSupabase, searchApprovedKnowledgeCases } from '@/lib/supabase';
 
 // ============================================================
 // WYZE PRODUCT CATALOG
@@ -1179,6 +1179,47 @@ export async function POST(req: Request) {
   const productMeta = getProductMeta(persona.product);
   const deviceNoun = productMeta.deviceNoun;
 
+  // Retrieve approved technical cases privately for grounded scenario behavior.
+  // The table uses normalized product_family enum values rather than display labels.
+  const productLower = String(persona.product || '').toLowerCase();
+  let knowledgeProductFamily = 'other';
+  if (/cam|doorbell|floodlight|bulb cam/i.test(productLower)) knowledgeProductFamily = 'cam';
+  else if (/router|mesh/i.test(productLower)) knowledgeProductFamily = 'router_mesh';
+  else if (/lock|safe/i.test(productLower)) knowledgeProductFamily = 'lock_access';
+  else if (/vacuum/i.test(productLower)) knowledgeProductFamily = 'vacuum';
+  else if (/thermostat/i.test(productLower)) knowledgeProductFamily = 'thermostat';
+  else if (/plug|switch/i.test(productLower)) knowledgeProductFamily = 'plug_switch';
+  else if (/bulb|light strip|solar panel/i.test(productLower)) knowledgeProductFamily = 'bulb_light';
+  else if (/sensor|sense hub|keypad/i.test(productLower)) knowledgeProductFamily = 'sensor_monitoring';
+  else if (/scale|watch|band|headphone|buds/i.test(productLower)) knowledgeProductFamily = 'scale_watch_audio';
+  else if (/cam plus|cam protect|home monitoring|subscription|account/i.test(productLower)) knowledgeProductFamily = 'services_account';
+
+  const approvedKnowledgeCases = await searchApprovedKnowledgeCases({
+    productFamily: knowledgeProductFamily,
+    productModel: persona.product,
+    issueCategory: persona.issueCategory,
+    traineeMessage: latestAgentMsg,
+    limit: 3
+  });
+
+  const privateKnowledgeContext = approvedKnowledgeCases.length
+    ? [
+        "",
+        "PRIVATE APPROVED KNOWLEDGE CASES — INTERNAL SIMULATION REFERENCE ONLY:",
+        "These details are not known to the customer. Never volunteer or state the root cause, internal resolution steps, or expected LED behavior as if the customer diagnosed the device.",
+        "Use the case symptoms only to keep the customer's reported experience consistent. When the trainee gives a troubleshooting instruction, roleplay a plausible result consistent with the case, one step at a time. Do not skip steps or reveal the answer.",
+        ...approvedKnowledgeCases.map((item, index) => [
+          `Case ${index + 1}: ${item.title}`,
+          `Issue category: ${item.issue_category}`,
+          `Symptoms: ${(item.symptoms || []).join('; ')}`,
+          `Private root cause (do not disclose): ${item.hidden_root_cause}`,
+          `Private resolution reference (do not disclose): ${(item.resolution_steps || []).join(' -> ')}`,
+          `Private diagnostic questions: ${(item.diagnostic_questions || []).join('; ')}`,
+          item.expected_led_behavior ? `Private expected indicator behavior: ${item.expected_led_behavior}` : ''
+        ].filter(Boolean).join('\n'))
+      ].join('\n')
+    : '';
+
   const systemInstruction = [
     "You are roleplaying as a customer contacting support for help with your device.",
     "You have ZERO technical knowledge, cannot troubleshoot on your own, and cannot predict what needs to be done.",
@@ -1229,7 +1270,8 @@ export async function POST(req: Request) {
     `- Issue: ${persona.issueCategory}`,
     isEmailMode
       ? "Format: Realistic support email body with paragraph details."
-      : "Format: Live-chat format (1-2 sentences max). No email greetings or signatures."
+      : "Format: Live-chat format (1-2 sentences max). No email greetings or signatures.",
+    privateKnowledgeContext
   ].join('\n');
 
   let botReply: string | null = null;
