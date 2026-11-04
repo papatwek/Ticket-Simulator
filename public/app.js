@@ -839,6 +839,9 @@
     s.busy = busy;
     if(s === state){
       refreshControls();
+      if(busy && typingIndicator && !typingIndicator.hidden){
+        scrollChat();
+      }
     }
     renderTabs();
   }
@@ -1614,7 +1617,7 @@
             traineeEmail: loginProfile ? loginProfile.email : '',
             traineeName: loginProfile ? loginProfile.name : ''
           }),
-          signal: AbortSignal.timeout(5500)
+          signal: AbortSignal.timeout(12000)
         });
 
         if(res.ok){
@@ -1709,11 +1712,12 @@
     }
   }
 
-  /* ---------- 7-Minute Inactivity Abandonment Check (Chat Mode) ---------- */
+  /* ---------- 4-Minute Impatience Escalation & 7-Minute Inactivity Abandonment Check ---------- */
   function checkChatAbandonment(){
     if(simMode !== 'chat') return;
     var now = Date.now();
-    var ABANDON_THRESHOLD_MS = 7 * 60 * 1000; // 7 minutes without agent update
+    var NUDGE_THRESHOLD_MS = 4 * 60 * 1000;   // 4 minutes: customer sends impatient follow-up
+    var ABANDON_THRESHOLD_MS = 7 * 60 * 1000; // 7 minutes: customer leaves due to silence
 
     sessions.forEach(function(s){
       if(!s.persona || s.ended || s.busy || s.messages.length === 0) return;
@@ -1721,6 +1725,36 @@
       if(lastMsg.role !== 'customer') return; // Wait only when customer is waiting for agent
 
       var idleTime = now - lastMsg.ts;
+
+      // 4-Minute Impatience Escalation: customer nudges trainee after 4 minutes of waiting
+      if(idleTime >= NUDGE_THRESHOLD_MS && idleTime < ABANDON_THRESHOLD_MS && !s.impatientNudged){
+        s.impatientNudged = true;
+        var prod = (s.persona && s.persona.product) ? s.persona.product : 'device';
+        var nudgeReplies = [
+          "Hello? Are you still there? I've been waiting here for over 4 minutes with no reply.",
+          "Is someone still looking into this? It's been 4 minutes since your last response.",
+          "Hi, just checking in... I'm still waiting right here with my " + prod + "."
+        ];
+        var nudgeText = nudgeReplies[Math.floor(Math.random() * nudgeReplies.length)];
+
+        s.messages.push({
+          role: 'customer',
+          text: nudgeText,
+          ts: now,
+          gapSec: Math.round(idleTime / 1000),
+          impatience: true
+        });
+
+        if(s === state){
+          renderMessages();
+          scrollChat();
+        }
+        scheduleSave(s);
+        saveWorkspaceState();
+        return;
+      }
+
+      // 7-Minute Inactivity Abandonment
       if(idleTime >= ABANDON_THRESHOLD_MS && !s.abandoned){
         s.abandoned = true;
         s.ended = true;
@@ -1990,6 +2024,8 @@
       gapSec: gapSec,
       wpm: wpm || null
     });
+
+    s.impatientNudged = false;
 
     renderMessages();
     saveWorkspaceState();

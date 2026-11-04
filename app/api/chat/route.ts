@@ -815,14 +815,14 @@ async function callGeminiModelWithRecovery(
         contents,
         config: {
           systemInstruction,
-          temperature: 0.3,
-          maxOutputTokens: 800,
-          topP: 0.9
+          temperature: 0.65,
+          maxOutputTokens: 600,
+          topP: 0.95
         }
       });
 
       const timeoutPromise = new Promise<{ isTimeout: true }>((resolve) => {
-        setTimeout(() => resolve({ isTimeout: true }), 3500);
+        setTimeout(() => resolve({ isTimeout: true }), 4500);
       });
 
       const result: any = await Promise.race([
@@ -833,7 +833,7 @@ async function callGeminiModelWithRecovery(
       if (result?.isTimeout) {
         recordModelFailure(
           modelName,
-          new Error('Call timed out after 3500ms'),
+          new Error('Call timed out after 4500ms'),
           'timeout'
         );
 
@@ -897,6 +897,87 @@ async function callGeminiModelWithRecovery(
     errorType: 'max_retries_exceeded',
     errorMsg: 'Max bounded retries reached'
   };
+}
+
+// ============================================================
+// OPENROUTER FREE MODEL BACKUP (EXPLICITLY FREE GEMMA VARIANT)
+// ============================================================
+
+async function callOpenRouterFreeModel(
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  systemInstruction: string,
+  isCamera: boolean
+): Promise<{
+  reply: string | null;
+  errorType?: string;
+  errorMsg?: string;
+}> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    return { reply: null, errorType: 'no_key', errorMsg: 'OPENROUTER_API_KEY not configured in environment' };
+  }
+
+  // Strictly enforce a free-tier model variant ending in :free to prevent any surprise billing
+  let model = process.env.OPENROUTER_MODEL || 'google/gemma-2-9b-it:free';
+  if (!model.endsWith(':free')) {
+    console.warn(`[OpenRouter] Configured model "${model}" does not end with :free. Forcing google/gemma-2-9b-it:free to protect free tier.`);
+    model = 'google/gemma-2-9b-it:free';
+  }
+
+  try {
+    const formattedMessages = [
+      { role: 'system', content: systemInstruction },
+      ...messages
+    ];
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://wyze-ece-training.app',
+        'X-Title': 'Wyze ECE Support Training Simulator'
+      },
+      body: JSON.stringify({
+        model,
+        messages: formattedMessages,
+        temperature: 0.65,
+        max_tokens: 600
+      }),
+      signal: AbortSignal.timeout(4500)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      return {
+        reply: null,
+        errorType: `http_${response.status}`,
+        errorMsg: errText.slice(0, 160)
+      };
+    }
+
+    const data = await response.json().catch(() => null);
+    const candidate = data?.choices?.[0]?.message?.content?.trim();
+
+    if (candidate) {
+      if (isCamera || !/\bcamera\b/i.test(candidate)) {
+        return { reply: candidate };
+      }
+    }
+
+    return {
+      reply: null,
+      errorType: 'empty_response',
+      errorMsg: 'Empty or invalid response from OpenRouter'
+    };
+  } catch (error: any) {
+    const isTimeout = error?.name === 'TimeoutError' || /timeout|abort/i.test(error?.message || '');
+    return {
+      reply: null,
+      errorType: isTimeout ? 'timeout' : 'other',
+      errorMsg: String(error?.message || error)
+    };
+  }
 }
 
 // ============================================================
@@ -1260,91 +1341,7 @@ export async function POST(req: Request) {
   let botReply: string | null = null;
 
   // ==========================================================
-  // 6. ATTEMPT 1: RENDER BACKEND
-  // ==========================================================
-
-  try {
-    const renderResponse = await fetch(
-      `${RENDER_BACKEND_URL}/api/chat`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
-        body: JSON.stringify({
-          contents: apiContents,
-          messages: messages || [],
-          message: latestAgentMsg,
-          prompt: latestAgentMsg,
-          persona,
-          turnNumber: turnNum,
-          mode: isEmailMode ? 'email' : 'chat',
-          systemInstruction,
-          sessionId: sessionId || ''
-        }),
-        signal: AbortSignal.timeout(15000)
-      }
-    );
-
-    if (renderResponse.ok) {
-      const renderData = await renderResponse.json().catch(() => ({}));
-
-      const candidate =
-        renderData.message ||
-        renderData.text ||
-        renderData.reply ||
-        renderData.response;
-
-      if (
-        candidate &&
-        typeof candidate === 'string' &&
-        candidate.trim()
-      ) {
-        const trimmedCandidate = candidate.trim();
-
-        // Reject camera-related replies for non-camera products.
-        if (
-          productMeta.isCamera ||
-          !/\bcamera\b/i.test(trimmedCandidate)
-        ) {
-          botReply = trimmedCandidate;
-
-          const renderProvider = String(
-            renderData.provider || ''
-          ).toLowerCase();
-
-          if (
-            renderProvider.includes('gemma') ||
-            renderProvider.includes('openrouter')
-          ) {
-            providerSource = 'gemma';
-          } else if (renderProvider === 'gemini') {
-            providerSource = 'gemini';
-          } else if (renderProvider === 'contextual_engine') {
-            providerSource = 'contextual_engine';
-          } else {
-            providerSource = 'render';
-          }
-
-          isAiGenerated = ![
-            'contextual_engine',
-            'graceful_exit'
-          ].includes(renderProvider);
-
-          console.log(
-            `[Turn ${turnNum}] Render response from ${renderProvider || 'unreported provider'}`
-          );
-        }
-      }
-    }
-  } catch {
-    // Render may be sleeping or unavailable.
-    // Continue to the direct Gemini fallback.
-  }
-
-  // ==========================================================
-  // 7. ATTEMPT 2: DIRECT GEMINI FALLBACK
+  // 6. ATTEMPT 1: DIRECT GEMINI API (PRIMARY PROVIDER)
   // ==========================================================
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -1370,7 +1367,7 @@ export async function POST(req: Request) {
 
     for (const modelName of modelsToTry) {
       console.log(
-        `[Turn ${turnNum}] Attempting Gemini model: ${modelName}`
+        `[Turn ${turnNum}] Attempting primary Gemini model: ${modelName}`
       );
 
       const {
@@ -1404,7 +1401,127 @@ export async function POST(req: Request) {
   }
 
   // ==========================================================
-  // 8. ATTEMPT 3: LOCAL CONTEXTUAL ENGINE
+  // 7. ATTEMPT 2: OPENROUTER (EXPLICITLY FREE GEMMA BACKUP)
+  // ==========================================================
+
+  if (!botReply && process.env.OPENROUTER_API_KEY) {
+    console.log(
+      `[Turn ${turnNum}] Attempting secondary OpenRouter free Gemma model backup...`
+    );
+
+    const openRouterMessages = apiContents.map((c) => ({
+      role: (c.role === 'model' ? 'assistant' : 'user') as 'user' | 'assistant',
+      content: c.parts[0]?.text || ''
+    }));
+
+    const orResult = await callOpenRouterFreeModel(
+      openRouterMessages,
+      systemInstruction,
+      productMeta.isCamera
+    );
+
+    if (orResult.reply) {
+      botReply = orResult.reply;
+      providerSource = 'gemma';
+      isAiGenerated = true;
+
+      console.log(
+        `[Turn ${turnNum}] OpenRouter free Gemma model generated a response.`
+      );
+    } else {
+      console.warn(
+        `[Turn ${turnNum}] OpenRouter free backup failed (${orResult.errorType || 'unknown'}): ${orResult.errorMsg || ''}`
+      );
+    }
+  }
+
+  // ==========================================================
+  // 8. ATTEMPT 3: RENDER AUXILIARY BACKEND (NON-BLOCKING)
+  // ==========================================================
+
+  if (!botReply && RENDER_BACKEND_URL) {
+    try {
+      const renderResponse = await fetch(
+        `${RENDER_BACKEND_URL}/api/chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({
+            contents: apiContents,
+            messages: messages || [],
+            message: latestAgentMsg,
+            prompt: latestAgentMsg,
+            persona,
+            turnNumber: turnNum,
+            mode: isEmailMode ? 'email' : 'chat',
+            systemInstruction,
+            sessionId: sessionId || ''
+          }),
+          signal: AbortSignal.timeout(2500)
+        }
+      );
+
+      if (renderResponse.ok) {
+        const renderData = await renderResponse.json().catch(() => ({}));
+
+        const candidate =
+          renderData.message ||
+          renderData.text ||
+          renderData.reply ||
+          renderData.response;
+
+        if (
+          candidate &&
+          typeof candidate === 'string' &&
+          candidate.trim()
+        ) {
+          const trimmedCandidate = candidate.trim();
+
+          // Reject camera-related replies for non-camera products.
+          if (
+            productMeta.isCamera ||
+            !/\bcamera\b/i.test(trimmedCandidate)
+          ) {
+            botReply = trimmedCandidate;
+
+            const renderProvider = String(
+              renderData.provider || ''
+            ).toLowerCase();
+
+            if (
+              renderProvider.includes('gemma') ||
+              renderProvider.includes('openrouter')
+            ) {
+              providerSource = 'gemma';
+            } else if (renderProvider === 'gemini') {
+              providerSource = 'gemini';
+            } else if (renderProvider === 'contextual_engine') {
+              providerSource = 'contextual_engine';
+            } else {
+              providerSource = 'render';
+            }
+
+            isAiGenerated = ![
+              'contextual_engine',
+              'graceful_exit'
+            ].includes(renderProvider);
+
+            console.log(
+              `[Turn ${turnNum}] Render response from ${renderProvider || 'unreported provider'}`
+            );
+          }
+        }
+      }
+    } catch {
+      // Non-fatal: Render may be asleep; proceed directly to local contextual engine
+    }
+  }
+
+  // ==========================================================
+  // 9. ATTEMPT 4: LOCAL CONTEXTUAL ENGINE (ZERO-COST, 0ms FALLBACK)
   // ==========================================================
 
   if (!botReply) {
@@ -1431,7 +1548,7 @@ export async function POST(req: Request) {
   }
 
   // ==========================================================
-  // 9. NORMALIZE AI RESPONSE
+  // 10. NORMALIZE AI RESPONSE
   // ==========================================================
 
   if (botReply.startsWith('```')) {
@@ -1473,7 +1590,7 @@ export async function POST(req: Request) {
   }
 
   // ==========================================================
-  // 10. SUPABASE MESSAGE PERSISTENCE
+  // 11. SUPABASE MESSAGE PERSISTENCE (PARALLELIZED & BOUNDED)
   // ==========================================================
 
   if (sessionId) {
@@ -1499,9 +1616,11 @@ export async function POST(req: Request) {
       ? 'PENDING'
       : 'OPEN';
 
+    const syncPromises: Promise<any>[] = [];
+
     if (latestAgentMsg) {
-      try {
-        await syncSingleMessageToSupabase(
+      syncPromises.push(
+        syncSingleMessageToSupabase(
           sessionId,
           'agent',
           latestAgentMsg,
@@ -1512,15 +1631,15 @@ export async function POST(req: Request) {
             scenarioType,
             status: sessionStatus
           }
-        );
-      } catch (agentSyncErr) {
-        console.warn('[Supabase Agent Message Sync] Handled defensively:', agentSyncErr);
-      }
+        ).catch((agentSyncErr) =>
+          console.warn('[Supabase Agent Message Sync] Handled defensively:', agentSyncErr)
+        )
+      );
     }
 
     if (botReply) {
-      try {
-        await syncSingleMessageToSupabase(
+      syncPromises.push(
+        syncSingleMessageToSupabase(
           sessionId,
           'customer',
           botReply,
@@ -1531,9 +1650,21 @@ export async function POST(req: Request) {
             scenarioType,
             status: sessionStatus
           }
-        );
-      } catch (custSyncErr) {
-        console.warn('[Supabase Customer Message Sync] Handled defensively:', custSyncErr);
+        ).catch((custSyncErr) =>
+          console.warn('[Supabase Customer Message Sync] Handled defensively:', custSyncErr)
+        )
+      );
+    }
+
+    // Parallel execution bounded by 1200ms so database latency never holds up user response
+    if (syncPromises.length > 0) {
+      try {
+        await Promise.race([
+          Promise.allSettled(syncPromises),
+          new Promise((resolve) => setTimeout(resolve, 1200))
+        ]);
+      } catch {
+        // Non-fatal defensive catch
       }
     }
   }

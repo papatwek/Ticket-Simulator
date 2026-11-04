@@ -334,7 +334,21 @@ const PRODUCTS = [
   { name: "Wyze Robot Vacuum", issue: "Hardware malfunction (battery drain, purple video tint, clicking sound)", led: "yellow pulse" },
   { name: "Wyze Bulb Color", issue: "Feature confusion — customer isn't sure how to configure rules or schedules", led: "dim white" },
   { name: "Wyze Plug Outdoor", issue: "Device offline or won't connect to Wi-Fi", led: "flashing blue" },
-  { name: "Wyze Cam Pan v3", issue: "The live view is black, frozen, or keeps buffering", led: "solid blue" }
+  { name: "Wyze Cam Pan v3", issue: "The live view is black, frozen, or keeps buffering", led: "solid blue" },
+  { name: "Wyze Thermostat", issue: "Heating or cooling not blowing expected temperature", led: "orange flame icon" },
+  { name: "Wyze Palm Lock", issue: "Biometric palm vein scanner failing to unlock front door", led: "red pulse" },
+  { name: "Wyze Solar Cam Pan", issue: "Solar panel not charging battery in direct sunlight", led: "slow flashing yellow" },
+  { name: "Wyze Air Purifier", issue: "Filter life indicator stuck at 0% after new filter replacement", led: "solid orange" },
+  { name: "Wyze Climate Sensor", issue: "Sensor reporting offline or temperature readings not updating", led: "single red flash" },
+  { name: "Wyze Switch", issue: "Single-pole smart switch clicking but not toggling ceiling light", led: "flashing amber" },
+  { name: "Wyze Duo Cam Doorbell", issue: "Package detection downward camera view buffering or distorted", led: "solid green" },
+  { name: "Wyze Scale Ultra BodyScan", issue: "Handheld bar impedance reading failing during body composition scan", led: "ERR2 display" },
+  { name: "Wyze Buds Pro", issue: "Active noise cancellation causing hollow echo in right earbud", led: "pulsing blue in case" },
+  { name: "Wyze Cordless Vacuum", issue: "Roller brush stops spinning after 30 seconds of high suction", led: "solid red battery bar" },
+  { name: "Wyze Gun Safe", issue: "Fingerprint scanner uncalibrated or failing on rapid access", led: "double beep red LED" },
+  { name: "Wyze Cam Plus Unlimited", issue: "Subscription license unassigned or AI vehicle detections missing", led: "N/A (Cloud)" },
+  { name: "Wyze Sprinkler Controller", issue: "Zone 3 solenoid valve not firing according to smart weather schedule", led: "solid white" },
+  { name: "Wyze Light Strip Pro", issue: "Individual LED segment showing mismatched color on chase effect", led: "mixed RGB" }
 ];
 
 const EMOTIONS = [
