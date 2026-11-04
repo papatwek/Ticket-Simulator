@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveSessionToDb, getSessionDetailFromDb, isTrainerPasscode } from '@/lib/db';
+import { saveSessionToDb, getSessionDetailFromDb } from '@/lib/db';
 import { syncSessionToSupabase, fetchSessionWithMessagesFromSupabase } from '@/lib/supabase';
+import { verifyAdminSession } from '@/lib/adminAuth';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -9,8 +10,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing session ID.' }, { status: 400 });
   }
 
-  const trainerKey = url.searchParams.get('key') || req.headers.get('x-trainer-passcode');
-  const isTrainer = isTrainerPasscode(trainerKey);
+  const isTrainer = verifyAdminSession(req);
 
   try {
     // 1. Try local/in-memory DB

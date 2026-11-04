@@ -9,7 +9,6 @@ import { syncSessionToSupabase } from './supabase';
 // os.tmpdir() (/tmp) is usually writable, but if SQLite disk write fails, we fall back to memory.
 const DB_PATH = process.env.SQLITE_DB_PATH || path.join(os.tmpdir(), 'wyze_sessions.db');
 const RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
-const TRAINER_PASSCODE = 'wyzeleadership';
 
 // Defensive In-Memory Store guaranteed to persist across requests in node process
 interface InMemoryStore {
@@ -130,7 +129,20 @@ function handleSqliteError(err: any): void {
 }
 
 export function isTrainerPasscode(code: string | null): boolean {
-  return (code || '').trim().toLowerCase() === TRAINER_PASSCODE;
+  const envPass = process.env.TRAINER_PASSCODE;
+  if (!envPass || envPass.trim().length === 0) {
+    console.warn('[Security] TRAINER_PASSCODE environment variable is not configured. Leadership access disabled.');
+    return false;
+  }
+  if (!code) return false;
+  try {
+    const a = Buffer.from(code.trim().toLowerCase());
+    const b = Buffer.from(envPass.trim().toLowerCase());
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 export function isEceEmail(email: string): boolean {

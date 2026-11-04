@@ -10,9 +10,9 @@ export function getSupabase(): SupabaseClient | null {
 
   _initAttempted = true;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  // This module is used by server API routes. Prefer the service-role key for server-side persistence;
-  // never import this module into browser code or expose this key through NEXT_PUBLIC_.
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Normal Supabase operations must strictly use only the Supabase anon/publishable key.
+  // It must NEVER prioritize or use SUPABASE_SERVICE_ROLE_KEY.
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     return null;
@@ -37,18 +37,14 @@ export function getSupabase(): SupabaseClient | null {
 // Privileged client is deliberately separate from the legacy application client.
 // It must only be imported by server-side API routes and must never be exposed to the browser.
 let _adminClient: SupabaseClient | null = null;
-let _adminInitAttempted = false;
 
 export function getSupabaseAdmin(): SupabaseClient | null {
   if (_adminClient) return _adminClient;
-  if (_adminInitAttempted) return null;
-  _adminInitAttempted = true;
 
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceRoleKey) {
-    console.warn('[Supabase Admin] Missing SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
     return null;
   }
 
@@ -61,6 +57,159 @@ export function getSupabaseAdmin(): SupabaseClient | null {
   } catch (err) {
     console.warn('[Supabase Admin] Failed to initialize privileged client:', err);
     return null;
+  }
+}
+
+export interface SupabaseDiagnosticResult {
+  ok: boolean;
+  connected: boolean;
+  status: 'connected' | 'missing_credentials' | 'query_failed' | 'unexpected_error';
+  error?: string | null;
+  environment: {
+    supabaseUrlConfigured: boolean;
+    serviceRoleKeyConfigured: boolean;
+  };
+  host: string | null;
+  articlesCount: number | null;
+  chunksCount: number | null;
+  latencyMs: number | null;
+  tables?: {
+    knowledge_articles: { accessible: boolean; count?: number };
+    knowledge_article_chunks: { accessible: boolean; count?: number };
+  };
+  timestamp: string;
+}
+
+/**
+ * Executes a strictly read-only diagnostic against Supabase using the server-side service-role key.
+ * Queries count only for knowledge_articles and knowledge_article_chunks (HEAD request).
+ * Never exposes credentials, tokens, or raw secrets to the caller.
+ * Detailed error logs are preserved on the server; generic messages are returned to browser.
+ */
+export async function runSupabaseConnectionDiagnostic(): Promise<SupabaseDiagnosticResult> {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  const envStatus = {
+    supabaseUrlConfigured: !!url,
+    serviceRoleKeyConfigured: !!serviceRoleKey,
+  };
+
+  if (!url || !serviceRoleKey) {
+    console.error('[Supabase Diagnostic Error] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment.');
+    return {
+      ok: false,
+      connected: false,
+      status: 'missing_credentials',
+      error: 'Missing required Supabase server configuration.',
+      environment: envStatus,
+      host: null,
+      articlesCount: null,
+      chunksCount: null,
+      latencyMs: null,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  let host: string = 'Configured';
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    host = 'Invalid URL host';
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    console.error('[Supabase Diagnostic Error] Failed to instantiate admin client.');
+    return {
+      ok: false,
+      connected: false,
+      status: 'unexpected_error',
+      error: 'Failed to initialize database client with configured credentials.',
+      environment: envStatus,
+      host,
+      articlesCount: null,
+      chunksCount: null,
+      latencyMs: null,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  const startTime = Date.now();
+
+  try {
+    const { count: articlesCount, error: articlesErr } = await supabase
+      .from('knowledge_articles')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: chunksCount, error: chunksErr } = await supabase
+      .from('knowledge_article_chunks')
+      .select('*', { count: 'exact', head: true });
+
+    const latencyMs = Date.now() - startTime;
+
+    if (articlesErr || chunksErr) {
+      const primaryErr = articlesErr || chunksErr;
+      console.error('[Supabase Diagnostic DB Query Error Details]:', primaryErr);
+      return {
+        ok: false,
+        connected: false,
+        status: 'query_failed',
+        error: 'Database query failed. Knowledge tables may be missing or inaccessible.',
+        environment: envStatus,
+        host,
+        articlesCount: articlesCount ?? null,
+        chunksCount: chunksCount ?? null,
+        latencyMs,
+        tables: {
+          knowledge_articles: {
+            accessible: !articlesErr,
+            count: articlesCount ?? undefined,
+          },
+          knowledge_article_chunks: {
+            accessible: !chunksErr,
+            count: chunksCount ?? undefined,
+          },
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    return {
+      ok: true,
+      connected: true,
+      status: 'connected',
+      environment: envStatus,
+      host,
+      articlesCount: articlesCount ?? 0,
+      chunksCount: chunksCount ?? 0,
+      latencyMs,
+      tables: {
+        knowledge_articles: {
+          accessible: true,
+          count: articlesCount ?? 0,
+        },
+        knowledge_article_chunks: {
+          accessible: true,
+          count: chunksCount ?? 0,
+        },
+      },
+      timestamp: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    console.error('[Supabase Diagnostic Execution Exception]:', err);
+    return {
+      ok: false,
+      connected: false,
+      status: 'unexpected_error',
+      error: 'An unexpected database error occurred.',
+      environment: envStatus,
+      host,
+      articlesCount: null,
+      chunksCount: null,
+      latencyMs: Date.now() - startTime,
+      timestamp: new Date().toISOString(),
+    };
   }
 }
 

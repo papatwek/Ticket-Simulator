@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  isTrainerPasscode,
   adminListTrainees,
   adminToggleAccountStatus,
   adminTriggerReset,
@@ -8,22 +7,23 @@ import {
   adminCreateTrainee,
   AdminTraineeSummary
 } from '@/lib/db';
-import { fetchAllTraineesFromSupabase, getSupabase } from '@/lib/supabase';
+import { fetchAllTraineesFromSupabase, getSupabaseAdmin } from '@/lib/supabase';
+import { verifyAdminSession } from '@/lib/adminAuth';
 import crypto from 'node:crypto';
 
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const key = url.searchParams.get('key') || req.headers.get('x-trainer-passcode');
-
-  if (!isTrainerPasscode(key)) {
-    return NextResponse.json({ error: 'Unauthorized leadership access.' }, { status: 401 });
+  if (!verifyAdminSession(req)) {
+    return NextResponse.json(
+      { error: 'Unauthorized leadership access. Admin session required.' },
+      { status: 401 }
+    );
   }
 
   try {
     // 1. Fetch from Supabase trainees table
     const supaTrainees = await fetchAllTraineesFromSupabase();
 
-    // 2. Fetch from local SQLite DB
+    // 2. Fetch from local DB
     const localTrainees = adminListTrainees();
 
     // 3. Merge by email address
@@ -60,19 +60,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, trainees });
   } catch (err: any) {
     console.error('Error listing trainees for admin:', err);
-    return NextResponse.json({ error: err.message || 'Failed to list trainees.' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to list trainees.' }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
+  if (!verifyAdminSession(req)) {
+    return NextResponse.json(
+      { error: 'Unauthorized leadership access. Admin session required.' },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await req.json();
-    const key = body.key || req.headers.get('x-trainer-passcode');
-
-    if (!isTrainerPasscode(key)) {
-      return NextResponse.json({ error: 'Unauthorized leadership access.' }, { status: 401 });
-    }
-
     const { action, userId, email, name, tempPassword, active, isActive, identifier } = body;
     const normalizedAction = String(action || '').toLowerCase().replace(/_/g, '-');
     const resolvedIdentifier = identifier || userId || email;
@@ -84,12 +85,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Missing userId.' }, { status: 400 });
       }
       const res = adminToggleAccountStatus(targetId, resolvedActive);
-      const supabase = getSupabase();
+      const supabase = getSupabaseAdmin();
       if (supabase) {
         try {
           await supabase.from('trainees').update({ is_active: resolvedActive }).or(`id.eq.${targetId},email.eq.${targetId}`);
         } catch (sErr) {
-          console.warn('[Toggle Status] Supabase update non-fatal:', sErr);
+          console.warn('[Toggle Status] Supabase admin update non-fatal:', sErr);
         }
       }
       return NextResponse.json(res);
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
       }
       let res = adminTriggerReset(resolvedIdentifier);
       if (!res.ok) {
-        const supabase = getSupabase();
+        const supabase = getSupabaseAdmin();
         if (supabase) {
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedIdentifier);
           let query = supabase.from('trainees').select('id, email, name');
@@ -137,8 +138,8 @@ export async function POST(req: NextRequest) {
       // 1. Create in local DB
       const res = adminCreateTrainee(email, name, tempPassword);
 
-      // 2. Also register in Supabase trainees table
-      const supabase = getSupabase();
+      // 2. Also register in Supabase trainees table using server admin client
+      const supabase = getSupabaseAdmin();
       if (supabase) {
         try {
           const normEmail = email.trim().toLowerCase();
@@ -161,6 +162,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown admin action.' }, { status: 400 });
   } catch (err: any) {
     console.error('Error executing admin action:', err);
-    return NextResponse.json({ error: err.message || 'Admin action failed.' }, { status: 500 });
+    return NextResponse.json({ error: 'Admin action failed.' }, { status: 500 });
   }
 }

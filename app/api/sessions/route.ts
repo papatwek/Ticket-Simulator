@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { listSessionsFromDb, isTrainerPasscode } from '@/lib/db';
+import { listSessionsFromDb } from '@/lib/db';
 import { getSupabase } from '@/lib/supabase';
+import { verifyAdminSession } from '@/lib/adminAuth';
 
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const isTrainerReq =
-    url.searchParams.get('trainer') === '1' &&
-    isTrainerPasscode(url.searchParams.get('key'));
+  const isTrainerReq = verifyAdminSession(req);
 
   try {
     const localData = listSessionsFromDb(isTrainerReq);

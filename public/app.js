@@ -34,7 +34,6 @@
     confused: "Confused, low technical confidence"
   };
 
-  var TRAINER_PASSCODE = 'wyzeleadership';
   var loginProfile = null;
   var workspaceInitialized = false;
   var simMode = 'chat'; // 'chat' or 'email'
@@ -1083,7 +1082,7 @@
     var r = reviewSessions.find(function(x){ return x.id === activeReviewId; });
     if(!r) return;
     try {
-      var res = await fetch('/api/session?id=' + encodeURIComponent(r.id) + '&trainer=1&key=' + encodeURIComponent(TRAINER_PASSCODE));
+      var res = await fetch('/api/session?id=' + encodeURIComponent(r.id));
       if(res.ok){
         var data = await res.json();
         if(data && data.data && data.data.messages){
@@ -2124,14 +2123,22 @@
     if(cockpitMain && view === 'cockpit') cockpitMain.scrollTop = 0;
 
     if(view === 'admin'){
-      if(trainerAccess){
-        if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = true;
-        if($('adminDashboardView')) $('adminDashboardView').hidden = false;
-        loadAdminTrainees();
-      } else {
+      fetch('/api/admin/auth').then(function(r){ return r.json(); }).then(function(data){
+        if(data && data.authenticated){
+          trainerAccess = true;
+          if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = true;
+          if($('adminDashboardView')) $('adminDashboardView').hidden = false;
+          loadAdminTrainees();
+        } else {
+          trainerAccess = false;
+          if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = false;
+          if($('adminDashboardView')) $('adminDashboardView').hidden = true;
+        }
+      }).catch(function(){
+        trainerAccess = false;
         if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = false;
         if($('adminDashboardView')) $('adminDashboardView').hidden = true;
-      }
+      });
     } else if(view === 'analytics'){
       var targetId = (params && params.traineeId) || (loginProfile && loginProfile.id);
       var fromAdmin = (params && params.fromAdmin) || false;
@@ -2443,8 +2450,15 @@
     if(cardsWrap) cardsWrap.innerHTML = '<div class="muted text-center py-4">Loading trainee records…</div>';
 
     try {
-      var res = await fetch('/api/admin/trainees?key=' + encodeURIComponent(TRAINER_PASSCODE));
+      var res = await fetch('/api/admin/trainees');
       if(!res.ok){
+        if(res.status === 401){
+          trainerAccess = false;
+          if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = false;
+          if($('adminDashboardView')) $('adminDashboardView').hidden = true;
+          if(body) body.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Leadership session required. Please unlock above.</td></tr>';
+          return;
+        }
         if(body) body.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Access denied or database error.</td></tr>';
         return;
       }
@@ -2464,8 +2478,120 @@
       if($('adminAvgWpm')) $('adminAvgWpm').textContent = avgWpm + ' WPM';
 
       applyAdminFilters();
+      runSupabaseDiagnostic(false);
     } catch(err){
       if(body) body.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Failed to load trainees.</td></tr>';
+      runSupabaseDiagnostic(false);
+    }
+  }
+
+  async function runSupabaseDiagnostic(showModal){
+    if(showModal){
+      var modal = $('adminDbDiagModal');
+      if(modal) modal.hidden = false;
+    }
+
+    var ind = $('diagStatusIndicator');
+    var badge = $('diagStatusBadge');
+    var title = $('diagStatusTitle');
+    var sub = $('diagStatusSub');
+    var artVal = $('diagArticlesCount');
+    var chkVal = $('diagChunksCount');
+    var hostVal = $('diagHostVal');
+    var latVal = $('diagLatencyVal');
+    var errBox = $('diagErrorBox');
+    var errMsg = $('diagErrorMsg');
+    var lastChecked = $('diagLastChecked');
+    var sumVal = $('adminDbSummaryVal');
+
+    if(title) title.textContent = 'Testing Supabase connection…';
+    if(sub) sub.textContent = 'Querying public.knowledge_articles & public.knowledge_article_chunks (read-only count)';
+    if(badge){
+      badge.textContent = 'TESTING';
+      badge.style.background = 'rgba(217, 119, 6, 0.15)';
+      badge.style.color = 'var(--amber)';
+    }
+    if(ind) ind.style.background = 'var(--amber)';
+    if(errBox) errBox.hidden = true;
+    if(sumVal) sumVal.textContent = '⚡ Checking…';
+
+    try {
+      var res = await fetch('/api/admin/diagnostics/supabase');
+      var now = new Date().toLocaleTimeString();
+      if(lastChecked) lastChecked.textContent = 'Last checked: ' + now;
+
+      if(res.status === 401){
+        if(title) title.textContent = 'Unauthorized';
+        if(sub) sub.textContent = 'Administrator session is required to run database diagnostics.';
+        if(badge){
+          badge.textContent = 'AUTH REQUIRED';
+          badge.style.background = 'rgba(220, 38, 38, 0.15)';
+          badge.style.color = 'var(--coral)';
+        }
+        if(ind) ind.style.background = 'var(--coral)';
+        if(errBox){
+          errBox.hidden = false;
+          if(errMsg) errMsg.textContent = 'Administrator session missing or expired. Please unlock the Leadership Console.';
+        }
+        if(sumVal) sumVal.textContent = '🔒 Admin Only';
+        return;
+      }
+
+      var data = await res.json();
+
+      if(res.ok && data.connected && data.ok){
+        // Connected & Healthy
+        if(title) title.textContent = 'Connected & Operational';
+        if(sub) sub.textContent = 'Supabase PostgreSQL connection verified with knowledge repository access.';
+        if(badge){
+          badge.textContent = 'CONNECTED';
+          badge.style.background = 'rgba(16, 185, 129, 0.15)';
+          badge.style.color = '#10B981';
+        }
+        if(ind) ind.style.background = '#10B981';
+        if(artVal) artVal.textContent = (data.articlesCount != null) ? Number(data.articlesCount).toLocaleString() : '0';
+        if(chkVal) chkVal.textContent = (data.chunksCount != null) ? Number(data.chunksCount).toLocaleString() : '0';
+        if(hostVal) hostVal.textContent = data.host || 'Connected';
+        if(latVal) latVal.textContent = (data.latencyMs != null) ? (data.latencyMs + ' ms') : '—';
+        if(errBox) errBox.hidden = true;
+        if(sumVal) sumVal.textContent = '✅ ' + (data.articlesCount || 0) + ' Articles';
+      } else {
+        // Query error or missing credentials
+        var errText = data.error || 'Connection failed or knowledge tables are inaccessible.';
+
+        if(title) title.textContent = (data.status === 'missing_credentials') ? 'Missing Credentials' : 'Connection Failed';
+        if(sub) sub.textContent = 'Database query encountered an issue. Review diagnostic error details below.';
+        if(badge){
+          badge.textContent = (data.status === 'missing_credentials') ? 'UNCONFIGURED' : 'FAILED';
+          badge.style.background = 'rgba(220, 38, 38, 0.15)';
+          badge.style.color = 'var(--coral)';
+        }
+        if(ind) ind.style.background = 'var(--coral)';
+        if(artVal) artVal.textContent = (data.articlesCount != null) ? String(data.articlesCount) : '—';
+        if(chkVal) chkVal.textContent = (data.chunksCount != null) ? String(data.chunksCount) : '—';
+        if(hostVal) hostVal.textContent = data.host || 'Unreachable';
+        if(latVal) latVal.textContent = (data.latencyMs != null) ? (data.latencyMs + ' ms') : '—';
+        if(errBox){
+          errBox.hidden = false;
+          if(errMsg) errMsg.textContent = errText;
+        }
+        if(sumVal) sumVal.textContent = '❌ DB Error';
+      }
+    } catch(fetchErr){
+      var errStr = fetchErr?.message || 'Network request failed';
+      if(title) title.textContent = 'Connection Error';
+      if(sub) sub.textContent = 'Failed to reach diagnostic endpoint.';
+      if(badge){
+        badge.textContent = 'ERROR';
+        badge.style.background = 'rgba(220, 38, 38, 0.15)';
+        badge.style.color = 'var(--coral)';
+      }
+      if(ind) ind.style.background = 'var(--coral)';
+      if(errBox){
+        errBox.hidden = false;
+        if(errMsg) errMsg.textContent = errStr;
+      }
+      if(sumVal) sumVal.textContent = '⚠️ DB Offline';
     }
   }
 
@@ -2631,7 +2757,7 @@
       var res = await fetch('/api/admin/trainees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'trigger-reset', identifier: identifier })
+        body: JSON.stringify({ action: 'trigger-reset', identifier: identifier })
       });
       var data = await res.json();
       if(res.ok){
@@ -2674,7 +2800,7 @@
       var res = await fetch('/api/admin/trainees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'toggle-status', userId: userId, isActive: newActive })
+        body: JSON.stringify({ action: 'toggle-status', userId: userId, isActive: newActive })
       });
       if(res.ok){
         loadAdminTrainees();
@@ -3424,19 +3550,55 @@
     on('adminSearchInput', 'input', applyAdminFilters);
     on('adminStatusFilter', 'change', applyAdminFilters);
 
-    on('adminGateUnlockBtn', 'click', function(){
-      var val = ($('adminGatePasscode') ? $('adminGatePasscode').value : '').trim().toLowerCase();
-      if(val === TRAINER_PASSCODE){
-        trainerAccess = true;
-        if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = true;
-        if($('adminDashboardView')) $('adminDashboardView').hidden = false;
-        loadAdminTrainees();
-      } else {
-        if($('adminGateStatus')) $('adminGateStatus').textContent = 'Invalid passcode.';
+    on('adminGateUnlockBtn', 'click', async function(){
+      var passInput = $('adminGatePasscode');
+      var val = (passInput ? passInput.value : '').trim();
+      var statusEl = $('adminGateStatus');
+      if(!val){
+        if(statusEl) statusEl.textContent = 'Please enter leadership passcode.';
+        return;
+      }
+      if(statusEl) statusEl.textContent = 'Authenticating…';
+      try {
+        var res = await fetch('/api/admin/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'login', passcode: val })
+        });
+        var data = await res.json().catch(function(){ return {}; });
+        if(res.ok && data.ok){
+          trainerAccess = true;
+          if(passInput) passInput.value = '';
+          if(statusEl) statusEl.textContent = '';
+          if($('adminPasscodeGate')) $('adminPasscodeGate').hidden = true;
+          if($('adminDashboardView')) $('adminDashboardView').hidden = false;
+          loadAdminTrainees();
+        } else {
+          if(statusEl) statusEl.textContent = data.error || 'Invalid passcode.';
+        }
+      } catch(err){
+        if(statusEl) statusEl.textContent = 'Authentication error. Please retry.';
       }
     });
 
     on('refreshAdminTraineesBtn', 'click', loadAdminTrainees);
+
+    // Supabase Database Diagnostics Modal & Triggers
+    on('adminDbDiagBtn', 'click', function(){
+      runSupabaseDiagnostic(true);
+    });
+    on('adminDbSummaryChip', 'click', function(){
+      runSupabaseDiagnostic(true);
+    });
+    on('closeAdminDbDiagModal', 'click', function(){
+      if($('adminDbDiagModal')) $('adminDbDiagModal').hidden = true;
+    });
+    on('dismissAdminDbDiagModal', 'click', function(){
+      if($('adminDbDiagModal')) $('adminDbDiagModal').hidden = true;
+    });
+    on('runAdminDbDiagBtn', 'click', function(){
+      runSupabaseDiagnostic(false);
+    });
 
     // Admin Invite Trainee Modal
     on('adminInviteBtn', 'click', function(){
@@ -3460,7 +3622,7 @@
         var res = await fetch('/api/admin/trainees', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: TRAINER_PASSCODE, action: 'invite', email: email, name: name, tempPassword: pw })
+          body: JSON.stringify({ action: 'invite', email: email, name: name, tempPassword: pw })
         });
         if(res.ok){
           var resData = await res.json();
@@ -3482,13 +3644,30 @@
     // History Modal
     on(historyBtn, 'click', openHistory);
     on('closeHistory', 'click', function(){ if(historyModal) historyModal.hidden = true; });
-    on(trainerPassBtn, 'click', function(){
-      if(trainerPassInput && trainerPassInput.value.trim().toLowerCase() === TRAINER_PASSCODE){
-        trainerAccess = true;
-        if(trainerPassStatus) trainerPassStatus.textContent = 'Unlocked (Leadership access active)';
-        openHistory();
-      } else {
-        if(trainerPassStatus) trainerPassStatus.textContent = 'Invalid passcode.';
+    on(trainerPassBtn, 'click', async function(){
+      var val = trainerPassInput ? trainerPassInput.value.trim() : '';
+      if(!val){
+        if(trainerPassStatus) trainerPassStatus.textContent = 'Please enter passcode.';
+        return;
+      }
+      if(trainerPassStatus) trainerPassStatus.textContent = 'Verifying…';
+      try {
+        var res = await fetch('/api/admin/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'login', passcode: val })
+        });
+        var data = await res.json().catch(function(){ return {}; });
+        if(res.ok && data.ok){
+          trainerAccess = true;
+          if(trainerPassInput) trainerPassInput.value = '';
+          if(trainerPassStatus) trainerPassStatus.textContent = 'Unlocked (Leadership access active)';
+          openHistory();
+        } else {
+          if(trainerPassStatus) trainerPassStatus.textContent = data.error || 'Invalid passcode.';
+        }
+      } catch(e){
+        if(trainerPassStatus) trainerPassStatus.textContent = 'Error verifying passcode.';
       }
     });
 
@@ -3506,10 +3685,18 @@
     on('closeInfo', 'click', function(){ if(infoModal) infoModal.hidden = true; });
 
     // Sign out
-    on(signOutBtn, 'click', function(){
+    on(signOutBtn, 'click', async function(){
       loginProfile = null;
+      trainerAccess = false;
       try {
         localStorage.removeItem('ecewise:auth_user');
+      } catch(e){}
+      try {
+        await fetch('/api/admin/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'logout' })
+        });
       } catch(e){}
       if(appRoot) appRoot.hidden = true;
       if(loginScreen) loginScreen.hidden = false;
@@ -3549,7 +3736,7 @@
     historyModal.hidden = false;
     if(historyList) historyList.innerHTML = '<div class="muted text-center" style="padding:20px;">Loading session history…</div>';
     try {
-      var url = '/api/sessions' + (trainerAccess ? '?trainer=1&key=' + encodeURIComponent(TRAINER_PASSCODE) : '');
+      var url = '/api/sessions';
       var res = await fetch(url);
       if(!res.ok) return;
       var data = await res.json();
@@ -3583,7 +3770,7 @@
             btn.disabled = true;
 
             try {
-              var sRes = await fetch('/api/session?id=' + encodeURIComponent(id) + '&trainer=1&key=' + encodeURIComponent(TRAINER_PASSCODE));
+              var sRes = await fetch('/api/session?id=' + encodeURIComponent(id));
               var sessionData = null;
               if(sRes.ok){
                 var d = await sRes.json();
