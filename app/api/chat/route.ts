@@ -259,6 +259,8 @@ interface TelemetryStats {
   timeoutCount: number;
   latencies: number[];
   startedAt: number;
+  lastUsedAt: string | null;
+  lastUsedTimestamp: number | null;
   recentErrors: Array<{
     timestamp: string;
     model: string;
@@ -288,6 +290,8 @@ if (!g.__chatTelemetry) {
     timeoutCount: 0,
     latencies: [],
     startedAt: Date.now(),
+    lastUsedAt: null,
+    lastUsedTimestamp: null,
     recentErrors: []
   };
 }
@@ -481,6 +485,8 @@ export async function GET() {
     status: 'ok',
     service: 'Wyze ECE AI Bot Core & Diagnostics',
     uptimeSec: Math.round((Date.now() - telemetry.startedAt) / 1000),
+    lastUsedAt: telemetry.lastUsedAt,
+    lastUsedTimestamp: telemetry.lastUsedTimestamp,
     metrics: {
       totalRequests: telemetry.totalRequests,
       successfulRequests: telemetry.successfulRequests,
@@ -1678,6 +1684,8 @@ export async function POST(req: Request) {
 
   if (telemetry) {
     telemetry.totalRequests++;
+    telemetry.lastUsedAt = new Date().toISOString();
+    telemetry.lastUsedTimestamp = Date.now();
 
     if (botReply) {
       telemetry.successfulRequests++;

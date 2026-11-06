@@ -41,16 +41,25 @@ export async function GET(req: NextRequest) {
       if (!existing) {
         mergedMap.set(emailKey, t);
       } else {
+        const totalDrills = Math.max(existing.totalDrills, t.totalDrills);
+        const resolvedCount = Math.max(existing.resolvedCount, t.resolvedCount);
+        const resolvedRate = totalDrills > 0 ? Math.round((resolvedCount / totalDrills) * 100) : 0;
+        const lastActiveTs = Math.max(existing.lastActiveAt || existing.lastActive || 0, t.lastActiveAt || t.lastActive || 0) || null;
+
         mergedMap.set(emailKey, {
           ...existing,
           id: t.id || existing.id,
           name: t.name || existing.name,
           avatarId: t.avatarId || existing.avatarId,
-          totalDrills: Math.max(existing.totalDrills, t.totalDrills),
-          resolvedCount: Math.max(existing.resolvedCount, t.resolvedCount),
-          resolvedRate: t.totalDrills > 0 ? t.resolvedRate : existing.resolvedRate,
+          totalDrills,
+          resolvedCount,
+          resolvedRate,
+          avgWpm: t.avgWpm ?? existing.avgWpm,
           abandonedCount: Math.max(existing.abandonedCount, t.abandonedCount),
-          lastActiveAt: Math.max(existing.lastActiveAt || 0, t.lastActiveAt || 0) || null,
+          caseDocScore: t.totalDrills > 0 ? t.caseDocScore : existing.caseDocScore,
+          frustrationRecoveryRate: t.totalDrills > 0 ? t.frustrationRecoveryRate : existing.frustrationRecoveryRate,
+          lastActive: lastActiveTs,
+          lastActiveAt: lastActiveTs,
           lastTicketId: t.lastTicketId || existing.lastTicketId,
         });
       }

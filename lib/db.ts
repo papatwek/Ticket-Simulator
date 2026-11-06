@@ -805,13 +805,15 @@ export function getAgentAnalyticsFromDb(identifier: string) {
       avgWpm: d.avgWpm || null,
       customerName: (d.persona && d.persona.name) || (d.notes && d.notes.customerName) || 'Customer',
       product: (d.persona && d.persona.product) || 'Wyze Device',
+      messages: Array.isArray(d.messages) ? d.messages : [],
+      notes: d.notes || {},
+      issue: (d.persona && (d.persona.issueDescription || d.persona.issueCategory)) || category,
     });
   }
 
-  const denom = completedCount > 0 ? completedCount : (totalSessions > 0 ? totalSessions : 1);
-  const resolvedRate = Math.round((resolvedCount / denom) * 100);
-  const escalatedRate = Math.round((escalatedCount / denom) * 100);
-  const abandonmentRate = Math.round((abandonedCount / denom) * 100);
+  const resolvedRate = totalSessions > 0 ? Math.round((resolvedCount / totalSessions) * 100) : 0;
+  const escalatedRate = totalSessions > 0 ? Math.round((escalatedCount / totalSessions) * 100) : 0;
+  const abandonmentRate = totalSessions > 0 ? Math.round((abandonedCount / totalSessions) * 100) : 0;
 
   const avgWpm = wpmSamples.length > 0
     ? Math.round(wpmSamples.reduce((a, b) => a + b, 0) / wpmSamples.length)
@@ -827,10 +829,10 @@ export function getAgentAnalyticsFromDb(identifier: string) {
 
   const frustrationRecoveryRate = frustratedHandled > 0
     ? Math.round((frustratedResolved / frustratedHandled) * 100)
-    : 100;
+    : (totalSessions > 0 ? 100 : 0);
 
-  const caseDocCompletionRate = completedCount > 0
-    ? Math.round((documentedCasesCount / completedCount) * 100)
+  const caseDocCompletionRate = totalSessions > 0
+    ? Math.round((documentedCasesCount / totalSessions) * 100)
     : 0;
 
   const categoryBreakdown = Array.from(categoryMap.entries()).map(([cat, stats]) => ({
@@ -841,15 +843,20 @@ export function getAgentAnalyticsFromDb(identifier: string) {
     avgWpm: stats.wpms.length > 0 ? Math.round(stats.wpms.reduce((a, b) => a + b, 0) / stats.wpms.length) : null,
   }));
 
+  const lastUsedTs = recentSessions[0] ? (recentSessions[0].updatedAt || recentSessions[0].createdAt) : null;
+
   return {
+    lastUsedTimestamp: lastUsedTs,
     kpis: {
       totalSessions,
       completedSessions: completedCount,
       resolvedCount,
+      resolvedSessions: resolvedCount,
       resolvedRate,
       escalatedCount,
       escalatedRate,
       abandonedCount,
+      abandonedSessions: abandonedCount,
       abandonmentRate,
       avgWpm,
       avgResponseTimeSec,
@@ -858,6 +865,7 @@ export function getAgentAnalyticsFromDb(identifier: string) {
       frustratedResolved,
       frustrationRecoveryRate,
       caseDocCompletionRate,
+      caseDocRate: caseDocCompletionRate,
     },
     speedDistribution: speedDist,
     responseTimeDistribution: respDist,
@@ -877,6 +885,7 @@ export interface AdminTraineeSummary {
   isActive: boolean;
   createdAt: number;
   updatedAt: number;
+  lastActive?: number | null;
   lastActiveAt: number | null;
   lastTicketId: string | null;
   totalDrills: number;
@@ -909,6 +918,7 @@ export function adminListTrainees(): AdminTraineeSummary[] {
     const analytics = getAgentAnalyticsFromDb(u.id);
     const k = analytics.kpis;
     const recent = analytics.recentSessions[0];
+    const lastActiveTs = recent ? (recent.updatedAt || recent.createdAt) : null;
     return {
       id: u.id,
       email: u.email,
@@ -917,7 +927,8 @@ export function adminListTrainees(): AdminTraineeSummary[] {
       isActive: u.is_active !== 0,
       createdAt: u.created_at,
       updatedAt: u.updated_at,
-      lastActiveAt: recent ? (recent.updatedAt || recent.createdAt) : null,
+      lastActive: lastActiveTs,
+      lastActiveAt: lastActiveTs,
       lastTicketId: recent ? (recent.ticketId || null) : null,
       totalDrills: k.totalSessions,
       resolvedCount: k.resolvedCount,

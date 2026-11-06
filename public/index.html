@@ -214,13 +214,6 @@
             <option value="warm">Warm Classic</option>
           </select>
         </div>
-
-        <div class="left-setting-row">
-          <label class="left-toggle-row" title="Reveal ground truth answer key for coaching review">
-            <span class="left-setting-label">👁️ Trainer view</span>
-            <input type="checkbox" id="trainerModeToggle" class="left-checkbox"/>
-          </label>
-        </div>
       </nav>
 
       <!-- Sidebar Sign Out in Footer -->
@@ -459,6 +452,7 @@
           <div class="summary-chip"><span class="chip-val text-teal" id="adminActiveCount">0</span> Active</div>
           <div class="summary-chip"><span class="chip-val text-emerald" id="adminAvgResRate">0%</span> Avg Resolution Rate</div>
           <div class="summary-chip"><span class="chip-val text-blue" id="adminAvgWpm">0 WPM</span> Avg Speed</div>
+          <div class="summary-chip" id="adminFeedbackChip" style="cursor:pointer;" title="Click to view all reported bugs and feedback"><span class="chip-val text-amber" id="adminFeedbackChipVal">0</span> 🐞 Feedback</div>
           <div class="summary-chip" id="adminDbSummaryChip" style="cursor:pointer;" title="Click to test Supabase connection"><span class="chip-val text-teal" id="adminDbSummaryVal">⚡ DB Check</span> Supabase</div>
         </div>
 
@@ -476,6 +470,7 @@
           <div class="admin-view-toggle">
             <button type="button" class="view-btn active" id="adminViewTableBtn" title="Table View">📋 Table View</button>
             <button type="button" class="view-btn" id="adminViewCardsBtn" title="Card View">🗂️ Card View</button>
+            <button type="button" class="view-btn" id="adminFeedbackBtn" title="View Reported Bugs & Feedback">🐞 Bug Reports (<span id="adminFeedbackCount">0</span>)</button>
           </div>
         </div>
 
@@ -540,6 +535,7 @@
               <div class="pa-title-row">
                 <h2 id="paTitle"><span id="paAgentName">Trainee Agent</span></h2>
                 <span class="pa-id-badge" id="paAgentEmail">agent@ececontactcenters.com</span>
+                <span class="pa-telemetry-badge" id="paLastUsedBadge" style="margin-left:8px; font-size:11.5px; padding:3px 8px; border-radius:6px; background:var(--panel-subtle); border:1px solid var(--line); color:var(--muted);" title="Most recent tool and simulator activity">Last Active: <b id="paLastUsedTime" style="color:var(--text);">—</b></span>
               </div>
               <p class="pa-subtitle" id="paSubtitleRole">ECE Live-Chat Agent Performance Cockpit • Wyze Support Division</p>
             </div>
@@ -790,11 +786,6 @@
     <button class="history-expand-btn" id="historyExpandBtn" type="button" aria-label="Expand history window" title="Expand history window">⤢</button>
     <button class="modal-close" id="closeHistory" aria-label="Close">×</button>
     <h3>Past sessions</h3>
-    <div class="trainer-access" id="trainerAccess">
-      <input type="password" id="trainerPassInput" placeholder="Trainer passcode to view live chats…" autocomplete="off"/>
-      <button type="button" class="btn btn-ghost" id="trainerPassBtn">Unlock</button>
-      <span class="trainer-status" id="trainerPassStatus"></span>
-    </div>
     <div id="historyList"></div>
   </div>
 </div>
@@ -1033,6 +1024,23 @@
     </form>
     <div id="bugSuccessNotice" class="alert-banner" hidden style="margin-top:14px;background:rgba(13,148,136,0.15);border:1px solid #0d9488;border-radius:8px;padding:12px;color:var(--text);font-size:13px;">
       ✅ Thank you! Your bug report and diagnostics have been logged for the training team.
+    </div>
+  </div>
+</div>
+
+<!-- Leadership Admin Feedback & Bug Reports Viewer Modal -->
+<div class="modal" id="adminFeedbackModal" hidden>
+  <div class="modal-content" style="max-width: 860px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column;">
+    <button class="modal-close" id="closeAdminFeedbackBtn" aria-label="Close">×</button>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+      <span style="font-size:22px;">🐞</span>
+      <div>
+        <h3 style="margin:0; font-size:17px;">Trainee Bug Reports &amp; Simulator Feedback</h3>
+        <p class="muted" style="margin:2px 0 0; font-size:12px;">Real-time issue logs, edge cases, and feature suggestions submitted by agents.</p>
+      </div>
+    </div>
+    <div style="overflow-y:auto; flex:1; max-height:calc(85vh - 120px); padding-right:4px;" id="adminFeedbackListWrap">
+      <div id="adminFeedbackList"><div class="muted text-center py-4">Loading feedback records…</div></div>
     </div>
   </div>
 </div>

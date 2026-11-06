@@ -265,7 +265,14 @@
   }
 
   function fmtTime(ts){
-    return new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    if(!ts) return 'Never';
+    var d = new Date(ts);
+    if(isNaN(d.getTime())) return 'Never';
+    var now = new Date();
+    var isToday = d.toDateString() === now.toDateString();
+    var timeStr = d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    if(isToday) return 'Today, ' + timeStr;
+    return (d.getMonth() + 1) + '/' + d.getDate() + ', ' + timeStr;
   }
 
   function avatarMarkup(id, extraClass){
@@ -2223,10 +2230,11 @@
         if($('paSubtitleRole')) $('paSubtitleRole').textContent = 'ECE Live-Chat Agent Performance Cockpit • Wyze Support Division';
       }
 
-      renderAnalyticsKpis(kpis);
+      renderAnalyticsKpis(kpis, analytics);
       renderSpeedDistribution(analytics.speedDistribution || {});
       renderResponseDistribution(analytics.responseTimeDistribution || {});
       renderCategoryBreakdown(analytics.categoryBreakdown || []);
+      renderAbandonmentAnalysis(kpis, analytics.abandonedSessions || []);
       renderWpmChart(analytics.wpmHistory || []);
       renderAbandonedList(analytics.abandonedSessions || []);
       renderTranscriptsList(analytics.recentSessions || []);
@@ -2235,17 +2243,70 @@
     }
   }
 
-  function renderAnalyticsKpis(k){
+  function renderAnalyticsKpis(k, analytics){
     if($('paKpiWpm')) $('paKpiWpm').textContent = k.avgWpm ? (k.avgWpm + ' WPM') : '—';
     if($('paKpiResp')) $('paKpiResp').textContent = k.avgResponseTimeSec != null ? (k.avgResponseTimeSec + 's') : '—';
-    if($('paKpiResRate')) $('paKpiResRate').textContent = (k.resolvedRate || 0) + '%';
-    if($('paKpiResCount')) $('paKpiResCount').textContent = (k.resolvedSessions || 0) + ' / ' + (k.totalSessions || 0) + ' drills';
-    if($('paKpiAbandonRate')) $('paKpiAbandonRate').textContent = (k.abandonmentRate || 0) + '%';
-    if($('paKpiAbandonCount')) $('paKpiAbandonCount').textContent = (k.abandonedSessions || 0) + ' breaches';
-    if($('paKpiChurnRate')) $('paKpiChurnRate').textContent = (k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100) + '%';
-    if($('paKpiDocRate')) $('paKpiDocRate').textContent = (k.caseDocRate || 0) + '%';
 
-    if($('paChurnPercent')) $('paChurnPercent').textContent = (k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100) + '%';
+    var resolvedCount = k.resolvedCount != null ? k.resolvedCount : (k.resolvedSessions || 0);
+    var totalCount = k.totalSessions || 0;
+    var resRate = k.resolvedRate != null ? k.resolvedRate : (totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 0);
+    if($('paKpiResRate')) $('paKpiResRate').textContent = resRate + '%';
+    if($('paKpiResCount')) $('paKpiResCount').textContent = resolvedCount + ' / ' + totalCount + ' drills';
+
+    var abandonCount = k.abandonedCount != null ? k.abandonedCount : (k.abandonedSessions || 0);
+    if($('paKpiAbandonRate')) $('paKpiAbandonRate').textContent = (k.abandonmentRate || 0) + '%';
+    if($('paKpiAbandonCount')) $('paKpiAbandonCount').textContent = abandonCount + ' breaches';
+
+    var frustRecovery = k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : (totalCount > 0 ? 100 : 0);
+    if($('paKpiChurnRate')) $('paKpiChurnRate').textContent = frustRecovery + '%';
+    if($('paChurnPercent')) $('paChurnPercent').textContent = frustRecovery + '%';
+
+    var docRate = k.caseDocCompletionRate != null ? k.caseDocCompletionRate : (k.caseDocRate || 0);
+    if($('paKpiDocRate')) $('paKpiDocRate').textContent = docRate + '%';
+
+    // Update Last Used Timestamp
+    var lastTs = (analytics && (analytics.lastUsedTimestamp || (analytics.recentSessions && analytics.recentSessions[0] && (analytics.recentSessions[0].updatedAt || analytics.recentSessions[0].createdAt)))) || null;
+    if($('paLastUsedTime')) $('paLastUsedTime').textContent = lastTs ? fmtTime(lastTs) : 'Just now';
+
+    // Update Frustration description
+    if($('paChurnDesc')){
+      if((k.frustratedHandled || 0) > 0){
+        $('paChurnDesc').textContent = (k.frustratedResolved || 0) + ' of ' + k.frustratedHandled + ' frustrated or upset customers were successfully guided to resolution.';
+      } else {
+        $('paChurnDesc').textContent = 'Zero customer churn or angry escalations encountered across ' + totalCount + ' drills.';
+      }
+    }
+  }
+
+  function renderAbandonmentAnalysis(k, abandoned){
+    var wrap = $('paAbandonmentAnalysisContent');
+    if(!wrap) return;
+
+    var abandonCount = k.abandonedCount != null ? k.abandonedCount : (k.abandonedSessions || 0);
+    var totalCount = k.totalSessions || 0;
+    var heldCount = Math.max(0, totalCount - abandonCount);
+    var isClean = abandonCount === 0;
+
+    var statusText = isClean ? '🛡️ Zero Abandonment Breaches' : '⚠️ ' + abandonCount + ' Customer Departure' + (abandonCount > 1 ? 's' : '');
+    var badgeClass = isClean ? 'rate-high' : 'rate-low';
+    var badgeLabel = isClean ? '100% SLA COMPLIANT' : abandonCount + ' BREACH' + (abandonCount > 1 ? 'ES' : '');
+
+    var maxWait = k.maxResponseTimeSec != null ? (k.maxResponseTimeSec + 's') : '< 60s';
+
+    wrap.innerHTML = '<div class="pa-abandon-hero">' +
+      '<div class="pa-abandon-top">' +
+        '<div class="pa-abandon-status">' + statusText + '</div>' +
+        '<span class="pa-abandon-badge ' + badgeClass + '">' + badgeLabel + '</span>' +
+      '</div>' +
+      '<div class="pa-abandon-stats-grid">' +
+        '<div class="pa-abandon-stat-cell"><span class="lbl">Safely Handled</span><span class="val text-emerald">' + heldCount + ' / ' + totalCount + '</span></div>' +
+        '<div class="pa-abandon-stat-cell"><span class="lbl">Max Wait Gap</span><span class="val text-blue">' + maxWait + '</span></div>' +
+        '<div class="pa-abandon-stat-cell"><span class="lbl">Abandonment Rate</span><span class="val ' + (isClean ? 'text-emerald' : 'text-danger') + '">' + (k.abandonmentRate || 0) + '%</span></div>' +
+      '</div>' +
+      '<div class="pa-abandon-rule-note">' +
+        '<strong>Wyze Live-Chat Inactivity Rules:</strong> Customer impatience nudges begin after <b>4 continuous minutes (240s)</b> of silence. Customers walk out and disconnect at <b>7 continuous minutes (420s)</b>.' +
+      '</div>' +
+    '</div>';
   }
 
   function renderSpeedDistribution(s){
@@ -2308,13 +2369,18 @@
     }
     wrap.innerHTML = categories.map(function(c){
       var resRate = Math.round(((c.resolved || 0) / (c.total || 1)) * 100);
+      var resClass = resRate >= 70 ? 'rate-high' : (resRate >= 40 ? 'rate-mid' : 'rate-low');
       return '<div class="cat-stat-card">' +
-        '<div class="cat-stat-header"><strong>' + escapeHtml(c.category) + '</strong><span>' + c.total + ' drills</span></div>' +
+        '<div class="cat-stat-header">' +
+          '<strong>' + escapeHtml(c.category) + '</strong>' +
+          '<span>' + c.total + ' ' + (c.total === 1 ? 'drill' : 'drills') + '</span>' +
+        '</div>' +
         '<div class="cat-stat-meta">' +
-          '<span>Resolution: <b>' + resRate + '%</b></span>' +
+          '<span>Resolution: <span class="rate-pill ' + resClass + '">' + resRate + '%</span></span>' +
           '<span>Breaches: <b>' + (c.abandoned || 0) + '</b></span>' +
           '<span>Speed: <b>' + (c.avgWpm ? c.avgWpm + ' WPM' : '—') + '</b></span>' +
-        '</div></div>';
+        '</div>' +
+      '</div>';
     }).join('');
   }
 
@@ -2428,7 +2494,6 @@
     var targetId = activeAnalyticsTargetId || (loginProfile ? loginProfile.id : null);
     if(!targetId) return;
 
-    var banner = $('paGradeBanner');
     var origSummary = $('paExecutiveSummary') ? $('paExecutiveSummary').textContent : '';
     if($('paExecutiveSummary')) $('paExecutiveSummary').textContent = 'Analyzing drill performance against Wyze SOP guidelines…';
 
@@ -2436,39 +2501,80 @@
       var res = await fetch('/api/agent/analytics?user=' + encodeURIComponent(targetId));
       var data = await res.json();
       var k = (data.analytics && data.analytics.kpis) || {};
+      var cats = (data.analytics && data.analytics.categoryBreakdown) || [];
+      var agentName = $('paAgentName') ? $('paAgentName').textContent : 'Trainee Agent';
 
-      var prompt = [
-        "You are an Elite Wyze Contact Center QA Coach analyzing a trainee's drill metrics:",
-        "- Total Drills: " + (k.totalSessions || 0),
-        "- Resolution Rate: " + (k.resolvedRate || 0) + "%",
-        "- Abandonment Rate: " + (k.abandonmentRate || 0) + "%",
-        "- Average Typing Speed: " + (k.avgWpm || 0) + " WPM (Floor target: >= 45 WPM)",
-        "- Average Response Latency: " + (k.avgResponseTimeSec || 0) + "s (Target: < 60s)",
-        "- Frustration Recovery: " + (k.frustrationRecoveryRate != null ? k.frustrationRecoveryRate : 100) + "%",
-        "- Case Documentation Rate: " + (k.caseDocRate || 0) + "%",
-        "Generate a structured JSON output with these keys only:",
-        '{ "grade": "Solid | Developing | Needs Work | Excellent", "summary": "1 sentence executive assessment", "strengths": ["bullet 1", "bullet 2"], "improvements": ["bullet 1", "bullet 2"], "churnAdvice": "1 sentence", "speedAdvice": "1 sentence", "nextGoal": "1 specific drill goal" }'
-      ].join('\n');
+      var aiRes = await fetch('/api/agent/ai-insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          traineeName: agentName,
+          kpis: k,
+          categoryBreakdown: cats
+        })
+      });
 
-      var raw = await runModel([{ role: 'user', content: prompt }]);
-      try {
-        var clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-        var parsed = JSON.parse(clean);
-        if($('paOverallGrade')) $('paOverallGrade').textContent = parsed.grade || 'Solid';
-        if($('paExecutiveSummary')) $('paExecutiveSummary').textContent = parsed.summary || 'Strong technical command with consistent SOP adherence.';
-        if($('paStrengthsList') && parsed.strengths){
-          $('paStrengthsList').innerHTML = parsed.strengths.map(function(s){ return '<li>' + escapeHtml(s) + '</li>'; }).join('');
-        }
-        if($('paGrowthList') && parsed.improvements){
-          $('paGrowthList').innerHTML = parsed.improvements.map(function(i){ return '<li>' + escapeHtml(i) + '</li>'; }).join('');
-        }
-        if($('paChurnAdvice') && parsed.churnAdvice) $('paChurnAdvice').textContent = parsed.churnAdvice;
-        if($('paSpeedAdvice') && parsed.speedAdvice) $('paSpeedAdvice').textContent = parsed.speedAdvice;
-        if($('paNextGoal') && parsed.nextGoal) $('paNextGoal').textContent = parsed.nextGoal;
-      } catch(parseErr){
-        if($('paExecutiveSummary')) $('paExecutiveSummary').textContent = raw;
+      var parsed = null;
+      if(aiRes.ok){
+        var aiData = await aiRes.json();
+        parsed = aiData.insights;
       }
+
+      // If network or server didn't return insights, compute algorithmic QA evaluation from actual numbers
+      if(!parsed){
+        var grade = (k.resolvedRate >= 80 && (k.avgWpm || 0) >= 45) ? 'Proficient' : (k.resolvedRate >= 50 ? 'Solid' : 'Developing');
+        var strengths = [];
+        var growth = [];
+
+        if((k.resolvedRate || 0) >= 60) strengths.push('Strong resolution track record (' + k.resolvedRate + '% of drills solved).');
+        else growth.push('Focus on guiding customers to definitive resolution before concluding chats.');
+
+        if((k.avgWpm || 0) >= 45) strengths.push('Typing speed (' + (k.avgWpm || '—') + ' WPM) meets or exceeds contact center benchmarks.');
+        else growth.push('Improve response pacing to reach the 45+ WPM live-chat benchmark.');
+
+        if((k.abandonmentRate || 0) === 0) strengths.push('Zero 7-minute inactivity abandonments — excellent customer hold management.');
+        else growth.push('Prevent customer walkouts: check in every 2–3 minutes to avoid the 7-minute disconnect breach.');
+
+        if((k.caseDocCompletionRate || 0) >= 70) strengths.push('Thorough SOP CRM documentation recorded across drill case files.');
+        else growth.push('Document all required CRM case fields (Name, Email, Product, Recap, Next Steps).');
+
+        parsed = {
+          overallGrade: grade,
+          executiveSummary: 'Demonstrating active live-chat discipline across Wyze product scenarios. Maintain focus on swift response intervals and complete CRM documentation.',
+          strengths: strengths.length ? strengths : ['Active listening and customer acknowledgment on setup procedures.'],
+          growthAreas: growth.length ? growth : ['Keep customer wait gaps strictly under 60 seconds.'],
+          churnPreventionAdvice: 'When a customer expresses frustration, validate their feelings immediately before asking for device verification.',
+          slaSpeedAdvice: 'Use punchy, structured troubleshooting steps rather than long paragraphs to keep hold times low.',
+          nextDrillGoal: 'Achieve 100% case file documentation with zero response gaps over 60 seconds.'
+        };
+      }
+
+      var gradeText = parsed.overallGrade || parsed.grade || 'Solid';
+      if($('paOverallGrade')) $('paOverallGrade').textContent = gradeText;
+      if($('paExecutiveSummary')) $('paExecutiveSummary').textContent = parsed.executiveSummary || parsed.summary || 'Strong technical command with consistent SOP adherence.';
+
+      var sList = parsed.strengths || [];
+      if($('paStrengthsList') && sList.length){
+        $('paStrengthsList').innerHTML = sList.map(function(s){ return '<li>' + escapeHtml(s) + '</li>'; }).join('');
+      }
+
+      var gList = parsed.growthAreas || parsed.improvements || [];
+      if($('paGrowthList') && gList.length){
+        $('paGrowthList').innerHTML = gList.map(function(i){ return '<li>' + escapeHtml(i) + '</li>'; }).join('');
+      }
+
+      var churnAdv = parsed.churnPreventionAdvice || parsed.churnAdvice;
+      if($('paChurnAdvice') && churnAdv) $('paChurnAdvice').textContent = churnAdv;
+
+      var speedAdv = parsed.slaSpeedAdvice || parsed.speedAdvice;
+      if($('paSpeedAdvice') && speedAdv) $('paSpeedAdvice').textContent = speedAdv;
+
+      var goal = parsed.nextDrillGoal || parsed.nextGoal;
+      if($('paNextGoal') && goal) $('paNextGoal').textContent = goal;
+
+      showToast('✨ Fresh AI QA coaching assessment generated!');
     } catch(e){
+      console.warn('AI Insights trigger error:', e);
       if($('paExecutiveSummary')) $('paExecutiveSummary').textContent = origSummary || "Coaching synthesis temporarily unavailable.";
     }
   }
@@ -2513,11 +2619,63 @@
       if($('adminAvgResRate')) $('adminAvgResRate').textContent = avgRes + '%';
       if($('adminAvgWpm')) $('adminAvgWpm').textContent = avgWpm + ' WPM';
 
+      // Update feedback count in quick summary
+      fetch('/api/feedback').then(function(r){ return r.json(); }).then(function(fd){
+        if(fd && Array.isArray(fd.reports)){
+          if($('adminFeedbackChipCount')) $('adminFeedbackChipCount').textContent = fd.reports.length;
+          if($('adminFeedbackCount')) $('adminFeedbackCount').textContent = fd.reports.length + ' reports';
+        }
+      }).catch(function(){});
+
       applyAdminFilters();
       runSupabaseDiagnostic(false);
     } catch(err){
       if(body) body.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Failed to load trainees.</td></tr>';
       runSupabaseDiagnostic(false);
+    }
+  }
+
+  async function loadAdminFeedback(){
+    var list = $('adminFeedbackList');
+    var badge = $('adminFeedbackCount');
+    var chipCount = $('adminFeedbackChipCount');
+    if(list) list.innerHTML = '<div class="muted text-center py-4">Loading feedback and bug reports…</div>';
+    try {
+      var res = await fetch('/api/feedback');
+      var reports = [];
+      if(res.ok){
+        var data = await res.json();
+        reports = data.reports || [];
+      } else {
+        try {
+          reports = JSON.parse(localStorage.getItem('ecewise:bug_reports') || '[]');
+        } catch(e){}
+      }
+      if(badge) badge.textContent = reports.length + ' reports';
+      if(chipCount) chipCount.textContent = reports.length;
+      if(!list) return;
+      if(reports.length === 0){
+        list.innerHTML = '<div class="muted text-center py-4">No reported bugs or trainee feedback on record yet.</div>';
+        return;
+      }
+      var html = '';
+      reports.forEach(function(r){
+        var cat = r.category || 'other';
+        var catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
+        var timeStr = r.createdAt || r.ts ? fmtTime(r.createdAt || r.ts) : 'Recently';
+        var agent = r.agent || r.traineeName || 'Anonymous Agent';
+        var ticket = r.ticketId && r.ticketId !== 'None' ? ' • Ticket: ' + escapeHtml(r.ticketId) : '';
+        html += '<div class="feedback-item-card">' +
+          '<div class="feedback-header">' +
+            '<div><span class="feedback-cat-tag">' + escapeHtml(catLabel) + '</span> <strong class="feedback-agent">' + escapeHtml(agent) + '</strong><span class="muted text-xs">' + ticket + '</span></div>' +
+            '<span class="feedback-time">' + escapeHtml(timeStr) + '</span>' +
+          '</div>' +
+          '<div class="feedback-desc">' + escapeHtml(r.description || '') + '</div>' +
+        '</div>';
+      });
+      list.innerHTML = html;
+    } catch(err){
+      if(list) list.innerHTML = '<div class="text-danger text-center py-4">Failed to load reports: ' + escapeHtml(err.message) + '</div>';
     }
   }
 
@@ -2672,8 +2830,9 @@
     body.innerHTML = trainees.map(function(t){
       var resRate = t.resolvedRate || 0;
       var resPillClass = resRate >= 70 ? 'rate-high' : (resRate >= 40 ? 'rate-mid' : 'rate-low');
-      var frustRate = t.frustrationRate != null ? t.frustrationRate : 100;
-      var docRate = t.caseDocRate != null ? t.caseDocRate : (t.totalDrills > 0 ? 100 : 0);
+      var frustRate = t.frustrationRecoveryRate != null ? t.frustrationRecoveryRate : (t.frustrationRate != null ? t.frustrationRate : (t.totalDrills > 0 ? 100 : 0));
+      var docRate = t.caseDocScore != null ? t.caseDocScore : (t.caseDocRate != null ? t.caseDocRate : (t.totalDrills > 0 ? 100 : 0));
+      var lastActiveTs = t.lastActive || t.lastActiveAt;
 
       return '<tr>' +
         '<td>' +
@@ -2690,14 +2849,14 @@
         '<td>' + (t.isActive ? '<span class="status-badge badge-active">Active</span>' : '<span class="status-badge badge-inactive">Deactivated</span>') + '</td>' +
         '<td>' +
           '<div>' +
-            '<div>' + (t.lastActive ? fmtTime(t.lastActive) : 'Never') + '</div>' +
+            '<div>' + (lastActiveTs ? fmtTime(lastActiveTs) : 'Never') + '</div>' +
             '<div class="muted">' + (t.lastTicketId ? '<code>' + escapeHtml(t.lastTicketId) + '</code>' : 'No drills') + '</div>' +
           '</div>' +
         '</td>' +
         '<td style="text-align:center;"><b>' + (t.totalDrills || 0) + '</b></td>' +
         '<td style="text-align:center;"><span class="rate-pill ' + resPillClass + '">' + resRate + '%</span></td>' +
         '<td style="text-align:center;"><b>' + (t.avgWpm ? t.avgWpm + ' WPM' : '—') + '</b></td>' +
-        '<td style="text-align:center;"><span class="rate-pill rate-high">' + frustRate + '%</span></td>' +
+        '<td style="text-align:center;"><span class="rate-pill ' + (frustRate >= 70 ? 'rate-high' : 'rate-mid') + '">' + frustRate + '%</span></td>' +
         '<td style="text-align:center;"><span class="rate-pill ' + (docRate >= 70 ? 'rate-high' : 'rate-mid') + '">' + docRate + '%</span></td>' +
         '<td style="text-align:right;">' +
           '<div class="admin-actions-cell">' +
@@ -2725,6 +2884,8 @@
     grid.innerHTML = trainees.map(function(t){
       var resRate = t.resolvedRate || 0;
       var resPillClass = resRate >= 70 ? 'rate-high' : (resRate >= 40 ? 'rate-mid' : 'rate-low');
+      var frustRate = t.frustrationRecoveryRate != null ? t.frustrationRecoveryRate : (t.frustrationRate != null ? t.frustrationRate : (t.totalDrills > 0 ? 100 : 0));
+      var lastActiveTs = t.lastActive || t.lastActiveAt;
 
       return '<div class="admin-trainee-card">' +
         '<div class="atc-header">' +
@@ -2743,10 +2904,10 @@
           '<div class="atc-metric-item"><div class="atc-m-lbl">Total Drills</div><div class="atc-m-val">' + (t.totalDrills || 0) + '</div></div>' +
           '<div class="atc-metric-item"><div class="atc-m-lbl">Resolution</div><div class="atc-m-val"><span class="rate-pill ' + resPillClass + '">' + resRate + '%</span></div></div>' +
           '<div class="atc-metric-item"><div class="atc-m-lbl">Avg Speed</div><div class="atc-m-val">' + (t.avgWpm ? t.avgWpm + ' WPM' : '—') + '</div></div>' +
-          '<div class="atc-metric-item"><div class="atc-m-lbl">Frustration Rec.</div><div class="atc-m-val">' + (t.frustrationRate != null ? t.frustrationRate : 100) + '%</div></div>' +
+          '<div class="atc-metric-item"><div class="atc-m-lbl">Frustration Rec.</div><div class="atc-m-val">' + frustRate + '%</div></div>' +
         '</div>' +
         '<div class="atc-footer">' +
-          '<div class="muted" style="font-size:11.5px;">Last Active: ' + (t.lastActive ? fmtTime(t.lastActive) : 'Never') + '</div>' +
+          '<div class="muted" style="font-size:11.5px;">Last Active: ' + (lastActiveTs ? fmtTime(lastActiveTs) : 'Never') + '</div>' +
           '<div class="admin-actions-cell">' +
             '<button type="button" class="btn btn-xs btn-primary-ghost btn-drill" data-id="' + escapeHtml(t.id) + '">Drill-Down</button>' +
             '<button type="button" class="btn btn-xs btn-primary-ghost btn-reset" data-id="' + escapeHtml(t.id) + '">Reset PW</button>' +
@@ -3465,26 +3626,44 @@
     });
     on(closeReportBugBtn, 'click', function(){ if(reportBugModal) reportBugModal.hidden = true; });
     on(cancelReportBugBtn, 'click', function(){ if(reportBugModal) reportBugModal.hidden = true; });
-    on(reportBugForm, 'submit', function(ev){
+    on(reportBugForm, 'submit', async function(ev){
       ev.preventDefault();
       var cat = $('bugCategory') ? $('bugCategory').value : 'other';
       var desc = $('bugDescription') ? $('bugDescription').value.trim() : '';
       if(!desc) return;
-      var reports = [];
-      try {
-        reports = JSON.parse(localStorage.getItem('ecewise:bug_reports') || '[]');
-      } catch(e){}
-      reports.push({
+      var newReport = {
         id: 'bug_' + Date.now(),
         category: cat,
         description: desc,
         agent: loginProfile ? loginProfile.name : 'Unknown',
+        traineeId: loginProfile ? loginProfile.id : '',
         ticketId: state ? state.ticketId : 'None',
         ts: Date.now()
-      });
+      };
+      var reports = [];
+      try {
+        reports = JSON.parse(localStorage.getItem('ecewise:bug_reports') || '[]');
+      } catch(e){}
+      reports.push(newReport);
       try {
         localStorage.setItem('ecewise:bug_reports', JSON.stringify(reports));
       } catch(e){}
+
+      // Persist to server /api/feedback endpoint
+      try {
+        fetch('/api/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: cat,
+            description: desc,
+            agent: loginProfile ? loginProfile.name : 'Unknown',
+            traineeId: loginProfile ? loginProfile.id : '',
+            ticketId: state ? state.ticketId : 'None'
+          })
+        }).catch(function(){});
+      } catch(e){}
+
       if(bugSuccessNotice) bugSuccessNotice.hidden = false;
       showToast('🐛 Bug report submitted. Thank you for your feedback!');
       setTimeout(function(){
@@ -3634,6 +3813,23 @@
     });
     on('runAdminDbDiagBtn', 'click', function(){
       runSupabaseDiagnostic(false);
+    });
+
+    // Admin Feedback & Bug Reports Modal
+    on('adminFeedbackBtn', 'click', function(){
+      if($('adminFeedbackModal')) $('adminFeedbackModal').hidden = false;
+      loadAdminFeedback();
+    });
+    on('adminFeedbackChip', 'click', function(){
+      if($('adminFeedbackModal')) $('adminFeedbackModal').hidden = false;
+      loadAdminFeedback();
+    });
+    on('refreshAdminFeedbackBtn', 'click', loadAdminFeedback);
+    on('closeAdminFeedbackModal', 'click', function(){
+      if($('adminFeedbackModal')) $('adminFeedbackModal').hidden = true;
+    });
+    on('dismissAdminFeedbackModal', 'click', function(){
+      if($('adminFeedbackModal')) $('adminFeedbackModal').hidden = true;
     });
 
     // Admin Invite Trainee Modal
